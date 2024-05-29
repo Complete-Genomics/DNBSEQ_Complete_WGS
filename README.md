@@ -14,8 +14,9 @@ From: stlfr/cwgs:1.0.3
 EOF
  
 singularity build --fakeroot CWGS.sif CWGS.def
-# If the singularity doesn't support --fakeroot, you need sudo permission to run this command:
-# sudo singularity build CWGS.sif CWGS.def
+
+If the singularity doesn't support --fakeroot, you need sudo permission to run this command:
+sudo singularity build CWGS.sif CWGS.def
  
 singularity exec -B`pwd -P` CWGS.sif cp -rL /usr/local/bin/CWGS /usr/local/bin/runit /usr/local/app/CWGS/demo .
 
