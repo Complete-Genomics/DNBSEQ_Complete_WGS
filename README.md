@@ -55,9 +55,12 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
       demo1	/path/to/stLFR_01_1.fq.gz	/path/to/stLFR_01_2.fq.gz	/path/to/PCRfree_01_1.fq.gz	/path/to/PCRfree_01_2.fq.gz
       demo2	/path/to/stLFR_02_1.fq.gz	/path/to/stLFR_02_2.fq.gz	/path/to/PCRfree_02_1.fq.gz	/path/to/PCRfree_02_2.fq.gz
       EOF
-      *paths above can be both absolute and relative.
+   
+      *paths above can be both absolute and relative
+   
     start from barcode split fastq files (set --skipBarcodeSplit true)
       format same as above.
+   
     start from PCR-free and stLFR bam files (set --frombam true)
       E.g.
       cat << EOF > sample.list
@@ -65,7 +68,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
       demo1	/path/to/stLFR_01.bam	/path/to/PCRfree_01.bam
       demo2	/path/to/stLFR_02.bam	/path/to/PCRfree_02.bam
       EOF
-  2. Run settings
+  3. Run settings
       Set CPU
           --cpu2 INT
             Specify cpu number for QC, markdup, bam downsample, merge bam, bam stats calculation. [24]
@@ -152,7 +155,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
           By default, each process only keeps the output files. If you want to check the intermediate files within a process, use this flag.
 
 
-  3. Executor and MegaBOLT setting, four combinations:
+  4. Executor and MegaBOLT setting, four combinations:
       1. clusters by SGE (Sun Grid Engine) (default)
           Ensure the clusters contain at least one MegaBOLT queue.
           Ensure that the SGE system is functioning and installed in the /opt/gridengine directory (if the installation directory is different, specified with -sge option). Confirm the working queue and project number, which can be specified using --queue, --boltq, and --project for regular queue, MegaBOLT queue, and project id, respectively. Use "--project none" if the system doesn't need a project id.
