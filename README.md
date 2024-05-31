@@ -48,7 +48,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
 
 # Running the pipeline:
 1. Generate sample.list.
-    # start from fastq files (default)
+   start from fastq files (default)
       E.g.
       cat << EOF > sample.list
       sample	stlfr1	stlfr2	pcrfree1	pcrfree2
@@ -56,9 +56,9 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
       demo2	/path/to/stLFR_02_1.fq.gz	/path/to/stLFR_02_2.fq.gz	/path/to/PCRfree_02_1.fq.gz	/path/to/PCRfree_02_2.fq.gz
       EOF
       *paths above can be both absolute and relative.
-    # start from barcode split fastq files (set --skipBarcodeSplit true)
+    start from barcode split fastq files (set --skipBarcodeSplit true)
       format same as above.
-    # start from PCR-free and stLFR bam files (set --frombam true)
+    start from PCR-free and stLFR bam files (set --frombam true)
       E.g.
       cat << EOF > sample.list
       sample	stlfrbam	pfbam
@@ -66,14 +66,14 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
       demo2	/path/to/stLFR_02.bam	/path/to/PCRfree_02.bam
       EOF
   2. Run settings
-      # Set CPU
+      Set CPU
           --cpu2 INT
             Specify cpu number for QC, markdup, bam downsample, merge bam, bam stats calculation. [24]
 
           --cpu3 INT
             Specify cpu number for alignment and short variants calling (including BQSR and VQSR, if specified). [48]
 
-      # Sample the input fastq files
+      Sample the input fastq files
           --sampleFq BOOL
             if you want to initially sample the fastq file, set it true. [false]
 
@@ -84,7 +84,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
           --PF_fq_cov INT [only valid when '--sampleBam true']
           sample PCR-free reads to this coverage [50] 
 
-      # Alignment and variant calling relevant settings
+      Alignment and variant calling relevant settings
           --align_tool STRING
             Specify the alignment tool for stLFR reads. [lariat]
             Supports:
@@ -122,7 +122,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
               v0.7
             Current MegaBOLT DeepVariant version is v0.7; therefore, if you specify this option to "v1.6", MegaBOLT will not be used even if '--use_megabolt' is true.
 
-      # Markdup
+      Markdup
           --markdup STRING
             Specify the mark duplicates tool. [biobambam2]
             Supports: 
@@ -130,7 +130,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
               picard
               gatk4 (MarkDuplicatesSpark)
               sambamba (not recommended)
-      # Downsample the bam file
+      Downsample the bam file
           --sampleBam BOOL
             Whether downsample the stLFR bam and PCR-free bam. [true]
 
@@ -139,15 +139,15 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
 
           --PF_sampling_cov INT [only valid when '--sampleBam true']
             Downsample PCRFree bam to the specified coverage. [40]
-      # Merge the bam
+      Merge the bam
           --PF_lt_stLFR_depth INT
             Extract the intersection regions from the sampled stLFR bam with depth greater than (>) this value and PCRFree bam with depth less equal than (<=) this value. [10]
 
-      # Enable resuming the running
+      Enable resuming the running
           --keepFiles BOOL
             By default, useless intermediate files will be deleted during the analysis to save storage. If you want to resume the run, set it true. [false]
 
-      # Debug mode
+      Debug mode
           -debug
           By default, each process only keeps the output files. If you want to check the intermediate files within a process, use this flag.
 
