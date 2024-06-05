@@ -7,55 +7,59 @@ This is a pipline the enables the mapping, variant calling, and phasing of input
 1. On a Linux server, install singularity >= 3.8.1 with root on every nodes.
    
 2. Download the singularity images (internet connection required) by the following commands:
- 
+```
 cat <<EOF > CWGS.def
 Bootstrap: docker
 From: stlfr/cwgs:1.0.3
 %post
     cp /90-environment.sh /.singularity.d/env/
 EOF
- 
-singularity build --fakeroot CWGS.sif CWGS.def
 
+singularity build --fakeroot CWGS.sif CWGS.def
+```
+ 
 If the singularity doesn't support --fakeroot, you need sudo permission to run this command:
 sudo singularity build CWGS.sif CWGS.def
- 
+```
 singularity exec -B`pwd -P` CWGS.sif cp -rL /usr/local/bin/CWGS /usr/local/bin/runit /usr/local/app/CWGS/demo .
-
+```
 3. Download the database (internet connection required) by this command:
- 
+```
 ./CWGS -createdb
- 
+```
 This command will download around 32G data from internet and build index locally, which will occupy another 30G storage.
-If users are using MegaBolt or ZBolt nodes, they should create database by ./CWGS -createdb –megabolt .
+If users are using MegaBolt or ZBolt nodes, they should create database by ./CWGS -createdb --megabolt .
  
 4. Test demo data:
- 
+
+```
 cat << EOF > samplelist.txt
 sample  stlfr1                      stlfr2                      pcrfree1                 pcrfree2
 demo    demo/stLFR_demo_1M_1.fq.gz  demo/stLFR_demo_1M_2.fq.gz  demo/PF_demo_1M_1.fq.gz demo/PF_demo_1M_2.fq.gz
 EOF
  
 ./CWGS samplelist.txt -local
- 
+```
 Test demo data on clusters by SGE (Sun Grid Engine):
- 
+```
 ./CWGS samplelist.txt --queue mgi.q --project none
- 
+```
 Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
- 
+```
 ./CWGS samplelist.txt --queue mgi.q --project none --use_megabolt true --boltq fpga.q
+```
 
 # Running the pipeline:
 1. Generate sample.list.
    start from fastq files (default)
       E.g.
-      cat << EOF > sample.list
-      sample	stlfr1	stlfr2	pcrfree1	pcrfree2
-      demo1	/path/to/stLFR_01_1.fq.gz	/path/to/stLFR_01_2.fq.gz	/path/to/PCRfree_01_1.fq.gz	/path/to/PCRfree_01_2.fq.gz
-      demo2	/path/to/stLFR_02_1.fq.gz	/path/to/stLFR_02_2.fq.gz	/path/to/PCRfree_02_1.fq.gz	/path/to/PCRfree_02_2.fq.gz
-      EOF
-   
+   ```
+   cat << EOF > sample.list
+   sample	stlfr1	stlfr2	pcrfree1	pcrfree2
+   demo1	/path/to/stLFR_01_1.fq.gz	/path/to/stLFR_01_2.fq.gz	/path/to/PCRfree_01_1.fq.gz	/path/to/PCRfree_01_2.fq.gz
+   demo2	/path/to/stLFR_02_1.fq.gz	/path/to/stLFR_02_2.fq.gz	/path/to/PCRfree_02_1.fq.gz	/path/to/PCRfree_02_2.fq.gz
+   EOF
+   ```
       *paths above can be both absolute and relative
    
     start from barcode split fastq files (set --skipBarcodeSplit true)
@@ -63,11 +67,13 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
    
     start from PCR-free and stLFR bam files (set --frombam true)
       E.g.
-      cat << EOF > sample.list
-      sample	stlfrbam	pfbam
-      demo1	/path/to/stLFR_01.bam	/path/to/PCRfree_01.bam
-      demo2	/path/to/stLFR_02.bam	/path/to/PCRfree_02.bam
-      EOF
+   ```
+   cat << EOF > sample.list
+   sample	stlfrbam	pfbam
+   demo1	/path/to/stLFR_01.bam	/path/to/PCRfree_01.bam
+   demo2	/path/to/stLFR_02.bam	/path/to/PCRfree_02.bam
+   EOF
+   ```
   3. Run settings
       Set CPU
           --cpu2 INT
@@ -156,22 +162,23 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
 
 
   4. Executor and MegaBOLT setting, four combinations:
-      1. clusters by SGE (Sun Grid Engine) (default)
-          Ensure the clusters contain at least one MegaBOLT queue.
-          Ensure that the SGE system is functioning and installed in the /opt/gridengine directory (if the installation directory is different, specified with -sge option). Confirm the working queue and project number, which can be specified using --queue, --boltq, and --project for regular queue, MegaBOLT queue, and project id, respectively. Use "--project none" if the system doesn't need a project id.
+     Make sure CWGS is in your PATH.
+      1. on clusters by SGE (Sun Grid Engine) (default)
+          Confirm the working queue and project number, which can be specified using --queue, and --project for regular queue, and project id, respectively. Use "--project none" if the system doesn't support a project id.
           E.g.
-          perl CWGS.pl sample.list -sge /opt/sysoft/sge --queue mb.q --boltq fpga.q --project none > run.log 2>&1 &
-      2. on clusters by SGE with none MegaBOLT nodes.
-          Run with "-no_mb" option. 
+          CWGS sample.list --queue all.q --project none > run.log 2>&1 &
+      3. on clusters by SGE with MegaBOLT nodes.
+          Ensure the clusters contain at least one MegaBOLT queue and have a queue for them, e.g. bolt.q.
+          Confirm the working queue and project number, which can be specified using --queue, --boltq, and --project for regular queue, MegaBOLT queue, and project id, respectively. Use "--project none" if the system doesn't support a project id.
           E.g.
-          perl CWGS.pl sample.list -no_mb > run.log 2>&1 &
-      3. locally on a MegaBOLT machine
+          CWGS sample.list --queue all.q --use_megabolt true --boltq bolt.q --project none > run.log 2>&1 &
+      4. locally run.
           Run with "-local" option. 
           E.g.
-          perl CWGS.pl sample.list -local > run.log 2>&1 &
-      4. locally on a NONE MegaBOLT machine.
-          Run with "-local -no_mb" option. 
+          CWGS sample.list -local > run.log 2>&1 &
+      5. locally run on a MegaBOLT machine.
+          Run with "-local" & "--use_megabolt true" option. 
           E.g.
-          perl CWGS.pl sample.list -local -no_mb > run.log 2>&1 &  
+          CWGS sample.list -local --use_megabolt true > run.log 2>&1 &  
 
-       Note that the order of parameters matters: single dash parameters (-opt) should be placed before all double dash parameters (-–opt).
+       Note that the order of parameters matters: single dash parameters (-opt) should be placed before all double dash parameters (--opt).
