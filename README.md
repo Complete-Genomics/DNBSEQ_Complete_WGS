@@ -21,7 +21,7 @@ singularity build --fakeroot CWGS.sif CWGS.def
 If the singularity doesn't support --fakeroot, you need sudo permission to run this command:
 sudo singularity build CWGS.sif CWGS.def
 ```
-singularity exec -B`pwd -P` CWGS.sif cp -rL /usr/local/bin/CWGS /usr/local/bin/runit /usr/local/app/CWGS/demo .
+singularity exec -B`pwd -P` --pwd `pwd -P` CWGS.sif cp -rL /usr/local/bin/CWGS /usr/local/bin/runit /usr/local/app/CWGS/PARAMS.txt /usr/local/app/CWGS/demo .
 ```
 3. Download the database (internet connection required) by this command:
 ```
