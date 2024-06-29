@@ -17,7 +17,7 @@ EOF
 
 singularity build --fakeroot CWGS.sif CWGS.def
 ```
- 
+The users have no root permission may build the .sif file locally then upload to server.  
 If the singularity doesn't support --fakeroot, you need sudo permission to run this command:
 sudo singularity build CWGS.sif CWGS.def
 ```
