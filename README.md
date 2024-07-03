@@ -46,7 +46,7 @@ Test demo data on clusters by SGE (Sun Grid Engine):
 ```
 Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
 ```
-./CWGS samplelist.txt --queue mgi.q --project none --use_megabolt true --boltq fpga.q
+./CWGS samplelist.txt -bolt --queue mgi.q --project none --boltq fpga.q
 ```
 
 # Running the pipeline:
