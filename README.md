@@ -163,22 +163,31 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
 
   4. Executor and MegaBOLT setting, four combinations:
      Make sure CWGS is in your PATH.
-      1. on clusters by SGE (Sun Grid Engine) (default)
+      1. on clusters by SGE (Sun Grid Engine) and no MegaBOLT (default)
           Confirm the working queue and project number, which can be specified using --queue, and --project for regular queue, and project id, respectively. Use "--project none" if the system doesn't support a project id.
           E.g.
+         ```
           CWGS sample.list --queue all.q --project none > run.log 2>&1 &
+         ```
       3. on clusters by SGE with MegaBOLT nodes.
           Ensure the clusters contain at least one MegaBOLT queue and have a queue for them, e.g. bolt.q.
           Confirm the working queue and project number, which can be specified using --queue, --boltq, and --project for regular queue, MegaBOLT queue, and project id, respectively. Use "--project none" if the system doesn't support a project id.
           E.g.
-          CWGS sample.list --queue all.q --use_megabolt true --boltq bolt.q --project none > run.log 2>&1 &
-      4. locally run.
+         ```
+          CWGS sample.list -bolt --queue all.q --boltq bolt.q --project none > run.log 2>&1 &
+         ```
+      5. locally run.
           Run with "-local" option. 
           E.g.
+         ```
           CWGS sample.list -local > run.log 2>&1 &
-      5. locally run on a MegaBOLT machine.
-          Run with "-local" & "--use_megabolt true" option. 
+         ```
+      7. locally run on a MegaBOLT machine.
+          Run with "-local" & "-bolt" option. 
           E.g.
-          CWGS sample.list -local --use_megabolt true > run.log 2>&1 &  
+         ```
+          CWGS sample.list -local -bolt > run.log 2>&1 &
+         ```
 
-       Note that the order of parameters matters: single dash parameters (-opt) should be placed before all double dash parameters (--opt).
+# Note that the order of parameters matters:
+# single dash parameters (-opt) should be placed before all double dash parameters (--opt)
