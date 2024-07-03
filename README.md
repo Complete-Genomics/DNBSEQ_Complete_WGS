@@ -169,20 +169,20 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
          ```
           CWGS sample.list --queue all.q --project none > run.log 2>&1 &
          ```
-      3. on clusters by SGE with MegaBOLT nodes.
+      2. on clusters by SGE with MegaBOLT nodes.
           Ensure the clusters contain at least one MegaBOLT queue and have a queue for them, e.g. bolt.q.
           Confirm the working queue and project number, which can be specified using --queue, --boltq, and --project for regular queue, MegaBOLT queue, and project id, respectively. Use "--project none" if the system doesn't support a project id.
           E.g.
          ```
           CWGS sample.list -bolt --queue all.q --boltq bolt.q --project none > run.log 2>&1 &
          ```
-      5. locally run.
+      3. locally run.
           Run with "-local" option. 
           E.g.
          ```
           CWGS sample.list -local > run.log 2>&1 &
          ```
-      7. locally run on a MegaBOLT machine.
+      4. locally run on a MegaBOLT machine.
           Run with "-local" & "-bolt" option. 
           E.g.
          ```
