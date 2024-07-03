@@ -10,7 +10,7 @@ This is a pipline the enables the mapping, variant calling, and phasing of input
 ```
 cat <<EOF > CWGS.def
 Bootstrap: docker
-From: stlfr/cwgs:1.0.4
+From: stlfr/cwgs:1.0.6
 %post
     cp /90-environment.sh /.singularity.d/env/
 EOF
