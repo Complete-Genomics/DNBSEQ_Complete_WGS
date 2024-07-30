@@ -27,8 +27,11 @@ singularity exec -B`pwd -P` --pwd `pwd -P` CWGS.sif cp -rL /usr/local/bin/CWGS /
 ```
 ./CWGS -createdb
 ```
+Or for MegaBolt or ZBolt nodes
+```
+./CWGS -createdb --megabolt
+```
 This command will download around 32G data from internet and build index locally, which will occupy another 30G storage.
-If users are using MegaBolt or ZBolt nodes, they should create database by ./CWGS -createdb --megabolt .
  
 4. Test demo data:
 
