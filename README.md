@@ -62,6 +62,9 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
 ```
 
 # Running the pipeline:
+## Note that the order of parameters matters:    
+## single dash parameters (-opt) should be placed before all double dash parameters (--opt)    
+     
 1. Generate sample.list.
    start from fastq files (default)
       E.g.
@@ -87,8 +90,6 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
    EOF
    ```
   3. Run settings
-     ***Note that the order of parameters matters:***
-     ***single dash parameters (-opt) should be placed before all double dash parameters (--opt)***
       Set CPU
           --cpu2 INT
             Specify cpu number for QC, markdup, bam downsample, merge bam, bam stats calculation. [24]
