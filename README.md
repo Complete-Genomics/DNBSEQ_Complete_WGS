@@ -3,6 +3,15 @@ This is a pipline the enables the mapping, variant calling, and phasing of input
 
 ![image](https://github.com/CGI-stLFR/CompleteWGS/assets/81321463/e73a2837-f60a-4a28-8d48-8eeb9e580905)
 
+# Requirements  
+**Hardware requirements**  
+Multiple core computer  
+Minium 72GB RAM  
+Exact storage may vary depends on sample count and coverage, expect 1TB per sample.  
+**Software requirements**  
+Linux CentOS >=7  
+You may need root access to install Singularity  
+
 # Installation instructions: 
 1. On a Linux server, install singularity >= 3.8.1 with root on every nodes.
    
