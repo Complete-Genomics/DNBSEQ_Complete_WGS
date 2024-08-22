@@ -102,7 +102,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
           --stLFR_fq_cov INT [only valid when '--sampleFq true']
           sample stLFR reads to this coverage [40] 
           
-          --PF_fq_cov INT [only valid when '--sampleBam true']
+          --PF_fq_cov INT [only valid when '--sampleFq true']
           sample PCR-free reads to this coverage [50] 
 
       Alignment and variant calling relevant settings
