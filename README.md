@@ -87,6 +87,8 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
    EOF
    ```
   3. Run settings
+     ***Note that the order of parameters matters:***
+     ***single dash parameters (-opt) should be placed before all double dash parameters (--opt)***
       Set CPU
           --cpu2 INT
             Specify cpu number for QC, markdup, bam downsample, merge bam, bam stats calculation. [24]
@@ -173,7 +175,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
           By default, each process only keeps the output files. If you want to check the intermediate files within a process, use this flag.
 
 
-  4. Executor and MegaBOLT setting, four combinations:
+  5. Executor and MegaBOLT setting, four combinations:
      Make sure CWGS is in your PATH.
       1. on clusters by SGE (Sun Grid Engine) and no MegaBOLT (default)
           Confirm the working queue and project number, which can be specified using --queue, and --project for regular queue, and project id, respectively. Use "--project none" if the system doesn't support a project id.
@@ -201,5 +203,3 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
           CWGS sample.list -local -bolt > run.log 2>&1 &
          ```
 
-# Note that the order of parameters matters:
-# single dash parameters (-opt) should be placed before all double dash parameters (--opt)
