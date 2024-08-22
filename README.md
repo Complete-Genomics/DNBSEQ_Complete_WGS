@@ -3,6 +3,7 @@
 This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free and a Complete Genomics' stLFR library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the stLFR library. Below is a flow chart which summarizes the processes used in the pipeline. *Note, SV detection has not yet been enabled on this version of the pipeline.
 
 ![image](https://github.com/CGI-stLFR/CompleteWGS/assets/81321463/e73a2837-f60a-4a28-8d48-8eeb9e580905)
+
 A more detailed flow chart.  
 ![Workflow](images/cwgs_flowchart.svg)
 
