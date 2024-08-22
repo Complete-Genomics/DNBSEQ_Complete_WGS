@@ -4,9 +4,6 @@ This is a pipline the enables the mapping, variant calling, and phasing of input
 
 ![image](https://github.com/CGI-stLFR/CompleteWGS/assets/81321463/e73a2837-f60a-4a28-8d48-8eeb9e580905)
 
-A more detailed flow chart.  
-![Workflow](images/cwgs_flowchart.svg)
-
 # Requirements  
 **Hardware requirements**  
 Multiple core computer  
@@ -207,4 +204,8 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
          ```
           CWGS sample.list -local -bolt > run.log 2>&1 &
          ```
+
+
+A more detailed flow chart.  
+![Workflow](images/cwgs_flowchart.svg)
 
