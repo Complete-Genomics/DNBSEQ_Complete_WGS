@@ -1,6 +1,6 @@
 
 # CompleteWGS
-This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free and a Complete Genomics' stLFR library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the stLFR library. Below is a flow chart which summarizes the processes used in the pipeline. *Note, SV detection has not yet been enabled on this version of the pipeline.
+This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' stLFR library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the stLFR library. Below is a flow chart which summarizes the processes used in the pipeline. *Note, SV detection has not yet been enabled on this version of the pipeline.
 
 ![image](https://github.com/CGI-stLFR/CompleteWGS/assets/81321463/e73a2837-f60a-4a28-8d48-8eeb9e580905)
 
@@ -13,7 +13,7 @@ Exact storage may vary depends on sample count and coverage, expect 1TB per samp
 Linux CentOS >=7  
 You may need root access to install Singularity  
 
-# Installation instructions: 
+# Installation   
 1. On a Linux server, install singularity >= 3.8.1 with root on every nodes.
    
 2. Download the singularity images (internet connection required) by the following commands:
@@ -62,9 +62,8 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
 ./CWGS samplelist.txt -bolt --queue mgi.q --project none --boltq fpga.q
 ```
 
-# Running the pipeline:
-## Note that the order of parameters matters:    
-## single dash parameters (-opt) should be placed before all double dash parameters (--opt)    
+# Run the pipeline  
+## Note that the order of parameters matters: single dash parameters (-opt) should be placed before all double dash parameters (--opt)    
      
 1. Generate sample.list.
    start from fastq files (default)
@@ -90,26 +89,28 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
    demo2	/path/to/stLFR_02.bam	/path/to/PCRfree_02.bam
    EOF
    ```
-  3. Run settings
+  2. Run settings
       Set CPU
+          ```
           --cpu2 INT
             Specify cpu number for QC, markdup, bam downsample, merge bam, bam stats calculation. [24]
 
           --cpu3 INT
             Specify cpu number for alignment and short variants calling (including BQSR and VQSR, if specified). [48]
-
+          ```
       Sample the input fastq files
           --sampleFq BOOL
             if you want to initially sample the fastq file, set it true. [false]
-
+          ```
           the following settings are valid only sampleFq is true
           --stLFR_fq_cov INT [only valid when '--sampleFq true']
           sample stLFR reads to this coverage [40] 
           
           --PF_fq_cov INT [only valid when '--sampleFq true']
           sample PCR-free reads to this coverage [50] 
-
-      Alignment and variant calling relevant settings
+          ```
+      Alignment (BWA or Lariat) and variant calling (GATK or Deepvariant (DV)) relevant settings   
+          ```
           --align_tool STRING
             Specify the alignment tool for stLFR reads. [lariat]
             Supports:
@@ -123,8 +124,9 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
               gatk
               dv (DeepVariant)
               gatk,dv (this will execute both)
+          ```
           * If two alignment tools ("lariat,bwa") and two variant calling programs ("gatk,dv") are specified, four result sets will be generated.
- 
+          ```
           --gatk_version STRING [only valid when '--var_tool' contains "gatk"]
             Specify the GATK version. [v4]
             Supports:
@@ -146,7 +148,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
               v1.6
               v0.7
             Current MegaBOLT DeepVariant version is v0.7; therefore, if you specify this option to "v1.6", MegaBOLT will not be used even if '--use_megabolt' is true.
-
+          ```
       Markdup
           --markdup STRING
             Specify the mark duplicates tool. [biobambam2]
@@ -177,7 +179,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
           By default, each process only keeps the output files. If you want to check the intermediate files within a process, use this flag.
 
 
-  5. Executor and MegaBOLT setting, four combinations:
+  3. Executor and MegaBOLT setting, four combinations:
      Make sure CWGS is in your PATH.
       1. on clusters by SGE (Sun Grid Engine) and no MegaBOLT (default)
           Confirm the working queue and project number, which can be specified using --queue, and --project for regular queue, and project id, respectively. Use "--project none" if the system doesn't support a project id.
@@ -209,3 +211,59 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
 A more detailed flow chart.  
 ![Workflow](images/cwgs_flowchart.svg)
 
+# Output of the demo example  
+***Results***
+All output in the ./CWGS_run folder.   
+1. A summary report, with all intermediate metrics, results of mapping, variant calling, phasing etc.     
+![report](CWGS_run/out/report.csv)  
+2. FQ, BAM, VCF output   
+The FQs in ./CWGS_run/out/<sample_name>/fq
+```
+demo.pf.bssq
+demo.pf.qc_1.fq.gz
+demo.pf.qc_2.fq.gz
+demo_split_1.fq.gz
+demo_split_2.fq.gz
+split_stat_read1.log
+```
+The BAMs in in ./CWGS_run/out/<sample_name>/align
+```
+06.lfr_highquality.txt
+06.lfr_length.txt
+06.lfr_per_barcode.txt
+06.lfr_readpair.txt
+demo.cmrg.cov
+demo.lariat.cov10.intersect.bed
+demo.lariat.dv.vcf.gz
+demo.lariat.dv.vcf.gz.tbi
+demo.lariat.merge.bam
+demo.lariat.merge.bam.bai
+demo.lfr.report
+demo.merge.cmrg.hist.bed
+demo.merge.cmrg.mean.bed
+demo.pf.bwa.dv.vcf.gz
+demo.pf.bwa.dv.vcf.gz.tbi
+demo.pf.cmrg.hist.bed
+demo.pf.cmrg.mean.bed
+demo.pf.megaboltbwabqsr.bam
+demo.pf.megaboltbwabqsr.bam.bai
+demo.stlfr.lariat.biobambam2.bam
+demo.stlfr.lariat.biobambam2.bam.bai
+
+```
+The phased VCF in in ./CWGS_run/out/<sample_name>/phase
+```
+demo.lariat.dv.hapblock
+demo.lariat.dv.hapcut_stat.txt
+demo.lariat.dv.phase.report
+demo.lariat.dv.phased.vcf.gz
+demo.lariat.dv.phased.vcf.gz.tbi
+```
+
+***Log file***
+The run.log shows excution information etc.  
+For a typical run of 1 sample, with 30x StLFR and 40x PCR free library, with 48CPU:
+megabolt: ~14hr   
+non-megabolt: ~42hr  
+
+# Reference   
