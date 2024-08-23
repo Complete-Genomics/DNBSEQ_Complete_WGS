@@ -221,8 +221,8 @@ A more detailed flow chart.
 # Output of the demo example  
 **Results**  
 All output in the ./CWGS_run folder.   
-1. A summary report, with all intermediate metrics, results of mapping, variant calling, phasing etc.     
-![report](CWGS_run/out/report.csv)  
+1. The ./CWGS_run/out/report.csv is a summary report, with all intermediate metrics, results of mapping, variant calling, phasing etc.     
+![report.csv](CWGS_run/out/report.csv)  
 2. FQ, BAM, VCF output   
 The FQs in ./CWGS_run/out/<sample_name>/fq
 ```
@@ -282,3 +282,9 @@ CWGS sample.list -sing /usr/local/bin/singularity -module <your_modules_path> -l
 ```
 
 # Reference   
+1. [Lariat](https://github.com/10XGenomics/lariat)
+A Linked-Read Alignment Tool  
+2. [Deepvariant](https://github.com/google/deepvariant)  
+A deep learning-based variant caller  
+3. [Hapcut2](https://github.com/vibansal/HapCUT2)  
+A haplotype assembly  
