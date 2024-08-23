@@ -219,7 +219,7 @@ A more detailed flow chart.
 ![Workflow](images/cwgs_flowchart.svg)
 
 # Output of the demo example  
-**Results**
+**Results**  
 All output in the ./CWGS_run folder.   
 1. A summary report, with all intermediate metrics, results of mapping, variant calling, phasing etc.     
 ![report](CWGS_run/out/report.csv)  
@@ -267,7 +267,7 @@ demo.lariat.dv.phased.vcf.gz
 demo.lariat.dv.phased.vcf.gz.tbi
 ```
 
-**Log file**
+**Log file**  
 1. The run.log shows excution information etc.  
 For a typical run of 1 sample, with 30x StLFR and 40x PCR free library, with 48CPU:  
 megabolt: ~14hr   
