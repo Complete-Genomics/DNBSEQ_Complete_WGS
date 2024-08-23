@@ -63,7 +63,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
 ```
 
 # Run the pipeline  
-## Note that the order of parameters matters: single dash parameters (-opt) should be placed before all double dash parameters (--opt)    
+**## **Note that the order of parameters matters: single dash parameters (-opt) should be placed before all double dash parameters (--opt)**     
      
 1. Generate sample.list.
    start from fastq files (default)
@@ -282,7 +282,7 @@ CWGS sample.list -sing /usr/local/bin/singularity -module <your_modules_path> -l
 ```
 
 # Reference   
-1. [Lariat](https://github.com/10XGenomics/lariat)
+1. [Lariat](https://github.com/10XGenomics/lariat)  
 A Linked-Read Alignment Tool  
 2. [Deepvariant](https://github.com/google/deepvariant)  
 A deep learning-based variant caller  
