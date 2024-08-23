@@ -125,7 +125,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
         dv (DeepVariant)
         gatk,dv (this will execute both)
     ```
-    * If two alignment tools ("lariat,bwa") and two variant calling programs ("gatk,dv") are specified, four result sets will be generated.
+    *If two alignment tools ("lariat,bwa") and two variant calling programs ("gatk,dv") are specified, four result sets will be generated.
     ```
     --gatk_version STRING [only valid when '--var_tool' contains "gatk"]
       Specify the GATK version. [v4]
@@ -180,7 +180,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
     --keepFiles BOOL
       By default, useless intermediate files will be deleted during the analysis to save storage. If you want to resume the run, set it true. [false]
     ```
-    Debug mode
+    Debug mode (if you plan to rerun with different parameter setting to tune the results, use **-debug**)
     ```
     -debug
     By default, each process only keeps the output files. If you want to check the intermediate files within a process, use this flag.
@@ -219,7 +219,7 @@ A more detailed flow chart.
 ![Workflow](images/cwgs_flowchart.svg)
 
 # Output of the demo example  
-***Results***
+**Results**
 All output in the ./CWGS_run folder.   
 1. A summary report, with all intermediate metrics, results of mapping, variant calling, phasing etc.     
 ![report](CWGS_run/out/report.csv)  
@@ -267,10 +267,18 @@ demo.lariat.dv.phased.vcf.gz
 demo.lariat.dv.phased.vcf.gz.tbi
 ```
 
-***Log file***
-The run.log shows excution information etc.  
-For a typical run of 1 sample, with 30x StLFR and 40x PCR free library, with 48CPU:
+**Log file**
+1. The run.log shows excution information etc.  
+For a typical run of 1 sample, with 30x StLFR and 40x PCR free library, with 48CPU:  
 megabolt: ~14hr   
 non-megabolt: ~42hr  
+2. The ./CWGS_run/report.html is output of nextflow, with runtime, CPU usage etc.  
+3. The ./CWGS_run/trace.txt shows excution of each steps, use trace.txt to find intermediate files/folders.   
+
+# Customize 
+To customize and make the pipeline adapt to your needs, you may revise the scripts in the modules folder and run with the -module tag  
+```
+CWGS sample.list -sing /usr/local/bin/singularity -module <your_modules_path> -local -debug  
+```
 
 # Reference   
