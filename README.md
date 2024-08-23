@@ -89,123 +89,130 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
    demo2	/path/to/stLFR_02.bam	/path/to/PCRfree_02.bam
    EOF
    ```
-  2. Run settings
-      Set CPU
-          ```
-          --cpu2 INT
-            Specify cpu number for QC, markdup, bam downsample, merge bam, bam stats calculation. [24]
+2. Run settings
+    Set CPU
+    ```
+    --cpu2 INT
+      Specify cpu number for QC, markdup, bam downsample, merge bam, bam stats calculation. [24]
 
-          --cpu3 INT
-            Specify cpu number for alignment and short variants calling (including BQSR and VQSR, if specified). [48]
-          ```
-      Sample the input fastq files
-          --sampleFq BOOL
-            if you want to initially sample the fastq file, set it true. [false]
-          ```
-          the following settings are valid only sampleFq is true
-          --stLFR_fq_cov INT [only valid when '--sampleFq true']
-          sample stLFR reads to this coverage [40] 
-          
-          --PF_fq_cov INT [only valid when '--sampleFq true']
-          sample PCR-free reads to this coverage [50] 
-          ```
-      Alignment (BWA or Lariat) and variant calling (GATK or Deepvariant (DV)) relevant settings   
-          ```
-          --align_tool STRING
-            Specify the alignment tool for stLFR reads. [lariat]
-            Supports:
-              bwa
-              lariat
-              bwa,lariat (this will execute both)
+    --cpu3 INT
+      Specify cpu number for alignment and short variants calling (including BQSR and VQSR, if specified). [48]
+    ```
+    Sample the input fastq files
+    ```
+    --sampleFq BOOL
+      if you want to initially sample the fastq file, set it true. [false]
+    the following settings are valid only sampleFq is true
+    --stLFR_fq_cov INT [only valid when '--sampleFq true']
+    sample stLFR reads to this coverage [40] 
+    
+    --PF_fq_cov INT [only valid when '--sampleFq true']
+    sample PCR-free reads to this coverage [50] 
+    ```
+    Alignment (BWA or Lariat) and variant calling (GATK or Deepvariant (DV)) relevant settings   
+    ```
+    --align_tool STRING
+      Specify the alignment tool for stLFR reads. [lariat]
+      Supports:
+        bwa
+        lariat
+        bwa,lariat (this will execute both)
 
-          --var_tool STRING
-            Specify the variant calling tools for merged bam file. [dv]
-            Supports:
-              gatk
-              dv (DeepVariant)
-              gatk,dv (this will execute both)
-          ```
-          * If two alignment tools ("lariat,bwa") and two variant calling programs ("gatk,dv") are specified, four result sets will be generated.
-          ```
-          --gatk_version STRING [only valid when '--var_tool' contains "gatk"]
-            Specify the GATK version. [v4]
-            Supports:
-              v3
-              v4
+    --var_tool STRING
+      Specify the variant calling tools for merged bam file. [dv]
+      Supports:
+        gatk
+        dv (DeepVariant)
+        gatk,dv (this will execute both)
+    ```
+    * If two alignment tools ("lariat,bwa") and two variant calling programs ("gatk,dv") are specified, four result sets will be generated.
+    ```
+    --gatk_version STRING [only valid when '--var_tool' contains "gatk"]
+      Specify the GATK version. [v4]
+      Supports:
+        v3
+        v4
 
-          --run_bqsr BOOL [only valid when '--var_tool' contains "gatk"]
-            Run Base Quality Score Recalibration (BQSR) of GATK. [true]
+    --run_bqsr BOOL [only valid when '--var_tool' contains "gatk"]
+      Run Base Quality Score Recalibration (BQSR) of GATK. [true]
 
-          --run_vqsr BOOL [only valid when '--var_tool' contains "gatk"]
-            Run Variant Quality Score Recalibration (VQSR) of GATK. [true]
+    --run_vqsr BOOL [only valid when '--var_tool' contains "gatk"]
+      Run Variant Quality Score Recalibration (VQSR) of GATK. [true]
 
-          --split_by_intervals BOOL [only valid when '--var_tool' contains "gatk" and '--use_megabolt' is false]
-            Utilizes -L option for GATK haplotypecaller; split by chromosome. [true]
+    --split_by_intervals BOOL [only valid when '--var_tool' contains "gatk" and '--use_megabolt' is false]
+      Utilizes -L option for GATK haplotypecaller; split by chromosome. [true]
 
-          --dv_version STRING [only valid when '--var_tool' contains "dv"]
-            Specify the DeepVariant version. [v1.6]
-            Supports: 
-              v1.6
-              v0.7
-            Current MegaBOLT DeepVariant version is v0.7; therefore, if you specify this option to "v1.6", MegaBOLT will not be used even if '--use_megabolt' is true.
-          ```
-      Markdup
-          --markdup STRING
-            Specify the mark duplicates tool. [biobambam2]
-            Supports: 
-              biobambam2 (much faster than picard; recommended)
-              picard
-              gatk4 (MarkDuplicatesSpark)
-              sambamba (not recommended)
-      Downsample the bam file
-          --sampleBam BOOL
-            Whether downsample the stLFR bam and PCR-free bam. [true]
+    --dv_version STRING [only valid when '--var_tool' contains "dv"]
+      Specify the DeepVariant version. [v1.6]
+      Supports: 
+        v1.6
+        v0.7
+      Current MegaBOLT DeepVariant version is v0.7; therefore, if you specify this option to "v1.6", MegaBOLT will not be used even if '--use_megabolt' is true.
+    ```
+    Markdup
+    ```
+    --markdup STRING
+    Specify the mark duplicates tool. [biobambam2]
+    Supports: 
+      biobambam2 (much faster than picard; recommended)
+      picard
+      gatk4 (MarkDuplicatesSpark)
+      sambamba (not recommended)
+    ```
+    Downsample the bam file
+    ```
+    --sampleBam BOOL
+      Whether downsample the stLFR bam and PCR-free bam. [true]
 
-          --stLFR_sampling_cov INT [only valid when '--sampleBam true']
-            Downsample stLFR bam to the specified coverage. [30]
+    --stLFR_sampling_cov INT [only valid when '--sampleBam true']
+      Downsample stLFR bam to the specified coverage. [30]
 
-          --PF_sampling_cov INT [only valid when '--sampleBam true']
-            Downsample PCRFree bam to the specified coverage. [40]
-      Merge the bam
-          --PF_lt_stLFR_depth INT
-            Extract the intersection regions from the sampled stLFR bam with depth greater than (>) this value and PCRFree bam with depth less equal than (<=) this value. [10]
+    --PF_sampling_cov INT [only valid when '--sampleBam true']
+      Downsample PCRFree bam to the specified coverage. [40]
+    ```
+    Merge the bam
+    ```
+    --PF_lt_stLFR_depth INT
+      Extract the intersection regions from the sampled stLFR bam with depth greater than (>) this value and PCRFree bam with depth less equal than (<=) this value. [10]
+    ```
+    Enable resuming the running
+    ```
+    --keepFiles BOOL
+      By default, useless intermediate files will be deleted during the analysis to save storage. If you want to resume the run, set it true. [false]
+    ```
+    Debug mode
+    ```
+    -debug
+    By default, each process only keeps the output files. If you want to check the intermediate files within a process, use this flag.
+    ```
 
-      Enable resuming the running
-          --keepFiles BOOL
-            By default, useless intermediate files will be deleted during the analysis to save storage. If you want to resume the run, set it true. [false]
-
-      Debug mode
-          -debug
-          By default, each process only keeps the output files. If you want to check the intermediate files within a process, use this flag.
-
-
-  3. Executor and MegaBOLT setting, four combinations:
-     Make sure CWGS is in your PATH.
-      1. on clusters by SGE (Sun Grid Engine) and no MegaBOLT (default)
-          Confirm the working queue and project number, which can be specified using --queue, and --project for regular queue, and project id, respectively. Use "--project none" if the system doesn't support a project id.
-          E.g.
-         ```
-          CWGS sample.list --queue all.q --project none > run.log 2>&1 &
-         ```
-      2. on clusters by SGE with MegaBOLT nodes.
-          Ensure the clusters contain at least one MegaBOLT queue and have a queue for them, e.g. bolt.q.
-          Confirm the working queue and project number, which can be specified using --queue, --boltq, and --project for regular queue, MegaBOLT queue, and project id, respectively. Use "--project none" if the system doesn't support a project id.
-          E.g.
-         ```
-          CWGS sample.list -bolt --queue all.q --boltq bolt.q --project none > run.log 2>&1 &
-         ```
-      3. locally run.
-          Run with "-local" option. 
-          E.g.
-         ```
-          CWGS sample.list -local > run.log 2>&1 &
-         ```
-      4. locally run on a MegaBOLT machine.
-          Run with "-local" & "-bolt" option. 
-          E.g.
-         ```
-          CWGS sample.list -local -bolt > run.log 2>&1 &
-         ```
+3. Executor and MegaBOLT setting, four combinations:
+    Make sure CWGS is in your PATH.
+    1. on clusters by SGE (Sun Grid Engine) and no MegaBOLT (default)
+        Confirm the working queue and project number, which can be specified using --queue, and --project for regular queue, and project id, respectively. Use "--project none" if the system doesn't support a project id.
+        E.g.
+        ```
+        CWGS sample.list --queue all.q --project none > run.log 2>&1 &
+        ```
+    2. on clusters by SGE with MegaBOLT nodes.
+        Ensure the clusters contain at least one MegaBOLT queue and have a queue for them, e.g. bolt.q.
+        Confirm the working queue and project number, which can be specified using --queue, --boltq, and --project for regular queue, MegaBOLT queue, and project id, respectively. Use "--project none" if the system doesn't support a project id.
+        E.g.
+        ```
+        CWGS sample.list -bolt --queue all.q --boltq bolt.q --project none > run.log 2>&1 &
+        ```
+    3. locally run.
+        Run with "-local" option. 
+        E.g.
+        ```
+        CWGS sample.list -local > run.log 2>&1 &
+        ```
+    4. locally run on a MegaBOLT machine.
+        Run with "-local" & "-bolt" option. 
+        E.g.
+        ```
+        CWGS sample.list -local -bolt > run.log 2>&1 &
+        ```
 
 
 A more detailed flow chart.  
