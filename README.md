@@ -1,6 +1,6 @@
 
 # CompleteWGS
-This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' stLFR library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the stLFR library. Below is a flow chart which summarizes the pipeline processes. *Note, SV detection has not yet been enabled on the current version of the pipeline.
+This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' stLFR (Single-Tube Long Fragment Read, a DNA cobarcoding technology) library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the stLFR library. Below is a flow chart which summarizes the pipeline processes. *Note, SV detection has not yet been enabled on the current version of the pipeline.
 
 ![image](https://github.com/CGI-stLFR/CompleteWGS/assets/81321463/e73a2837-f60a-4a28-8d48-8eeb9e580905)
 
@@ -77,7 +77,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
    ```
       *paths above can be both absolute and relative
    
-    start from barcode split fastq files (set --skipBarcodeSplit true)
+    start from barcode (BC) split/deconvolution fastq files (set --skipBarcodeSplit true)
       format same as above.
    
     start from PCR-free and stLFR bam files (set --frombam true)
@@ -225,6 +225,7 @@ All output in the ./CWGS_run folder.
 ![report.csv](CWGS_run/out/report.csv)  
 2. FQ, BAM, VCF output   
 The FQs in ./CWGS_run/out/<sample_name>/fq
+(demo_split_*.fq.gz are the FQ after barcode deconvolution)   
 ```
 demo.pf.bssq
 demo.pf.qc_1.fq.gz
