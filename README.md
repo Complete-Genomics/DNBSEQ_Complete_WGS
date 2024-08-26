@@ -1,6 +1,6 @@
 
 # CompleteWGS
-This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' stLFR library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the stLFR library. Below is a flow chart which summarizes the processes used in the pipeline. *Note, SV detection has not yet been enabled on this version of the pipeline.
+This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' stLFR library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the stLFR library. Below is a flow chart which summarizes the pipeline processes. *Note, SV detection has not yet been enabled on the current version of the pipeline.
 
 ![image](https://github.com/CGI-stLFR/CompleteWGS/assets/81321463/e73a2837-f60a-4a28-8d48-8eeb9e580905)
 
@@ -8,7 +8,7 @@ This is a pipline the enables the mapping, variant calling, and phasing of input
 **Hardware requirements**  
 Multiple core computer  
 Minium 72GB RAM  
-Exact storage may vary depends on sample count and coverage, expect 1TB per sample.  
+Exact storage may vary depending on sample count and coverage, expect 1TB per sample.  
 **Software requirements**  
 Linux CentOS >=7  
 You may need root access to install Singularity  
@@ -63,7 +63,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
 ```
 
 # Run the pipeline  
-**## **Note that the order of parameters matters: single dash parameters (-opt) should be placed before all double dash parameters (--opt)**     
+**Note that the order of parameters matters: single dash parameters (-opt) should be placed before all double dash parameters (--opt)**     
      
 1. Generate sample.list.
    start from fastq files (default)
@@ -287,4 +287,4 @@ A Linked-Read Alignment Tool
 2. [Deepvariant](https://github.com/google/deepvariant)  
 A deep learning-based variant caller  
 3. [Hapcut2](https://github.com/vibansal/HapCUT2)  
-A haplotype assembly  
+A haplotype assembly tool  
