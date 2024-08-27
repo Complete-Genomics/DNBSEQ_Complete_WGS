@@ -288,4 +288,6 @@ A Linked-Read Alignment Tool
 2. [Deepvariant](https://github.com/google/deepvariant)  
 A deep learning-based variant caller  
 3. [Hapcut2](https://github.com/vibansal/HapCUT2)  
-A haplotype assembly tool  
+A haplotype assembly tool
+4. [SOAPnuke](https://github.com/BGI-flexlab/SOAPnuke)
+A novel quality control tool  
