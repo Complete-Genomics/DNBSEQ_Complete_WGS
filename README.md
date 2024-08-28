@@ -224,7 +224,7 @@ All output in the ./CWGS_run folder.
 1. The ./CWGS_run/out/report.csv is a summary report, with all intermediate metrics, results of mapping, variant calling, phasing etc.     
 ![report.csv](CWGS_run/out/report.csv)  
 2. FQ, BAM, VCF output   
-The FQs in ./CWGS_run/out/<sample_name>/fq
+The FQs are in ./CWGS_run/out/<sample_name>/fq, QC by SOAPnuke.  
 (demo_split_*.fq.gz are the FQ after barcode deconvolution)   
 ```
 demo.pf.bssq
