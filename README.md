@@ -272,7 +272,7 @@ demo.lariat.dv.phased.vcf.gz.tbi
 1. The run.log shows excution information etc.  
 For a typical run of 1 sample, with 30x StLFR and 40x PCR free library, with 60CPU:  
 megabolt: ~14hr   
-non-megabolt: ~42hr  
+non-megabolt: ~45hr  
 2. The ./CWGS_run/report.html is output of nextflow, with runtime, CPU usage etc.  
 3. The ./CWGS_run/trace.txt shows excution of each steps, use trace.txt to find intermediate files/folders.   
 
