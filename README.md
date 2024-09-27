@@ -279,7 +279,7 @@ non-megabolt: ~45hr
 # Customize 
 To customize and make the pipeline adapt to your needs, you may revise the scripts in the modules folder and run with the -module tag  
 ```
-CWGS sample.list -sing /usr/local/bin/singularity -module <your_modules_path> -local -debug  
+CWGS sample.list -sing /usr/local/bin/singularity -module <your_modules_path> -script <your_scripts_path> -local -debug  
 ```
 
 # Reference   
