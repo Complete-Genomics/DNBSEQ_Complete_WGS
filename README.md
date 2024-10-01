@@ -1,6 +1,6 @@
 
-# CompleteWGS
-This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' stLFR (Single-Tube Long Fragment Read, a DNA cobarcoding technology) library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the stLFR library. Below is a flow chart which summarizes the pipeline processes. *Note, SV detection has not yet been enabled on the current version of the pipeline.
+# CompleteWGS (cWGS)  
+This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' DNBSEQ Complete WGS (cWGS) (a DNA cobarcoding technology, previously known as stLFR) library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the cWGS library. Below is a flow chart which summarizes the pipeline processes. *Note, SV detection has not yet been enabled on the current version of the pipeline.
 
 ![image](https://github.com/CGI-stLFR/CompleteWGS/assets/81321463/e73a2837-f60a-4a28-8d48-8eeb9e580905)
 
@@ -71,8 +71,8 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
    ```
    cat << EOF > sample.list
    sample	stlfr1	stlfr2	pcrfree1	pcrfree2
-   demo1	/path/to/stLFR_01_1.fq.gz	/path/to/stLFR_01_2.fq.gz	/path/to/PCRfree_01_1.fq.gz	/path/to/PCRfree_01_2.fq.gz
-   demo2	/path/to/stLFR_02_1.fq.gz	/path/to/stLFR_02_2.fq.gz	/path/to/PCRfree_02_1.fq.gz	/path/to/PCRfree_02_2.fq.gz
+   demo1	/path/to/cWGS_01_1.fq.gz	/path/to/cWGS_01_2.fq.gz	/path/to/PCRfree_01_1.fq.gz	/path/to/PCRfree_01_2.fq.gz
+   demo2	/path/to/cWGS_02_1.fq.gz	/path/to/cWGS_02_2.fq.gz	/path/to/PCRfree_02_1.fq.gz	/path/to/PCRfree_02_2.fq.gz
    EOF
    ```
       *paths above can be both absolute and relative
@@ -80,13 +80,13 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
     start from barcode (BC) split/deconvolution fastq files (set --skipBarcodeSplit true)
       format same as above.
    
-    start from PCR-free and stLFR bam files (set --frombam true)
+    start from PCR-free and cWGS bam files (set --frombam true)
       E.g.
    ```
    cat << EOF > sample.list
    sample	stlfrbam	pfbam
-   demo1	/path/to/stLFR_01.bam	/path/to/PCRfree_01.bam
-   demo2	/path/to/stLFR_02.bam	/path/to/PCRfree_02.bam
+   demo1	/path/to/cWGS_01.bam	/path/to/PCRfree_01.bam
+   demo2	/path/to/cWGS_02.bam	/path/to/PCRfree_02.bam
    EOF
    ```
 2. Run settings
@@ -104,7 +104,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
       if you want to initially sample the fastq file, set it true. [false]
     the following settings are valid only sampleFq is true
     --stLFR_fq_cov INT [only valid when '--sampleFq true']
-    sample stLFR reads to this coverage [40] 
+    sample cWGS (stLFR) reads to this coverage [40] 
     
     --PF_fq_cov INT [only valid when '--sampleFq true']
     sample PCR-free reads to this coverage [50] 
@@ -112,7 +112,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
     Alignment (BWA or Lariat) and variant calling (GATK or Deepvariant (DV)) relevant settings   
     ```
     --align_tool STRING
-      Specify the alignment tool for stLFR reads. [lariat]
+      Specify the alignment tool for cWGS reads. [lariat]
       Supports:
         bwa
         lariat
@@ -162,10 +162,10 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
     Downsample the bam file
     ```
     --sampleBam BOOL
-      Whether downsample the stLFR bam and PCR-free bam. [true]
+      Whether downsample the cWGS bam and PCR-free bam. [true]
 
     --stLFR_sampling_cov INT [only valid when '--sampleBam true']
-      Downsample stLFR bam to the specified coverage. [30]
+      Downsample cWGS (stLFR) bam to the specified coverage. [30]
 
     --PF_sampling_cov INT [only valid when '--sampleBam true']
       Downsample PCRFree bam to the specified coverage. [40]
@@ -173,7 +173,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
     Merge the bam
     ```
     --PF_lt_stLFR_depth INT
-      Extract the intersection regions from the sampled stLFR bam with depth greater than (>) this value and PCRFree bam with depth less equal than (<=) this value. [10]
+      Extract the intersection regions from the sampled cWGS (stLFR) bam with depth greater than (>) this value and PCRFree bam with depth less equal than (<=) this value. [10]
     ```
     Enable resuming the running
     ```
@@ -270,7 +270,7 @@ demo.lariat.dv.phased.vcf.gz.tbi
 
 **Log file**  
 1. The run.log shows excution information etc.  
-For a typical run of 1 sample, with 30x stLFR and 40x PCR free library, with 60CPU:  
+For a typical run of 1 sample, with 30x cWGS and 40x PCR free library, with 60CPU:  
 MegaBOLT: ~14hr   
 non-MegaBOLT: ~45hr  
 (Run time can be reduced by a batch run of multiple N samples, total time <= N*time_per_sample)     
