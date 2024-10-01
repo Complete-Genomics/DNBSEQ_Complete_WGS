@@ -6,7 +6,7 @@ This is a pipline the enables the mapping, variant calling, and phasing of input
 
 # Requirements  
 **Hardware requirements**  
-Multiple core computer  
+Multiple core computer (default >=48CPU)  
 Minium 72GB RAM  
 Exact storage may vary depending on sample count and coverage, expect 1TB per sample.  
 **Software requirements**  
@@ -37,7 +37,7 @@ singularity exec -B`pwd -P` --pwd `pwd -P` CWGS.sif cp -rL /usr/local/bin/CWGS /
 ```
 ./CWGS -createdb
 ```
-Or for MegaBolt or ZBolt nodes
+Or for MegaBolt or ZBolt nodes ((MGI's Bioinformatics analysis accelerator, including MegaBOLT/ZBOLT/ZBOLT Pro)  
 ```
 ./CWGS -createdb --megabolt
 ```
@@ -270,11 +270,13 @@ demo.lariat.dv.phased.vcf.gz.tbi
 
 **Log file**  
 1. The run.log shows excution information etc.  
-For a typical run of 1 sample, with 30x StLFR and 40x PCR free library, with 60CPU:  
-megabolt: ~14hr   
-non-megabolt: ~45hr  
-2. The ./CWGS_run/report.html is output of nextflow, with runtime, CPU usage etc.  
-3. The ./CWGS_run/trace.txt shows excution of each steps, use trace.txt to find intermediate files/folders.   
+For a typical run of 1 sample, with 30x stLFR and 40x PCR free library, with 60CPU:  
+MegaBOLT: ~14hr   
+non-MegaBOLT: ~45hr
+(Run time can be reduced by a batch run of multiple N samples, total time <= N*time_per_sample)     
+
+3. The ./CWGS_run/report.html is output of nextflow, with runtime, CPU usage etc.  
+4. The ./CWGS_run/trace.txt shows excution of each steps, use trace.txt to find intermediate files/folders.   
 
 # Customize 
 To customize and make the pipeline adapt to your needs, you may revise the scripts in the modules folder and run with the -module tag  
@@ -291,3 +293,5 @@ A deep learning-based variant caller
 A haplotype assembly tool
 4. [SOAPnuke](https://github.com/BGI-flexlab/SOAPnuke)  
 A novel quality control tool  
+5. [MegaBOLT](https://en.mgi-tech.com/products/software_info/6/)
+A Bioinformatics analysis accelerator
