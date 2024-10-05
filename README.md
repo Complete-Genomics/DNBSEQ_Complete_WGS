@@ -11,7 +11,7 @@ Minium 72GB RAM
 Exact storage may vary depending on sample count and coverage, expect 1TB per sample.  
 **Software requirements**  
 Linux CentOS >=7  
-You may need root access to install Singularity  
+You may need root access to install Singularity (Singularity is a more secure container platform as it does not require root access on execution, while Dokcer does.)      
 
 # Installation   
 1. On a Linux server, install singularity >= 3.8.1 with root on every nodes.
@@ -27,7 +27,7 @@ EOF
 
 singularity build --fakeroot CWGS.sif CWGS.def
 ```
-The users have no root permission may build the .sif file locally then upload to server.  
+**The users without root permission may build the .sif file locally then upload to server.**  
 If the singularity doesn't support --fakeroot, you need sudo permission to run this command:
 sudo singularity build CWGS.sif CWGS.def
 ```
