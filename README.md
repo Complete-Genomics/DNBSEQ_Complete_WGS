@@ -66,7 +66,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
 **Note that the order of parameters matters: single dash parameters (-opt) should be placed before all double dash parameters (--opt)**     
      
 1. Generate sample.list.
-   start from raw fastq (cWGS/stLFR PE100, R2 is 100+42bp e.g.) files (default)
+   start from raw fastq (cWGS/stLFR PE100, R2 is 100+42bp barcode e.g.) files (default)
       E.g.
    ```
    cat << EOF > sample.list
@@ -295,3 +295,5 @@ A haplotype assembly tool
 A novel quality control tool  
 5. [MegaBOLT](https://en.mgi-tech.com/products/software_info/6/)
 A Bioinformatics analysis accelerator
+6. [cWGS/stLFR] (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6499310/)
+A DNA cobarcoding technique  
