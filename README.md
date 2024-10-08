@@ -66,7 +66,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
 **Note that the order of parameters matters: single dash parameters (-opt) should be placed before all double dash parameters (--opt)**     
      
 1. Generate sample.list.
-   start from fastq files (default)
+   start from raw fastq (cGWS PE100, R2 is 100+42bp e.g.) files (default)
       E.g.
    ```
    cat << EOF > sample.list
@@ -77,7 +77,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
    ```
       *paths above can be both absolute and relative
    
-    start from barcode (BC) split/deconvolution fastq files (set --skipBarcodeSplit true)
+    start from barcode (BC) split/deconvolution fastq files (cGWS PE100, R2 is 100bp e.g.) **(set --skipBarcodeSplit true)**
       format same as above.
    
     start from PCR-free and cWGS bam files (set --frombam true)
