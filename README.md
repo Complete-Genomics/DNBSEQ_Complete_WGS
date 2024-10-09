@@ -1,17 +1,17 @@
 
-# CompleteWGS
-This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' stLFR library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the stLFR library. Below is a flow chart which summarizes the processes used in the pipeline. *Note, SV detection has not yet been enabled on this version of the pipeline.
+# CompleteWGS (cWGS)  
+This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' DNBSEQ Complete WGS (cWGS) (a DNA cobarcoding technology, previously known as stLFR) library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the cWGS library. Below is a flow chart which summarizes the pipeline processes. *Note, SV detection has not yet been enabled on the current version of the pipeline.
 
 ![image](https://github.com/CGI-stLFR/CompleteWGS/assets/81321463/e73a2837-f60a-4a28-8d48-8eeb9e580905)
 
 # Requirements  
 **Hardware requirements**  
-Multiple core computer  
+Multiple core computer (default >=48CPU)  
 Minium 72GB RAM  
-Exact storage may vary depends on sample count and coverage, expect 1TB per sample.  
+Exact storage may vary depending on sample count and coverage, expect 1TB per sample.  
 **Software requirements**  
 Linux CentOS >=7  
-You may need root access to install Singularity  
+You may need root access to install Singularity (Singularity is a more secure container platform as it does not require root access on execution, while Docker does.)      
 
 # Installation   
 1. On a Linux server, install singularity >= 3.8.1 with root on every nodes.
@@ -27,7 +27,7 @@ EOF
 
 singularity build --fakeroot CWGS.sif CWGS.def
 ```
-The users have no root permission may build the .sif file locally then upload to server.  
+**The users without root permission may build the .sif file locally then upload to server.**  
 If the singularity doesn't support --fakeroot, you need sudo permission to run this command:
 sudo singularity build CWGS.sif CWGS.def
 ```
@@ -37,7 +37,7 @@ singularity exec -B`pwd -P` --pwd `pwd -P` CWGS.sif cp -rL /usr/local/bin/CWGS /
 ```
 ./CWGS -createdb
 ```
-Or for MegaBolt or ZBolt nodes
+Or for MegaBolt or ZBolt nodes ((MGI's Bioinformatics analysis accelerator, including MegaBOLT/ZBOLT/ZBOLT Pro)  
 ```
 ./CWGS -createdb --megabolt
 ```
@@ -66,27 +66,27 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
 **Note that the order of parameters matters: single dash parameters (-opt) should be placed before all double dash parameters (--opt)**     
      
 1. Generate sample.list.
-   start from fastq files (default)
+   start from raw fastq (cWGS/stLFR PE100, R2 is 100+42bp barcode e.g.) files (default)
       E.g.
    ```
    cat << EOF > sample.list
    sample	stlfr1	stlfr2	pcrfree1	pcrfree2
-   demo1	/path/to/stLFR_01_1.fq.gz	/path/to/stLFR_01_2.fq.gz	/path/to/PCRfree_01_1.fq.gz	/path/to/PCRfree_01_2.fq.gz
-   demo2	/path/to/stLFR_02_1.fq.gz	/path/to/stLFR_02_2.fq.gz	/path/to/PCRfree_02_1.fq.gz	/path/to/PCRfree_02_2.fq.gz
+   demo1	/path/to/cWGS_01_1.fq.gz	/path/to/cWGS_01_2.fq.gz	/path/to/PCRfree_01_1.fq.gz	/path/to/PCRfree_01_2.fq.gz
+   demo2	/path/to/cWGS_02_1.fq.gz	/path/to/cWGS_02_2.fq.gz	/path/to/PCRfree_02_1.fq.gz	/path/to/PCRfree_02_2.fq.gz
    EOF
    ```
       *paths above can be both absolute and relative
    
-    start from barcode split fastq files (set --skipBarcodeSplit true)
+    start from barcode (BC) split/deconvolution fastq files (cWGS/stLFR PE100, R2 is 100bp e.g.) **(set --skipBarcodeSplit true)**
       format same as above.
    
-    start from PCR-free and stLFR bam files (set --frombam true)
+    start from PCR-free and cWGS bam files (set --frombam true)
       E.g.
    ```
    cat << EOF > sample.list
    sample	stlfrbam	pfbam
-   demo1	/path/to/stLFR_01.bam	/path/to/PCRfree_01.bam
-   demo2	/path/to/stLFR_02.bam	/path/to/PCRfree_02.bam
+   demo1	/path/to/cWGS_01.bam	/path/to/PCRfree_01.bam
+   demo2	/path/to/cWGS_02.bam	/path/to/PCRfree_02.bam
    EOF
    ```
 2. Run settings
@@ -104,7 +104,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
       if you want to initially sample the fastq file, set it true. [false]
     the following settings are valid only sampleFq is true
     --stLFR_fq_cov INT [only valid when '--sampleFq true']
-    sample stLFR reads to this coverage [40] 
+    sample cWGS (stLFR) reads to this coverage [40] 
     
     --PF_fq_cov INT [only valid when '--sampleFq true']
     sample PCR-free reads to this coverage [50] 
@@ -112,7 +112,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
     Alignment (BWA or Lariat) and variant calling (GATK or Deepvariant (DV)) relevant settings   
     ```
     --align_tool STRING
-      Specify the alignment tool for stLFR reads. [lariat]
+      Specify the alignment tool for cWGS reads. [lariat]
       Supports:
         bwa
         lariat
@@ -162,10 +162,10 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
     Downsample the bam file
     ```
     --sampleBam BOOL
-      Whether downsample the stLFR bam and PCR-free bam. [true]
+      Whether downsample the cWGS bam and PCR-free bam. [true]
 
     --stLFR_sampling_cov INT [only valid when '--sampleBam true']
-      Downsample stLFR bam to the specified coverage. [30]
+      Downsample cWGS (stLFR) bam to the specified coverage. [30]
 
     --PF_sampling_cov INT [only valid when '--sampleBam true']
       Downsample PCRFree bam to the specified coverage. [40]
@@ -173,7 +173,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
     Merge the bam
     ```
     --PF_lt_stLFR_depth INT
-      Extract the intersection regions from the sampled stLFR bam with depth greater than (>) this value and PCRFree bam with depth less equal than (<=) this value. [10]
+      Extract the intersection regions from the sampled cWGS (stLFR) bam with depth greater than (>) this value and PCRFree bam with depth less equal than (<=) this value. [10]
     ```
     Enable resuming the running
     ```
@@ -224,7 +224,8 @@ All output in the ./CWGS_run folder.
 1. The ./CWGS_run/out/report.csv is a summary report, with all intermediate metrics, results of mapping, variant calling, phasing etc.     
 ![report.csv](CWGS_run/out/report.csv)  
 2. FQ, BAM, VCF output   
-The FQs in ./CWGS_run/out/<sample_name>/fq
+The FQs are in ./CWGS_run/out/<sample_name>/fq, QC by SOAPnuke.  
+(demo_split_*.fq.gz are the FQ after barcode deconvolution)   
 ```
 demo.pf.bssq
 demo.pf.qc_1.fq.gz
@@ -269,16 +270,18 @@ demo.lariat.dv.phased.vcf.gz.tbi
 
 **Log file**  
 1. The run.log shows excution information etc.  
-For a typical run of 1 sample, with 30x StLFR and 40x PCR free library, with 48CPU:  
-megabolt: ~14hr   
-non-megabolt: ~42hr  
-2. The ./CWGS_run/report.html is output of nextflow, with runtime, CPU usage etc.  
-3. The ./CWGS_run/trace.txt shows excution of each steps, use trace.txt to find intermediate files/folders.   
+For a typical run of 1 sample, with 30x cWGS and 40x PCR free library, with 60CPU:  
+MegaBOLT: ~14hr   
+non-MegaBOLT: ~45hr  
+(Run time can be reduced by a batch run of multiple N samples, total time <= N*time_per_sample)     
+
+3. The ./CWGS_run/report.html is output of nextflow, with runtime, CPU usage etc.  
+4. The ./CWGS_run/trace.txt shows excution of each steps, use trace.txt to find intermediate files/folders.   
 
 # Customize 
 To customize and make the pipeline adapt to your needs, you may revise the scripts in the modules folder and run with the -module tag  
 ```
-CWGS sample.list -sing /usr/local/bin/singularity -module <your_modules_path> -local -debug  
+CWGS sample.list -sing /usr/local/bin/singularity -module <your_modules_path> -script <your_scripts_path> -local -debug  
 ```
 
 # Reference   
@@ -287,4 +290,10 @@ A Linked-Read Alignment Tool
 2. [Deepvariant](https://github.com/google/deepvariant)  
 A deep learning-based variant caller  
 3. [Hapcut2](https://github.com/vibansal/HapCUT2)  
-A haplotype assembly  
+A haplotype assembly tool
+4. [SOAPnuke](https://github.com/BGI-flexlab/SOAPnuke)  
+A novel quality control tool  
+5. [MegaBOLT](https://en.mgi-tech.com/products/software_info/6/)  
+A Bioinformatics analysis accelerator  
+6. [cWGS/stLFR](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6499310/)  
+A DNA cobarcoding technique  
