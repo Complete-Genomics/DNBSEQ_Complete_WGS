@@ -293,7 +293,7 @@ A deep learning-based variant caller
 A haplotype assembly tool
 4. [SOAPnuke](https://github.com/BGI-flexlab/SOAPnuke)  
 A novel quality control tool  
-5. [MegaBOLT](https://en.mgi-tech.com/products/software_info/6/)
-A Bioinformatics analysis accelerator
-6. [cWGS/stLFR] (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6499310/)  
+5. [MegaBOLT](https://en.mgi-tech.com/products/software_info/6/)  
+A Bioinformatics analysis accelerator  
+6. [cWGS/stLFR](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6499310/)  
 A DNA cobarcoding technique  
