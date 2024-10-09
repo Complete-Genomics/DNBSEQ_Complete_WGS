@@ -63,7 +63,7 @@ include {
     sampleBam as sampleBamStlfrBwa;
     sampleBam as sampleBamStlfrLariat;
     stLFRQC} from "${params.MOD}/align"
-
+include { mapq } from "${params.MOD}/bam"
 include {
     frag1;
     frag2                           } from "${params.MOD}/frag"
@@ -178,6 +178,10 @@ include {
     report0 as reportBwaDv;
     report0 as reportLariatGatk;
     report0 as reportLariatDv;
+    report01 as reportBwaGatk1;
+    report01 as reportBwaDv1;
+    report01 as reportLariatGatk1;
+    report01 as reportLariatDv1;
     report;
     html } from "${params.MOD}/report"
 
@@ -328,9 +332,9 @@ workflow CWGS {
             splitLog = barcode_split.out.log
             
             if (params.sampleFq) { 
-                qc_stlfr_stats(ch_stlfrfq).basecnt.set {ch_stlfrbasecount}
+                qc_stlfr_stats(ch_splitfq).basecnt.set {ch_stlfrbasecount}
                 qc_stlfr_stats.out.rlen.set {ch_stLFRreadLen}
-                sampleStlfrFq(ch_stlfrbasecount.join(ch_stLFRreadLen).join(ch_stlfrfq).map {id, base, rlen, r1, r2 ->
+                sampleStlfrFq(ch_stlfrbasecount.join(ch_stLFRreadLen).join(ch_splitfq).map {id, base, rlen, r1, r2 ->
                     tuple(id, base, rlen, [r1, r2])}.transpose())
                     .collect()
                     .map {id, read1, idd, read2 -> 
@@ -338,25 +342,26 @@ workflow CWGS {
                         def r2 = read1.toString().contains("_1.") ? read2 : read1
                         tuple(id, r1, r2)}
                     // .view()
-                    .set {ch_stlfrfq}
-                if (!params.stLFR_only) {
-                    basecountPf(ch_pfbssq).set {ch_pfbasecount}
-                    samplePfFq(ch_pfbasecount.join(ch_PFreadLen).join(ch_qcpffq).map {id, base, rlen, r1, r2 ->
-                    tuple(id, base, rlen, [r1, r2])}.transpose())
-                        .collect()
-                        .map {id, read1, idd, read2 -> 
-                            def r1 = read1.toString().contains("_1.") ? read1 : read2
-                            def r2 = read1.toString().contains("_1.") ? read2 : read1
-                            tuple(id, r1, r2)}
-                        // .view()
-                        .set {ch_qcpffq}
-                }
-            } 
+                    .set {ch_stlfrsampledfq}
+                basecountPf(ch_pfbssq).set {ch_pfbasecount}
+                samplePfFq(ch_pfbasecount.join(ch_PFreadLen).join(ch_qcpffq).map {id, base, rlen, r1, r2 ->
+                tuple(id, base, rlen, [r1, r2])}.transpose())
+                    .collect()
+                    .map {id, read1, idd, read2 -> 
+                        def r1 = read1.toString().contains("_1.") ? read1 : read2
+                        def r2 = read1.toString().contains("_1.") ? read2 : read1
+                        tuple(id, r1, r2)}
+                    // .view()
+                    .set {ch_pfsampledfq}
+            } else {
+                ch_stlfrsampledfq = ch_splitfq
+                ch_pfsampledfq = ch_qcpffq
+            }
             
             if (params.use_megabolt) {
-                bwaMegaboltPf(ch_libpf, ch_qcpffq).set {ch_pfbam}
+                bwaMegaboltPf(ch_libpf, ch_pfsampledfq).set {ch_pfbam}
             } else {
-                bwaPf(ch_libpf, ch_qcpffq).set {ch_pfsortbam}
+                bwaPf(ch_libpf, ch_pfsampledfq).set {ch_pfsortbam}
                 markdupPf(ch_libpf, ch_bwa, ch_pfsortbam).set {ch_pfbam}
                 if (params.var_tool.contains("gatk") && params.run_bqsr) { bqsrPf(ch_libpf, ch_bwa, ch_pfbam).set {ch_pfbam} }
             } 
@@ -367,6 +372,7 @@ workflow CWGS {
             bam(ch_bam).stlfr.set {ch_lariatbam}
             bam.out.pf.set {ch_pfbam}         
         }
+	mapq(ch_pfbam).set {ch_pfbam}
         deepvariantv16BwaPf(ch_bwa, ch_pfbam).set {ch_pfdvvcf} 
         vcfevalPf(ch_libpf, ch_pfdvvcf).set {ch_vcfevalPf}
         coveragePf(ch_libpf, ch_pfbam).join(coverageMeanPf(ch_libpf, ch_pfbam)).set { ch_PfGeneCov }
@@ -396,7 +402,7 @@ workflow CWGS {
             ////////stlfr lariat
             if (params.align_tool.contains("lariat")) {
                 if (params.lariatStLFRBC) { //use stLFR bc for lariat
-                    splitfq(ch_splitfq).fq1s.transpose().set {ch_fq1s} //[id, num, fq1, fq2]
+                    splitfq(ch_stlfrsampledfq).fq1s.transpose().set {ch_fq1s} //[id, num, fq1, fq2]
                     splitfq.out.fq2s.transpose().set {ch_fq2s}
                     ch_fq1s.join(ch_fq2s).set {ch_splitstlfrfq}
                     lariatBC(ch_splitstlfrfq).groupTuple().set {ch_splitlariatfqs}
@@ -406,14 +412,14 @@ workflow CWGS {
                 } else {
                     tofake10xHash(splitLog).set {ch_hash}
                     if (params.lariatSplitFqNum != 1) { 
-                        splitfq(ch_splitfq).fq1s.transpose().set {ch_fq1s} //[id, num, fq1, fq2]
+                        splitfq(ch_stlfrsampledfq).fq1s.transpose().set {ch_fq1s} //[id, num, fq1, fq2]
                         splitfq.out.fq2s.transpose().set {ch_fq2s}
                         ch_fq1s.join(ch_fq2s).set {ch_splitstlfrfq}
                         // ch_splitstlfrfq.view()
                         tofake10x(ch_splitstlfrfq.combine(ch_hash, by:0)).reads.set {ch_splitfake10xfq}
                         fake10x2lariat(ch_splitfake10xfq).groupTuple().set {ch_splitlariatfqs}
                         mergeFq(ch_splitlariatfqs).set {ch_lariatfq}
-                    } else { fake10x2lariat(tofake10x(ch_splitfq.join(ch_hash))).set {ch_lariatfq} }
+                    } else { fake10x2lariat(tofake10x(ch_stlfrsampledfq.join(ch_hash))).set {ch_lariatfq} }
                 }
                 
                 sortbam(lariat(ch_lariatfq)).set {ch_lariatbam0} 
@@ -717,7 +723,7 @@ workflow CWGS {
             hb = phaseCatBwaGatk.out.hb
             if (!params.frombam){ 
                 reportBwaGatk(ch_bwa, ch_gatk, ch_vcf.join(splitLog).join(ch_lfr).join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalBwaGatk).join(ch_vcfevalPf)).collect().mix(ch_reports).set {ch_reports}
-            }      
+	    }  
         }
         if (params.align_tool.contains("bwa") && params.var_tool.contains("dv")) {
             ch_vcf = ch_mergevcf3
@@ -738,7 +744,9 @@ workflow CWGS {
             hb = phaseCatLariatGatk.out.hb
             if (!params.frombam) { 
                 reportLariatGatk(ch_lariat, ch_gatk, ch_vcf.join(splitLog).join(ch_lfr).join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatGatk).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
-            }
+            } else {
+		reportLariatGatk1(ch_lariat, ch_gatk, ch_vcf.join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatDv).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
+	    }
         } 
         if (params.align_tool.contains("lariat") && params.var_tool.contains("dv")) {
             ch_vcf = ch_mergevcf
@@ -748,7 +756,9 @@ workflow CWGS {
             hb = phaseCatLariatDv.out.hb
             if (!params.frombam) {
                 reportLariatDv(ch_lariat, ch_dv, ch_vcf.join(splitLog).join(ch_lfr).join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatDv).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
-            }
+            } else {
+		reportLariatDv1(ch_lariat, ch_dv, ch_vcf.join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatDv).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
+	    }
         } 
         report(ch_reports)
         hapKaryotype(hb)            // ${id}.haplotype.pdf
