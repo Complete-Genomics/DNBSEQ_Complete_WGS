@@ -89,6 +89,12 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
    demo2	/path/to/cWGS_02.bam	/path/to/PCRfree_02.bam
    EOF
    ```
+
+### Updates 
+Updates are pushed to the github module folder, use the latest scripts. Currently, it's recommended to filter reads with MAPQ>=3 with the pfmapq tag. Also, to customize and make the pipeline adapt to your needs, you may revise the scripts in the modules folder and run with the -module tag. An example:   
+```
+CWGS sample.list -sing /usr/local/bin/singularity -module <your_modules_path> -script <your_scripts_path> -local -debug --pfmapq 3
+```
 2. Run settings
     Set CPU
     ```
@@ -186,7 +192,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
     By default, each process only keeps the output files. If you want to check the intermediate files within a process, use this flag.
     ```
 
-3. Executor and MegaBOLT setting, four combinations:
+4. Executor and MegaBOLT setting, four combinations:
     Make sure CWGS is in your PATH.
     1. on clusters by SGE (Sun Grid Engine) and no MegaBOLT (default)
         Confirm the working queue and project number, which can be specified using --queue, and --project for regular queue, and project id, respectively. Use "--project none" if the system doesn't support a project id.
@@ -278,11 +284,6 @@ non-MegaBOLT: ~45hr
 3. The ./CWGS_run/report.html is output of nextflow, with runtime, CPU usage etc.  
 4. The ./CWGS_run/trace.txt shows excution of each steps, use trace.txt to find intermediate files/folders.   
 
-# Customize 
-To customize and make the pipeline adapt to your needs, you may revise the scripts in the modules folder and run with the -module tag  
-```
-CWGS sample.list -sing /usr/local/bin/singularity -module <your_modules_path> -script <your_scripts_path> -local -debug  
-```
 
 # Reference   
 1. [Lariat](https://github.com/10XGenomics/lariat)  
