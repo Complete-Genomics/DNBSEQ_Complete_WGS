@@ -2,7 +2,7 @@
 # CompleteWGS (cWGS)  
 This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' DNBSEQ Complete WGS (cWGS) (a DNA cobarcoding technology, previously known as stLFR) library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the cWGS library. Below is a flow chart which summarizes the pipeline processes. *Note, SV detection has not yet been enabled on the current version of the pipeline.
 
-![image](https://github.com/CGI-stLFR/CompleteWGS/assets/81321463/e73a2837-f60a-4a28-8d48-8eeb9e580905)
+![image](images/new_flowchart.png)
 
 # Requirements  
 **Hardware requirements**  
@@ -93,7 +93,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
 ### Updates 
 Updates are pushed to the github module folder, use the latest scripts. Currently, it's recommended to filter reads with MAPQ>=3 with the pfmapq tag. Also, to customize and make the pipeline adapt to your needs, you may revise the scripts in the modules folder and run with the -module tag. An example:   
 ```
-CWGS sample.list -sing /usr/local/bin/singularity -module <your_modules_path> -script <your_scripts_path> -local -debug --pfmapq 3
+CWGS sample.list -sing /usr/local/bin/singularity -module <your_modules_path> -local -debug --pfmapq 3
 ```
 2. Run settings
     Set CPU
