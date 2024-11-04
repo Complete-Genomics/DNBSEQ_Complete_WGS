@@ -90,11 +90,6 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
    EOF
    ```
 
-### Updates 
-Updates are pushed to the github module folder, use the latest scripts. Currently, it's recommended to filter reads with MAPQ>=3 with the pfmapq tag. Also, to customize and make the pipeline adapt to your needs, you may revise the scripts in the modules folder and run with the -module tag. An example:   
-```
-CWGS sample.list -sing /usr/local/bin/singularity -module <your_modules_path> -local -debug --pfmapq 3
-```
 2. Run settings
     Set CPU
     ```
