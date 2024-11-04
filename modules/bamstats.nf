@@ -15,6 +15,8 @@ process bamdepth {
     script:
     def bam = bam.first()
     "bamcov=`${params.BIN}samtools depth -@ ${task.cpus} $bam | awk '{sum += \$3}END{print sum/${params.ref_len}}'`"
+    stub:
+    "bamcov=30"
 }
 
 process barcodeStat {    
@@ -85,12 +87,13 @@ process insertsize {
 
     script:
     bam = bam.first()
-    prefix = "${bam.getBaseName()}"
     """    
     ${params.BIN}java -Xms${task.memory.giga}g -Xmx${task.memory.giga}g -jar ${params.SCRIPT}/picard/picard.jar CollectInsertSizeMetrics \\
       I=$bam O=${id}.Insertsize.metrics.txt H=${id}.Insertsize.pdf TMP_DIR=.
 
     """
+    stub:
+    "touch ${id}.Insertsize.metrics.txt ${id}.Insertsize.pdf"
 }
 process gcbias {
     cpus params.CPU0
@@ -129,6 +132,8 @@ process gcbias {
         CHART=${id}.GCbias.pdf \\
         S=${id}.GCbias.summary_metrics.txt VALIDATION_STRINGENCY=SILENT
     """
+    stub:
+    "touch ${id}.GCbias.summary_metrics.txt"
 }
 
 process samtools_flagstat {
@@ -150,6 +155,8 @@ process samtools_flagstat {
     def bam = bam.first()
     prefix = "${bam.getBaseName()}"
     "${params.BIN}samtools flagstat -@ ${task.cpus} $bam > ${prefix}.samtools_flagstat"
+    stub:
+    "touch ${bam.getBaseName()}.samtools_flagstat"
 }
 
 process samtools_stats {   
@@ -170,7 +177,11 @@ process samtools_stats {
     script:
     def bam = bam.first()
     prefix = "${bam.getBaseName()}"
-    "${params.BIN}samtools stats $bam > ${prefix}.samtools_stats"
+    """
+    ${params.BIN}samtools stats $bam > ${prefix}.samtools_stats
+    """
+    stub:
+    "touch ${bam.getBaseName()}.samtools_stats"
 }
 
 process bam2depth {
@@ -243,6 +254,8 @@ process samtools_depth {
     awk '\$3 >= 10 { sum10 += 1 } \$3 >= 1 { sum1 += 1 } END { print sum1/${params.ref_len}, sum10/${params.ref_len} }' > ${id}.${lib}.bamdepth.report
     #python3 ${params.SCRIPT}/calcdepth.py ${id}.${lib}.bam.depth ${params.ref_len}> ${id}.${lib}.bamdepth.report
     """
+    stub:
+    "touch ${id}.${lib}.bamdepth.report"
 }
 
 process samtools_depth0 {
@@ -445,6 +458,8 @@ process align_cat {
     python3 ${params.SCRIPT}/aligncat.py $flagstat $stats $depth $insertsize $s > ${prefix}.align_cat
 
     """
+    stub:
+    "touch ${flagstat.getBaseName()}.align_cat"
 }
 
 process align_cat3 {

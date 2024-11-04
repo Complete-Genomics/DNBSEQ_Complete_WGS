@@ -26,6 +26,8 @@ process qc {
 
     mv Basic_Statistics_of_Sequencing_Quality.txt ${id}.${lib}.bssq
     """
+    stub:
+    "touch ${id}.${lib}.qc_1.fq.gz ${id}.${lib}.qc_2.fq.gz ${id}.${lib}.bssq"
 }
 
 process qc_stlfr_stats {
@@ -57,6 +59,8 @@ process qc_stlfr_stats {
     basecount=`head -5 Basic_Statistics_of_Sequencing_Quality.txt | tail -1 | awk '{print \$7}'`
     rlen=`head -2 Basic_Statistics_of_Sequencing_Quality.txt | tail -1 | awk '{print \$3}' | cut -d "." -f 1`
     """
+    stub:
+    "basecount=1;rlen=100"
 }
 process readNum {
     executor = 'local'

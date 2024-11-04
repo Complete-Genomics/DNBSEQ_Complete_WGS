@@ -15,7 +15,7 @@ process report0 {
     path "${id}.*report"
 
     tag "$id, $aligner, $varcaller"
-    publishDir "${params.outdir}/$id/"
+    // publishDir "${params.outdir}/$id/"
     // cache false
 
     script:
@@ -28,6 +28,41 @@ process report0 {
 
     ${params.BIN}python3 ${params.SCRIPT}/report.py $id $aligner $varcaller ${id}.bcftoolsStats.txt het $splitLog $lfr $aligncatstlfr $aligncatpf $phase $genecov $vcfeval $vcfevalPf $stlfrbamdepth $pfbamdepth > ${id}.${aligner}.${varcaller}.report
     """
+    stub:
+    "touch ${id}.${aligner}.${varcaller}.report"
+}
+process report01 {
+    executor = 'local'
+    container false
+
+    cpus params.CPU0
+    memory params.MEM0 + "g"
+    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+
+    input:
+    val(aligner)
+    val(varcaller)
+    tuple val(id), path(vcf), path(aligncatstlfr), path(aligncatpf), path(phase), path(genecov), path(vcfeval), path(vcfevalPf), val(stlfrbamdepth), val(pfbamdepth)
+
+    output:
+    path "${id}.*report"
+
+    tag "$id, $aligner, $varcaller"
+    // publishDir "${params.outdir}/$id/"
+    // cache false
+
+    script:
+    vcf = vcf.first()
+    """
+    ${params.BIN}bcftools stats $vcf > ${id}.bcftoolsStats.txt
+    hetsnp=`${params.BIN}bcftools view -v snps -g het $vcf |grep -v \\# |wc -l`
+    hetindel=`${params.BIN}bcftools view -v indels -g het $vcf |grep -v \\# |wc -l`
+    echo -e "\$hetsnp\\t\$hetindel" > het
+
+    ${params.BIN}python3 ${params.SCRIPT}/report_frombam.py $id $aligner $varcaller ${id}.bcftoolsStats.txt het $aligncatstlfr $aligncatpf $phase $genecov $vcfeval $vcfevalPf $stlfrbamdepth $pfbamdepth > ${id}.${aligner}.${varcaller}.report
+    """
+    stub:
+    "touch ${id}.${aligner}.${varcaller}.report"
 }
 
 process report {
@@ -53,6 +88,8 @@ process report {
     paste -d "," ${params.SCRIPT}/report_template.txt $reports > report.csv
     # ${params.BIN}python3 ${params.SCRIPT}/paste.py ${params.DB}/report_template.txt $reports > report.csv
     """
+    stub:
+    "touch report.csv"
 }
 
 process html {

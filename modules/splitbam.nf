@@ -60,5 +60,7 @@ process splitBam4phasing {
 
   ${params.BIN}samtools index ${id}.${aligner}.${chr}.bam 
   """
+  stub:
+  "touch ${id}.${aligner}.${chr}.bam "
 }
 

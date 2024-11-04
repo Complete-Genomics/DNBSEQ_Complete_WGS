@@ -12,7 +12,6 @@ process vcfeval {
     tuple val(id), path("*.xls")
     tag "$id"
     publishDir "${params.outdir}/report/$id", saveAs: {"${id}.${lib}.evaluation.xls"}, mode: 'link'
-    publishDir "${params.outdir}/$id"
     publishDir "${params.outdir}/report/$id", saveAs: {"${id}.evaluation.xls"}, mode: 'link', enabled: params.stLFR_only
     // publishDir (
     //   path: "${params.outdir}/report/", 
@@ -79,6 +78,8 @@ process vcfeval {
       >> ${prefix}.evaluation.xls 
     rm bench.*.vcf.gz   
     """
+    stub:
+    "touch ${id}.${lib}.evaluation.xls"
 }
 
 process eachstat_vcf {
@@ -92,7 +93,7 @@ process eachstat_vcf {
     output:
     tuple val(id), path("${id}.varianttable.xls")
 
-    publishDir "${params.outdir}/report/$id"
+    publishDir "${params.outdir}/report/$id", mode: 'link'
     // publishDir (
     //   path: "${params.outdir}/report/", 
     //   saveAs: { fn ->

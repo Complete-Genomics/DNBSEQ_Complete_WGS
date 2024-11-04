@@ -75,12 +75,16 @@ process splitfq {
 
     tag "$id"
 	output:
-	tuple val(id), path("${id}*_1.part_*.fq.gz"), emit: fq1s
-	tuple val(id), path("${id}*_2.part_*.fq.gz"), emit: fq2s
-
+	tuple val(id), path("${id}*_1.*part_*.fq.gz"), emit: fq1s
+	tuple val(id), path("${id}*_2.*part_*.fq.gz"), emit: fq2s
+    script:
 	"""
-	seqkit split2 -j ${task.cpus} -o .fq.gz -O . -p ${params.lariatSplitFqNum} -1 $r1 -2 $r2
+    mv $r1 ${id}_1.fq.gz
+    mv $r2 ${id}_2.fq.gz
+	seqkit split2 -o .fq.gz -O . -p ${params.lariatSplitFqNum} -1 ${id}_1.fq.gz -2 ${id}_2.fq.gz
 	"""
+    stub:
+    "touch ${id}*_1.part_*.fq.gz ${id}*_2.part_*.fq.gz"
 }
 
 process readLen {
@@ -158,12 +162,14 @@ process samplePfFq {
     echo ${params.ref_len}, $cov, ${rlen}. $basecount -\\> \$targetreadbase \$targetreadnum*$rlen > log
     if [ $basecount -gt \$targetreadbase ];then
         echo sample >> log
-        ${params.BIN}seqtk sample -2 -s111 $read \$targetreadnum  | ${params.BIN}seqtk trimfq -L $rlen - | gzip >  ${read.getBaseName(2)}.sampled.cov${cov}.fq.gz
+        ${params.BIN}seqtk sample -2 -s111 $read \$targetreadnum  | ${params.BIN}seqtk trimfq -L $rlen - | ${params.BIN}gzip >  ${read.getBaseName(2)}.sampled.cov${cov}.fq.gz
     else 
         ln -s $read ${read.getBaseName(2)}.sampled.cov${cov}.fq.gz
         echo not sample >> log
     fi
     """
+    stub:
+    "touch ${read.getBaseName(2)}.sampled.cov${params.PF_fq_cov}.fq.gz"
 }
 
 process sampleStlfrFq {
@@ -185,12 +191,14 @@ process sampleStlfrFq {
     echo ${params.ref_len}, $cov, ${rlen}. $basecount -\\> \$targetreadbase \$targetreadnum*$rlen > log
     if [ $basecount -gt \$targetreadbase ];then
         echo sample >> log
-        ${params.BIN}seqtk sample -2 -s111 $read \$targetreadnum  | gzip >  ${read.getBaseName(2)}.sampled.cov${cov}.fq.gz
+        ${params.BIN}seqtk sample -2 -s111 $read \$targetreadnum  | ${params.BIN}gzip >  ${read.getBaseName(2)}.sampled.cov${cov}.fq.gz
     else 
         ln -s $read ${read.getBaseName(2)}.sampled.cov${cov}.fq.gz
         echo not sample >> log
     fi
     """
+    stub:
+    "touch ${read.getBaseName(2)}.sampled.cov${params.stLFR_fq_cov}.fq.gz"
 }
 process fqcheck {
   // tag {fastq}
@@ -213,6 +221,8 @@ process fqcheck {
     ${params.BIN_fqcheck}fqcheck33 -r $r1 -c ${id}.${lib}_1.fqcheck
     ${params.BIN_fqcheck}fqcheck33 -r $r2 -c ${id}.${lib}_2.fqcheck
     """
+    stub:
+    "touch ${id}.${lib}_1.fqcheck ${id}.${lib}_2.fqcheck"
 }
 process fqdist {
   
@@ -245,6 +255,8 @@ process fqdist {
   """
   perl ${params.SCRIPT}/fqcheck/fqcheck_distribute.pl ${fqcheck1} ${fqcheck2} -o ${id}.${lib}.
   """
+  stub:
+  "touch ${id}.${lib}.png"
 }
 process eachstat_fastq {
     

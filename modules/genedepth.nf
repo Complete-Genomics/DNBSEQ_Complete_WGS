@@ -31,7 +31,7 @@ process coverage {
     tuple val(id), path("${id}.*.bed")
 
     tag "$id, $lib"
-    publishDir "${params.outdir}/$id/align/"
+    publishDir "${params.outdir}/$id/align/", mode:'link'
 
     script:
     bam = bam.first()
@@ -40,6 +40,8 @@ process coverage {
     """
     ${params.BIN}bedtools coverage -sorted -g $fai -a $bed -b $bam -hist > ${id}.${lib}.cmrg.hist.bed 
     """
+    stub:
+    "touch ${id}.${lib}.cmrg.hist.bed "
 }
 
 process coverageMean {
@@ -56,7 +58,7 @@ process coverageMean {
     tuple val(id), path("${id}.*.bed")
 
     tag "$id"
-    publishDir "${params.outdir}/$id/align/"
+    publishDir "${params.outdir}/$id/align/", mode:'link'
 
     script:
     bam = bam.first()
@@ -65,6 +67,8 @@ process coverageMean {
     """
     ${params.BIN}bedtools coverage -sorted -g $fai -a $bed -b $bam -mean > ${id}.${lib}.cmrg.mean.bed 
     """
+    stub:
+    "touch ${id}.${lib}.cmrg.mean.bed "
 }
 
 process coverageAvg {
@@ -80,7 +84,7 @@ process coverageAvg {
     tuple val(id), path("${id}.cmrg.cov")
 
     tag "$id"
-    publishDir "${params.outdir}/$id/align/"
+    publishDir "${params.outdir}/$id/align/", mode:'link'
 
     script:
     """
@@ -97,6 +101,8 @@ process coverageAvg {
     #${params.BIN}samtools depth -b cov0.7.bed bam  > depth
     #python3 ${params.SCRIPT}/genedepth.py \$genebed depth > out
     """
+    stub:
+    "touch ${id}.cmrg.cov "
 }
 process mosdepth {
     cpus params.cpu2
@@ -112,7 +118,7 @@ process mosdepth {
 
     tag "$id"
 
-    publishDir "${params.outdir}/$id/align/"
+    publishDir "${params.outdir}/$id/align/", mode:'link'
 
     script:
     bam = bam.first()
@@ -137,8 +143,7 @@ process mosdepthPlot {
 
     tag "$id"
 
-    publishDir "${params.outdir}/$id/align/"
-    publishDir "${params.outdir}/report/$id/"
+    publishDir "${params.outdir}/report/$id/", mode:'link'
 
     script:
     bam = bam.first()

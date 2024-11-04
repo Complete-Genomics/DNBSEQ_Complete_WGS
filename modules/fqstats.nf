@@ -23,6 +23,8 @@ process fqstats {
     """
     python3 ${params.SCRIPT}/fqstats.py $bssq > ${bssq.getBaseName()}.out
     """
+    stub:
+    "touch ${bssq.getBaseName()}.out"
 }
 
 // process fqstats_stlfr {

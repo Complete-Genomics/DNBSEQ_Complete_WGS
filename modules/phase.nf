@@ -63,6 +63,8 @@ process phase {
         """
     }
     return cmd
+    stub:
+    "touch ${id}.${aligner}.${varcaller}.${chr}.VCF.gz ${id}.${aligner}.${varcaller}.${chr}.lf ${id}.${aligner}.${varcaller}.${chr}.hapblock ${id}.${aligner}.${varcaller}.${chr}.hapcut_stat.txt"
 }
 
 process eachstat_phase {
@@ -119,6 +121,8 @@ process hapKaryotype {
 
     ${params.BIN}Rscript ${params.SCRIPT}/stat/haplotype.karyotype.R karyotype.${id}.genome.txt karyotype.${id}.band.txt ${id}.haplotype.pdf .
     """
+    stub:
+    "touch ${id}.haplotype.pdf karyotype.${id}.band.txt"
 }
 process hapKaryotype_bak {
     cpus params.CPU0
@@ -249,6 +253,8 @@ process phase_cat {
     
     python3 ${params.SCRIPT}/phase.py ${prefix} $fai > ${prefix}.phase.report
     """
+    stub:
+    "touch *.phase.report *.phased.vcf.gz ${id}.${aligner}.${varcaller}.VCF.gz ${id}.${aligner}.${varcaller}.lf ${id}.${aligner}.${varcaller}.hapblock ${id}.${aligner}.${varcaller}.hapcut_stat.txt"
 }
 
 process phaseCat_cwx {

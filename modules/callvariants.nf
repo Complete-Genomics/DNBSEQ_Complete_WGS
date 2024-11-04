@@ -42,6 +42,8 @@ process hcMegabolt {
     mv output/output.hc*.vcf.gz ${outprefix}.vcf.gz
     mv output/output.hc*.vcf.gz.tbi ${outprefix}.vcf.gz.tbi
     """
+    stub:
+    "touch ${id}.${aligner}.megaboltHc?.vcf.gz"
 }
 process vqsrMegabolt {
     label 'megabolt'
@@ -85,6 +87,8 @@ process vqsrMegabolt {
     mv output/output.vqsr.vcf.gz ${outprefix}.vcf.gz
     mv output/output.vqsr.vcf.gz.tbi ${outprefix}.vcf.gz.tbi
     """
+    stub:
+    "touch ${id}.${aligner}.gatk?.vcf.gz"
 }
 //no megabolt
 process hc {
@@ -136,6 +140,8 @@ process hc {
       """
     }
     return cmd
+    stub:
+    "touch ${id}.${aligner}.*.vcf.gz"
 }
 process vqsrSnp {
     cpus params.cpu3
@@ -228,6 +234,8 @@ process vqsrSnp {
       """
     }
     return cmd
+    stub:
+    "touch ${id}.${aligner}.vqsr?.snp.vcf.gz"
 }
 process vqsrIndel {
     cpus params.cpu3
@@ -314,6 +322,8 @@ process vqsrIndel {
       """
     }
     return cmd
+    stub:
+    "touch ${id}.${aligner}.vqsr?.indel.vcf.gz"
 }
 //run hc split
 process gatk_interval {
@@ -359,6 +369,8 @@ process gatk_interval {
   #head -22 $fai | awk '{print \$1}' > txt
   #tail -n +23 $fai |awk '{printf "%s -L ", \$1}' |sed 's/-L \$//' >> txt
   """
+  stub:
+  "touch txt"
 }
 process hcSplit {
     cpus params.CPU0
@@ -410,6 +422,8 @@ process hcSplit {
       """
     }
     return cmd
+    stub:
+    "touch ${id}.${aligner}.${file(bed).getBaseName()}.vcf.gz"
 }
 process gatherVcfsHc {
     cpus params.CPU0
@@ -443,6 +457,8 @@ process gatherVcfsHc {
 
     ${params.BIN}tabix ${id}.${aligner}.${suffix}
     """
+    stub:
+    "touch ${id}.${aligner}.${suffix}"
 }
 process gatherVcfsVqsr {
     cpus params.CPU0
@@ -466,6 +482,8 @@ process gatherVcfsVqsr {
     """
     ${params.BIN}bcftools concat -a $snpvcf $indelvcf -O b -o ${prefix}.vcf.gz
     """
+    stub:
+    "touch ${prefix}.vcf.gz"
 }
 process dvMegabolt {
   label 'megabolt'
@@ -502,6 +520,8 @@ process dvMegabolt {
     mv output/output.dv.vcf.gz ${id}.${aligner}.dv.vcf.gz
     mv output/output.dv.vcf.gz.tbi ${id}.${aligner}.dv.vcf.gz.tbi
     """
+    stub:
+    "touch ${id}.${aligner}.dv.vcf.gz"
 }
 process deepvariantv16 {
     cpus params.cpu3
@@ -537,4 +557,6 @@ process deepvariantv16 {
       --make_examples_extra_args="vsc_min_count_indels=1" 
 
     """
+    stub:
+    "touch ${id}.${aligner}.dv.vcf.gz"
 }

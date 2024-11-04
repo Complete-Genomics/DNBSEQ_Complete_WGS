@@ -53,7 +53,8 @@ process barcode_split {
         mv \$log split_stat_read1.log
     fi
     """
-
+    stub:
+    "touch ${id}_split_1.fq.gz ${id}_split_2.fq.gz split_stat_read1.log"
 }
 process get_rlen {
     cpus params.CPU1

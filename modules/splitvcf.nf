@@ -22,4 +22,6 @@ process split_vcf {
   """
   zcat $vcf | awk -F'\\t' -v chr="$chr" '(\$0 ~ /^#/) || (\$1 == chr && \$10 ~ /^(1\\/1|0\\/1|1\\/2):/)' | ${params.BIN}bgzip > ${id}.${aligner}.${varcaller}.${chr}.vcf.gz
   """
+  stub:
+  "touch ${id}.${aligner}.${varcaller}.${chr}.vcf.gz"
 }

@@ -22,6 +22,8 @@ process bwa {
     ${params.BIN}samtools sort -@ ${task.cpus} -T `pwd`/sort.tmp. -o ${id}.${lib}.sort.bam - 
     ${params.BIN}samtools index -@ ${task.cpus} ${id}.${lib}.sort.bam
     """
+    stub:
+    "touch ${id}.${lib}.sort.bam"
 }
 process bwaMegabolt {
     cpus params.cpu3
@@ -72,6 +74,8 @@ process bwaMegabolt {
         mv ${id}/${id}.*.bam ${outbam}
         mv ${id}/${id}.*.bam.bai ${outbam}.bai
     """
+    stub:
+    "touch ${id}.${lib}.*bam"
 }
 
 process bqsr {
@@ -140,6 +144,8 @@ process bqsr {
         """
     }
     return cmd
+    stub:
+    "touch ${id}.${lib}.${aligner}.bqsr4.bam"
 }
 process bqsrMegabolt { //stlfr lariat
     label 'megabolt'
@@ -202,6 +208,8 @@ process bqsrMegabolt { //stlfr lariat
         """
     }
     return cmd
+    stub:
+    "touch ${id}.stlfr.lariat.megaboltbqsr4.bam"
 }
 process lariatBC {
     cpus params.CPU0
@@ -227,6 +235,11 @@ process lariatBC {
         """
     }
     return cmd
+    stub:
+    """
+    part=`echo $r1 |awk -F '.' '{print \$2}'`
+    touch ${id}.\$part.fq.gz
+    """
 }
 process tofake10xHash {
 	
@@ -249,6 +262,8 @@ process tofake10xHash {
 	sed '1,5d' $splitLog | awk '{print \$3,\$2}' > barcode_freq.txt
 	perl ${params.SCRIPT}/merge_barcodes.pl barcode_freq.txt  $WL ${id}.merge.txt 1
 	"""
+    stub:
+    "touch ${id}.merge.txt"
 }
 process tofake10x {
 	
@@ -276,6 +291,8 @@ process tofake10x {
 	mv outdir/sample_S1_L001_R1_001.fastq.gz ${r1.getBaseName(2)}.fake10x_1.fq.gz
 	mv outdir/sample_S1_L001_R2_001.fastq.gz ${r2.getBaseName(2)}.fake10x_2.fq.gz
 	"""
+    stub:
+    "touch ${r1.getBaseName(2)}.fake10x_1.fq.gz ${r1.getBaseName(2)}.fake10x_2.fq.gz"
 }
 process mergeMaps {
 	
@@ -316,6 +333,8 @@ process fake10x2lariat {
     """
     python3 ${params.SCRIPT}/stlfr2lariat_v3.py $fq1 $fq2 ${fq1.getBaseName(3)}.lariat.fq.gz 
     """
+    stub:
+    "touch ${fq1.getBaseName(3)}.lariat.fq.gz "
 }
 process mergeFq {
     
@@ -344,6 +363,8 @@ process mergeFq {
         """
     }
     return cmd
+    stub:
+    "touch ${id}.lariat.fq.gz"
 }
 
 process lariat {  
@@ -377,6 +398,8 @@ process lariat {
         """
     }
     return cmd
+    stub:
+    "touch bc_sorted_bam.bam"
 }
 process sortbam {  
     cpus params.cpu2
@@ -406,6 +429,8 @@ process sortbam {
         """
     }
     return cmd
+    stub:
+    "touch ${id}.lariat.sort.bam"
 }
 process markdup {
     cpus params.cpu2
@@ -458,8 +483,10 @@ process markdup {
         """
     }
     return cmd
+    stub:
+    "touch ${id}.${lib}.${aligner}.*.bam"
 }
-process sampleBam {
+process sampleBam_samtools {
     cpus params.cpu2
     memory params.MEM1 + "g"
     clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
@@ -505,6 +532,48 @@ process sampleBam {
     }
     return cmd
 }
+process sampleBam {
+    cpus params.cpu2
+    memory params.MEM1 + "g"
+    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+
+    input:
+    val(lib)
+    val(aligner)
+    tuple val(id), path(indexedbam)
+
+    output:
+    tuple val(id), path("${id}.${lib}.${aligner}.sampled.bam*"), emit: bam
+    //path("${id}.${lib}.${aligner}.sampledbamdepth")
+
+    tag "$id, $lib, $aligner"
+    publishDir "${params.outdir}/$id/align/", mode: 'link'
+ 
+    script:
+    def bam = indexedbam.first()
+    def cov = lib == "stlfr" ? "${params.stLFR_sampling_cov}" : "${params.PF_sampling_cov}"
+
+    cmd = """
+    bamcov=`${params.BIN}samtools depth -@ ${task.cpus} $bam | awk '{sum += \$3}END{print sum/${params.ref_len}}'`
+    echo \$bamcov > tmp
+    ratio=`echo "scale=5; $cov/\$bamcov" | bc`
+    if [[ \$ratio > 1 ]];then
+        cp $bam ${id}.${lib}.${aligner}.sampled.bam
+        cp ${bam}.bai ${id}.${lib}.${aligner}.sampled.bam.bai
+    else
+        ${params.BIN}gatk DownsampleSam -I $bam -O ${id}.${lib}.${aligner}.sampled.bam -P \$ratio
+        ${params.BIN}samtools index -@ ${task.cpus} ${id}.${lib}.${aligner}.sampled.bam
+    fi
+    """
+    if (!params.keepFiles) {
+        cmd += """
+        rm `realpath $indexedbam`
+        """
+    }
+    return cmd
+    stub:
+    "touch ${id}.${lib}.${aligner}.sampled.bam"
+}
 process intersect {
     cpus params.cpu2
     memory params.MEM1 + "g"
@@ -528,6 +597,8 @@ process intersect {
     ${params.BIN}bedtools merge > ${id}.${aligner}.cov${params.PF_lt_stLFR_depth}.intersect.bed
 
     """
+    stub:
+    "touch ${id}.${aligner}.cov${params.PF_lt_stLFR_depth}.intersect.bed"
 }
 process depth {
     cpus params.cpu2
@@ -553,6 +624,8 @@ process depth {
     ${params.BIN}bedtools merge -i > ${id}.${lib}.${aligner}.cov${params.bamcov}.bed
 
     """
+    stub:
+    "touch ${id}.${lib}.${aligner}.cov${params.bamcov}.bed"
 }
 
 process bed {
@@ -574,6 +647,8 @@ process bed {
     """
     ${params.BIN}bedtools intersect -a $bed1 -b $bed2 > ${id}.${aligner}.cov${params.bamcov}.intersect.bed
     """
+    stub:
+    "touch ${id}.${aligner}.cov${params.bamcov}.intersect.bed"
 }
 
 process mergeBam {
@@ -606,9 +681,9 @@ process mergeBam {
     ${params.BIN}samtools merge -@ ${task.cpus} -f ${id}.${aligner}.merge.bam $pfbam new2.bam && \\
     ${params.BIN}samtools index -@ ${task.cpus} ${id}.${aligner}.merge.bam
 
-    if [ $params.debug == false ];then
-        rm lfr_lfr10_pf10.bam* new*.bam
-    fi    """
+    """
+    stub:
+    "touch ${id}.${aligner}.merge.bam"
 }
 
 process stLFRQC {
@@ -624,7 +699,7 @@ process stLFRQC {
     path("06*.txt")
 
     tag "$id"
-    publishDir "${params.outdir}/$id/align/"
+    publishDir "${params.outdir}/report/$id/", mode:'link'
  
     script:
     bam = bam.first()
@@ -641,4 +716,6 @@ process stLFRQC {
     sed -n '77p' 06.lfr_per_barcode.txt >> tmp
     mv tmp  ${id}.lfr.report
     """
+    stub:
+    "touch 06*.txt ${id}.lfr.report "
 }
