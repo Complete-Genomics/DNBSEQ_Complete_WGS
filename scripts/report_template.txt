@@ -1,0 +1,52 @@
+Sample
+stLFR aligner
+var caller
+stLFR bam avg depth
+PCR-free bam avg depth
+snps
+het snps
+indels
+het indels
+snps eval
+TP
+FP
+FN
+precision
+recall
+f1
+indels eval
+TP
+FP
+FN
+precision
+recall
+f1
+PCR-free snps eval
+TP
+FP
+FN
+precision
+recall
+f1
+PCR-free indels eval
+TP
+FP
+FN
+precision
+recall
+f1
+barcode split rate
+LFR count
+LFR avg len
+stLFR PE map rate
+PCR-free PE map rate
+stLFR %genome cov > 10x
+PCR-free %genome cov > 10x
+het snps phased
+het indels phased
+phase block count
+phase block N50
+CMRG avg coverage (PCR-free)
+CMRG avg coverage (merged)
+CMRG avg depth (PCR-free)
+CMRG avg depth (merged)

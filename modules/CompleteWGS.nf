@@ -307,10 +307,12 @@ workflow CWGS {
         circos(ch_vcf.join(ch_sv).join(ch_cnv).join(ch_bamfinal)).flg.set {ch_circos} // id.circos.png
         html(ch_circos.join(ch_haploplot)) //final html report
 
-        System.exit()
     }
 
     //// CWGS from fastq
+    if (params.ref == 'hs37d5') {chrs = (1..22).collect { it.toString() } + ['X', 'Y']}
+    else {chrs = (1..22).collect { "chr$it" } + ["chrX", "chrY"]}
+    
     if (!params.frombam) {
         println("!!! run CWGS from fastq")
         parse_sample (ch_input)
@@ -425,9 +427,6 @@ workflow CWGS {
             }
             
             //split stLFR bam for phasing
-            if (params.ref == 'hs37d5') {chrs = (1..22).collect { it.toString() } + ['X', 'Y']}
-            else {chrs = (1..22).collect { "chr$it" } + ["chrX", "chrY"]}
-
             splitBam4phasing(ch_lariat, ch_lariatbam, chrs).set {ch_eachbamlariat}
 
             //merge bam
@@ -634,11 +633,8 @@ workflow CWGS {
             phaseall = ch_phaseallLariatGatk
             hapcutstat = phaseCatLariatGatk.out.hapcutstat
             hb = phaseCatLariatGatk.out.hb
-            if (!params.frombam) { 
-                reportLariatGatk(ch_lariat, ch_gatk, ch_vcf.join(splitLog).join(ch_lfr).join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatGatk).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
-            } else {
-                reportLariatGatk1(ch_lariat, ch_gatk, ch_vcf.join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatDv).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
-            }
+
+            reportLariatGatk(ch_lariat, ch_gatk, ch_vcf.join(splitLog).join(ch_lfr).join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatGatk).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
         } 
         if (params.align_tool.contains("lariat") && params.var_tool.contains("dv")) {
             ch_vcf = ch_mergevcf
@@ -646,11 +642,8 @@ workflow CWGS {
             phaseall = ch_phaseallLariatDv
             hapcutstat = phaseCatLariatDv.out.hapcutstat
             hb = phaseCatLariatDv.out.hb
-            if (!params.frombam) {
-                reportLariatDv(ch_lariat, ch_dv, ch_vcf.join(splitLog).join(ch_lfr).join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatDv).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
-            } else {
-                reportLariatDv1(ch_lariat, ch_dv, ch_vcf.join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatDv).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
-            }
+
+            reportLariatDv(ch_lariat, ch_dv, ch_vcf.join(splitLog).join(ch_lfr).join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatDv).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
         } 
         report(ch_reports)
         hapKaryotype(hb)            // ${id}.haplotype.pdf
@@ -774,49 +767,52 @@ workflow CWGS {
             pvcfs2.join(lfs2).join(hbs2).set {ch_phaseallLariatGatk}
         }
         
-        // stlfrbam = ch_lariatbam 
-        // ch_mergebam = ch_mergeLariatBam
-        // ch_eachbam = ch_eachbamlariat
+        stlfrbam = ch_lariatbam 
+        ch_mergebam = ch_mergeLariatBam
+        ch_eachbam = ch_eachbamlariat
 
 
-        // //stlfr bam stats
-        // bamdepth(ch_libstlfr, stlfrbam).set {ch_stlfrbamdepth}
-        // samtools_flagstat(ch_libstlfr, stlfrbam).set {ch_flagstat}
-        // samtools_stats(ch_libstlfr, stlfrbam).set {ch_stat}
-        // insertsize(ch_libstlfr, stlfrbam).insertsize.set {ch_insertsize} 
+        //stlfr bam stats
+        bamdepth(ch_libstlfr, stlfrbam).set {ch_stlfrbamdepth}
+        samtools_flagstat(ch_libstlfr, stlfrbam).set {ch_flagstat}
+        samtools_stats(ch_libstlfr, stlfrbam).set {ch_stat}
+        insertsize(ch_libstlfr, stlfrbam).insertsize.set {ch_insertsize} 
             
-        // coverage(ch_merge, ch_mergebam).join(coverageMean(ch_merge, ch_mergebam)).set { ch_MergeGeneCov }
-        // coverageAvg(ch_PfGeneCov.join(ch_MergeGeneCov)).set {ch_avgCov}
-        // samtools_depth(ch_libstlfr, stlfrbam).set {ch_depthreport}
-        // align_cat(ch_libstlfr, ch_flagstat.join(ch_stat).join(ch_depthreport).join(ch_insertsize)).set {ch_aligncatstlfr} //info
-        // stLFRQC(stlfrbam).report.set {ch_lfr}
-        // // if (!params.frombam) { fqstats_stlfr(ch_stlfrbssq) }//report 22
+        coverage(ch_merge, ch_mergebam).join(coverageMean(ch_merge, ch_mergebam)).set { ch_MergeGeneCov }
+        if (!params.fromMergedBam) {
+            coverageAvg(ch_PfGeneCov.join(ch_MergeGeneCov)).set {ch_avgCov}
+        }
+        samtools_depth(ch_libstlfr, stlfrbam).set {ch_depthreport}
+        align_cat(ch_libstlfr, ch_flagstat.join(ch_stat).join(ch_depthreport).join(ch_insertsize)).set {ch_aligncatstlfr} //info
+        stLFRQC(stlfrbam).report.set {ch_lfr}
+        // if (!params.frombam) { fqstats_stlfr(ch_stlfrbssq) }//report 22
 
-        // if (params.align_tool.contains("lariat") && params.var_tool.contains("gatk")) {
-        //     ch_vcf = ch_mergevcf2
-        //     ch_phase = ch_phasereport2
-        //     phaseall = ch_phaseallLariatGatk
-        //     hapcutstat = phaseCatLariatGatk.out.hapcutstat
-        //     hb = phaseCatLariatGatk.out.hb
+        ch_reports = Channel.empty() 
+        if (params.align_tool.contains("lariat") && params.var_tool.contains("gatk")) {
+            ch_vcf = ch_mergevcf2
+            ch_phase = ch_phasereport2
+            phaseall = ch_phaseallLariatGatk
+            hapcutstat = phaseCatLariatGatk.out.hapcutstat
+            hb = phaseCatLariatGatk.out.hb
+            if (!params.fromMergedBam) {
+                reportLariatGatk1(ch_lariat, ch_gatk, ch_vcf.join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatDv).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
+            }
+            
+        } 
+        if (params.align_tool.contains("lariat") && params.var_tool.contains("dv")) {
+            ch_vcf = ch_mergevcf
+            ch_phase = ch_phasereport
+            phaseall = ch_phaseallLariatDv
+            hapcutstat = phaseCatLariatDv.out.hapcutstat
+            hb = phaseCatLariatDv.out.hb
 
-        //     reportLariatGatk1(ch_lariat, ch_gatk, ch_vcf.join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatDv).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
-
-        // } 
-        // if (params.align_tool.contains("lariat") && params.var_tool.contains("dv")) {
-        //     ch_vcf = ch_mergevcf
-        //     ch_phase = ch_phasereport
-        //     phaseall = ch_phaseallLariatDv
-        //     hapcutstat = phaseCatLariatDv.out.hapcutstat
-        //     hb = phaseCatLariatDv.out.hb
-        //     if (!params.frombam) {
-        //         reportLariatDv(ch_lariat, ch_dv, ch_vcf.join(splitLog).join(ch_lfr).join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatDv).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
-        //     } else {
-        //         reportLariatDv1(ch_lariat, ch_dv, ch_vcf.join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatDv).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
-        //     }
-        // } 
-        // report(ch_reports)
-        // hapKaryotype(hb)            // ${id}.haplotype.pdf
-        // hapKaryotype_bak(hb)
+            if (!params.fromMergedBam) {
+                reportLariatDv1(ch_lariat, ch_dv, ch_vcf.join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatDv).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
+            }
+        } 
+        report(ch_reports)
+        hapKaryotype(hb)            // ${id}.haplotype.pdf
+        hapKaryotype_bak(hb)
     }
 }
 workflow.onComplete {

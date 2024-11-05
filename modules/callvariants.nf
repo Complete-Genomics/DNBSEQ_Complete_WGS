@@ -29,7 +29,7 @@ process hcMegabolt {
     mills=`ls ${params.DB}/${params.ref}/gatk/Mills*.vcf.gz`
     kgsnp=`ls ${params.DB}/${params.ref}/gatk/1000G*snps*.vcf.gz`
 
-    ${params.MEGABOLT_RUNIT} -l${task.process}.${task.index} ${params.MEGABOLT}                           \\
+    ${params.MEGABOLT_RUNIT}  -l\$(basename \$(dirname \$PWD))_\$(basename \$PWD).${task.process}.${task.index} ${params.MEGABOLT} \\
       --type haplotypecaller $gatk \\
       --haplotypecaller-input $bam \\
       --stand-call-conf 10 --ref $ref \\
@@ -75,7 +75,7 @@ process vqsrMegabolt {
     kgsnp=`ls ${params.DB}/${params.ref}/gatk/1000G*snps*.vcf.gz`
     omni=`ls ${params.DB}/${params.ref}/gatk/*omni*.vcf.gz`
 
-    ${params.MEGABOLT_RUNIT} -l${task.process}.${task.index} ${params.MEGABOLT}                           \\
+    ${params.MEGABOLT_RUNIT}  -l\$(basename \$(dirname \$PWD))_\$(basename \$PWD).${task.process}.${task.index} ${params.MEGABOLT} \\
       --type vqsr --vqsr-input $vcf $gatk \\
       --resource-hapmap \$hapmap \\
       --resource-omni \$omni \\
@@ -511,7 +511,7 @@ process dvMegabolt {
     
     ${params.MEGABOLT_EXPORT}
 
-    ${params.MEGABOLT_RUNIT} -l${task.process}.${task.index} ${params.MEGABOLT}                           \\
+    ${params.MEGABOLT_RUNIT}  -l\$(basename \$(dirname \$PWD))_\$(basename \$PWD).${task.process}.${task.index} ${params.MEGABOLT} \\
       --type haplotypecaller --haplotypecaller-input $bam --deepvariant 1 --fast-model 0 --ref $ref \\
       --vcf \$dbsnp \\
       --knownSites \$kgsnp --knownSites \$mills \\

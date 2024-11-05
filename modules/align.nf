@@ -60,7 +60,8 @@ process bwaMegabolt {
 
     ${params.MEGABOLT_EXPORT}
 
-    ${params.MEGABOLT_RUNIT} -l${task.process}.${task.index} ${params.MEGABOLT}                           \\
+    # ${params.MEGABOLT_RUNIT} -l${task.process}.${task.index} ${params.MEGABOLT}                           \\
+    ${params.MEGABOLT_RUNIT}  -l\$(basename \$(dirname \$PWD))_\$(basename \$PWD).${task.process}.${task.index} ${params.MEGABOLT} \\
         --type ${type} --bwa 1  ${gatk}  \\
         --ref $ref                              \\
         --list ${id}.boltlist                   \\
@@ -176,7 +177,7 @@ process bqsrMegabolt { //stlfr lariat
     """
     if (params.gatk_version == "v3") {
         cmd += """
-        ${params.MEGABOLT_RUNIT} -l${task.process}.${task.index} ${params.MEGABOLT}                           \\
+        ${params.MEGABOLT_RUNIT}  -l\$(basename \$(dirname \$PWD))_\$(basename \$PWD).${task.process}.${task.index} ${params.MEGABOLT} \\
         --type bqsr --bqsr-input $bam  \\
         --ref $ref                              \\
         --vcf \$dbsnp \\
@@ -192,7 +193,7 @@ process bqsrMegabolt { //stlfr lariat
         """
     } else if (params.gatk_version == "v4") {
         cmd += """
-        ${params.MEGABOLT_RUNIT} -l${task.process}.${task.index} ${params.MEGABOLT}                           \\
+        ${params.MEGABOLT_RUNIT}  -l\$(basename \$(dirname \$PWD))_\$(basename \$PWD).${task.process}.${task.index} ${params.MEGABOLT} \\
         --type bqsr --bqsr4 1 --bqsr-input $bam  \\
         --ref $ref                              \\
         --vcf \$dbsnp \\

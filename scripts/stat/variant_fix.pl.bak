@@ -1,0 +1,69 @@
+#!/usr/bin/perl -w
+use strict;
+
+die "perl $0 <in> <name>"unless @ARGV==2;
+
+my $od = $ARGV[0];
+my $flag = 0;
+
+open IN,"$ARGV[1].varianttable.xls";
+open OT1,">$ARGV[1].varianttable.xls.2";
+while(<IN>){
+  chomp;
+  my @a = split /\t/;
+  next if /^CNV|^SV/;
+  if(/^Sample/){
+    for(my $i = 1; $i < @a; $i++){
+      $flag = $i if $a[$i] eq $ARGV[1];
+      print OT1 "$a[0]\t$a[$flag]\n";
+      last;
+    }
+    next;
+  }
+  print OT1 "$a[0]\t$a[$flag]\n";
+}
+close IN;
+
+my @cnv = (0) x 2;
+if(-e "$ARGV[1].CNV.result.xls"){
+  open IN,"$ARGV[1].CNV.result.xls";
+  while(<IN>){
+    chomp;
+    next if !/^>/;
+    my @a = split;
+    $a[3] eq "DEL" ? $cnv[0]++ : $cnv[1]++;
+  }
+  close IN;
+}
+print OT1 "CNV deletion\t$cnv[0]\n";
+print OT1 "CNV duplication\t$cnv[1]\n";
+
+my @sv = (0) x 5;
+if(-e "$ARGV[1].SV.vcf"){
+  open IN,"$ARGV[1].SV.vcf";
+  while(<IN>){
+    chomp;
+    next if /^#/;
+    my @a = split;
+    my $type;
+    foreach my $info (split /\;/, $a[7]){
+      my @info = split /\=/, $info;
+      $type = $info[1] if $info[0] eq "SVTYPE";
+    }
+    $type eq "DEL" ? $sv[0]++ :
+    $type eq "DUP" ? $sv[1]++ :
+    $type =~ /INV/ ? $sv[2]++ : 
+    $type =~ /TRA|BND/ ? $sv[3]++ : 
+    $sv[4]++;
+  }
+  close IN;
+}
+print OT1 "SV DEL\t$sv[0]\n";
+print OT1 "SV DUP\t$sv[1]\n";
+print OT1 "SV INV\t$sv[2]\n";
+print OT1 "SV TRA|BND\t$sv[3]\n";
+
+close OT1;
+
+`mv $ARGV[1].varianttable.xls.2 $ARGV[1].varianttable.xls`;
+
