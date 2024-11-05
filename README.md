@@ -89,8 +89,12 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
    demo2	/path/to/cWGS_02.bam	/path/to/PCRfree_02.bam
    EOF
    ```
+   an example run:
+   ```
+   ./CWGS sample.list -sing /usr/local/bin/singularity -local -debug --use_megabolt false
+   ```
 
-2. Run settings
+3. Run settings
     Set CPU
     ```
     --cpu2 INT
