@@ -1,50 +1,52 @@
-Sample,,Test
-stLFR aligner,,lariat
-var caller,,dv
-snps,,26316
-het snps,,917
-indels,,46752
-het indels,,6666
-snps eval,,
-TP,,9973
-FP,,5633
-FN,,3356401
-precision,,0.6390
-recall,,0.0030
-f1,,0.0059
-indels eval,,
-TP,,14537
-FP,,13620
-FN,,510860
-precision,,0.5163
-recall,,0.0277
-f1,,0.0525
-PCR-free snps eval,,
-TP,,9973
-FP,,5633
-FN,,3356401
-precision,,0.6390
-recall,,0.0030
-f1,,0.0059
-PCR-free indels eval,,
-TP,,14537
-FP,,13620
-FN,,510860
-precision,,0.5163
-recall,,0.0277
-f1,,0.0525
-barcode split rate,,71.55
-LFR count,,15
-LFR avg len,,182461
-stLFR PE map rate,,91.16%
-PCR-free PE map rate,,98.74%
-stLFR %genome cov > 10x,,0.0407701
-PCR-free %genome cov > 10x,,0.0895669
-het snps phased,,202
-het indels phased,,3
-phase block count,,50
-phase block N50,,10928
-CMRG avg coverage (PCR-free),,-nan
-CMRG avg coverage (merged),,-nan
-CMRG avg depth (PCR-free),,0.0928478
-CMRG avg depth (merged),,0.0928478
+Sample,Test
+stLFR aligner,lariat
+var caller,dv
+stLFR bam avg depth,0.0454123
+PCR-free bam avg depth,0.0961063
+snps,26550
+het snps,919
+indels,46839
+het indels,6664
+snps eval,
+TP,9973
+FP,5633
+FN,3356401
+precision,0.6390
+recall,0.0030
+f1,0.0059
+indels eval,
+TP,14537
+FP,13620
+FN,510860
+precision,0.5163
+recall,0.0277
+f1,0.0525
+PCR-free snps eval,
+TP,9973
+FP,5633
+FN,3356401
+precision,0.6390
+recall,0.0030
+f1,0.0059
+PCR-free indels eval,
+TP,14537
+FP,13620
+FN,510860
+precision,0.5163
+recall,0.0277
+f1,0.0525
+barcode split rate,71.55
+LFR count,15
+LFR avg len,182461
+stLFR PE map rate,91.16%
+PCR-free PE map rate,99.22%
+stLFR %genome cov > 10x,0.0407701
+PCR-free %genome cov > 10x,0.0866985
+het snps phased,203
+het indels phased,3
+phase block count,50
+phase block N50,10928
+CMRG avg coverage (PCR-free),-nan
+CMRG avg coverage (merged),-nan
+CMRG avg depth (PCR-free),0.0898635
+CMRG avg depth (merged),0.0898635
