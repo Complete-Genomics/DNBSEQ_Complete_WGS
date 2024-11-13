@@ -93,7 +93,6 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
    ```
    ./CWGS sample.list -sing /usr/local/bin/singularity -module <module_path> -script <script_path> -local -debug --use_megabolt false --pfmapq 3
    ```
-   Run customized reference with --ref </absolute/path/to/ref/fasta>; prepare all indices etc. in the same directory before run.
 
 3. Run settings
     Set CPU
