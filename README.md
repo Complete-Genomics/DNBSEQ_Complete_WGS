@@ -89,10 +89,11 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
    demo2	/path/to/cWGS_02.bam	/path/to/PCRfree_02.bam
    EOF
    ```
-   an example run:
+   Updates are pushed to the github module and script folders, use the latest ones. Currently, it's recommended to remove PF reads of MAPQ<3 with the --pfmapq tag. Also, to customize and make the pipeline adapt to your needs, you may revise the scripts. An example run:  
    ```
-   ./CWGS sample.list -sing /usr/local/bin/singularity -local -debug --use_megabolt false
+   ./CWGS sample.list -sing /usr/local/bin/singularity -module <module_path> -script <script_path> -local -debug --use_megabolt false --pfmapq 3
    ```
+   Run customized reference with --ref </absolute/path/to/ref/fasta>; prepare all indices etc. in the same directory before run.
 
 3. Run settings
     Set CPU
