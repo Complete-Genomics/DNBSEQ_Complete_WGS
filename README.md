@@ -109,10 +109,10 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
       if you want to initially sample the fastq file, set it true. [false]
     the following settings are valid only sampleFq is true
     --stLFR_fq_cov INT [only valid when '--sampleFq true']
-    sample cWGS (stLFR) reads to this coverage [30] 
+    sample cWGS (stLFR) reads to this coverage [40] 
     
     --PF_fq_cov INT [only valid when '--sampleFq true']
-    sample PCR-free reads to this coverage [40] 
+    sample PCR-free reads to this coverage [50] 
     ```
     Alignment (BWA or Lariat) and variant calling (GATK or Deepvariant (DV)) relevant settings   
     ```
