@@ -540,7 +540,7 @@ process deepvariantv16 {
  
     script:
     def bam = bam.first()
-    def ref = params.ref.startsWith('/') ? params.ref : "${params.DB}/${params.ref}/reference/${params.ref}.fa"
+    def ref = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
     def machine="${params.dv_machine}" // g400
     def model="${params.DB}/DV_model/dv1.6-mgi-${machine}.ckpt"
     def outvcf = bam.toString().contains("pf") ? "${id}.pf.bwa.dv.vcf.gz" : "${id}.${aligner}.dv.vcf.gz"
