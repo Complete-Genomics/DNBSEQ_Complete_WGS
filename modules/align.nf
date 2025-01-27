@@ -712,31 +712,6 @@ process mergeBam {
     "touch ${id}.${aligner}.merge.bam"
 }
 
-process combinebam {
-    cpus params.cpu2
-    memory params.MEM3 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
-
-    input:
-    tuple val(id), path(pfbam), path(stlfrbam)
-
-    output:
-    tuple val(id), path("${id}.lariat.merge.bam*") 
-
-    publishDir "${params.outdir}/$id/align/", mode: 'link'
-
-    script:
-    def pfbam = pfbam.first()
-    def stlfrbam = stlfrbam.first()
-    def aligner = 'lariat'
-    """
-    ${params.BIN}samtools merge -@ ${task.cpus} -f ${id}.${aligner}.merge.bam $pfbam $stlfrbam && \\
-    ${params.BIN}samtools index -@ ${task.cpus} ${id}.${aligner}.merge.bam
-
-    """
-    stub:
-    "touch ${id}.lariat.merge.bam"
-}
 process stLFRQC {
     cpus params.CPU1
     memory params.MEM1 + "g"
