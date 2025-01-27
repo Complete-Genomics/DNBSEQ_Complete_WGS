@@ -15,7 +15,12 @@ process bwa {
     // publishDir "${params.outdir}/$id/align/", mode: 'link', enabled: !params.sampleBam
  
     script:
-    def ref = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
+    if (params.ref.startsWith('/')) {
+        def ref = params.ref
+    } else {
+        def ref = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
+    }
+    
     """
     ${params.BIN}bwa mem -t ${task.cpus} -R '@RG\\tID:${id}\\tSM:sample\\tPL:COMPLETE' $ref $r1 $r2 | \
     ${params.BIN}samtools view -bhS -@ ${task.cpus} -t ${ref}.fai -T $ref - | \
@@ -43,38 +48,58 @@ process bwaMegabolt {
     publishDir "${params.outdir}/$id/align/", mode: 'link', enabled: !params.sampleBam
  
     script:
-    def ref = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
-    def refdir = "${params.DB}/${params.ref}/reference/"
-    def type = "${params.run_bqsr}" ? "alignmentsortmarkdupbqsr" : "alignmentsortmarkdup"
-    def gatk = (params.gatk_version == "v4") ? "--gatk4 1" : ""
-    def outbam = "${params.run_bqsr}" ? "${id}.${lib}.megaboltbwabqsr.bam" : "${id}.${lib}.megaboltbwa.bam"
+    if (params.ref.startsWith('/')) {
+        def ref = params.ref
+        def outbam = "${id}.${lib}.megaboltbwa.bam"
+        """
+        echo -e \\
+        "${id}\\t${r1}\\t${r2}\\t${id}\\t${id}\\t${id}\\tMGISEQ" > ${id}.boltlist
 
-    """
-    dbsnp=`ls ${params.DB}/${params.ref}/gatk/*dbsnp*.vcf.gz`
-    mills=`ls ${params.DB}/${params.ref}/gatk/Mills*.vcf.gz`
-    kgsnp=`ls ${params.DB}/${params.ref}/gatk/1000G*snps*.vcf.gz`
-    kgindel=`ls ${params.DB}/${params.ref}/gatk/1000G*indels*.vcf.gz`
+        ${params.MEGABOLT_EXPORT}
 
-    echo -e \\
-    "${id}\\t${r1}\\t${r2}\\t${id}\\t${id}\\t${id}\\tMGISEQ" > ${id}.boltlist
+        # ${params.MEGABOLT_RUNIT} -l${task.process}.${task.index} ${params.MEGABOLT}                           \\
+        ${params.MEGABOLT_RUNIT}  -l\$(basename \$(dirname \$PWD))_\$(basename \$PWD).${task.process}.${task.index} ${params.MEGABOLT} \\
+            --type alignmentsortmarkdup --bwa 1  \\
+            --ref $ref                              \\
+            --list ${id}.boltlist                   \\
+            --outputdir .                           
 
-    ${params.MEGABOLT_EXPORT}
+            mv ${id}/${id}.*.bam ${outbam}
+            mv ${id}/${id}.*.bam.bai ${outbam}.bai
+        """
+    } else {
+        def ref = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
+        def type = "${params.run_bqsr}" ? "alignmentsortmarkdupbqsr" : "alignmentsortmarkdup"
+        def gatk = (params.gatk_version == "v4") ? "--gatk4 1" : ""
+        def outbam = "${params.run_bqsr}" ? "${id}.${lib}.megaboltbwabqsr.bam" : "${id}.${lib}.megaboltbwa.bam"
 
-    # ${params.MEGABOLT_RUNIT} -l${task.process}.${task.index} ${params.MEGABOLT}                           \\
-    ${params.MEGABOLT_RUNIT}  -l\$(basename \$(dirname \$PWD))_\$(basename \$PWD).${task.process}.${task.index} ${params.MEGABOLT} \\
-        --type ${type} --bwa 1  ${gatk}  \\
-        --ref $ref                              \\
-        --list ${id}.boltlist                   \\
-        --vcf \$dbsnp \\
-        --knownSites \$dbsnp \\
-        --knownSites \$kgindel \\
-        --knownSites \$kgsnp \\
-        --knownSites \$mills \\
-        --outputdir .                           
+        """
+        dbsnp=`ls ${params.DB}/${params.ref}/gatk/*dbsnp*.vcf.gz`
+        mills=`ls ${params.DB}/${params.ref}/gatk/Mills*.vcf.gz`
+        kgsnp=`ls ${params.DB}/${params.ref}/gatk/1000G*snps*.vcf.gz`
+        kgindel=`ls ${params.DB}/${params.ref}/gatk/1000G*indels*.vcf.gz`
 
-        mv ${id}/${id}.*.bam ${outbam}
-        mv ${id}/${id}.*.bam.bai ${outbam}.bai
-    """
+        echo -e \\
+        "${id}\\t${r1}\\t${r2}\\t${id}\\t${id}\\t${id}\\tMGISEQ" > ${id}.boltlist
+
+        ${params.MEGABOLT_EXPORT}
+
+        # ${params.MEGABOLT_RUNIT} -l${task.process}.${task.index} ${params.MEGABOLT}                           \\
+        ${params.MEGABOLT_RUNIT}  -l\$(basename \$(dirname \$PWD))_\$(basename \$PWD).${task.process}.${task.index} ${params.MEGABOLT} \\
+            --type ${type} --bwa 1  ${gatk}  \\
+            --ref $ref                              \\
+            --list ${id}.boltlist                   \\
+            --vcf \$dbsnp \\
+            --knownSites \$dbsnp \\
+            --knownSites \$kgindel \\
+            --knownSites \$kgsnp \\
+            --knownSites \$mills \\
+            --outputdir .                           
+
+            mv ${id}/${id}.*.bam ${outbam}
+            mv ${id}/${id}.*.bam.bai ${outbam}.bai
+        """
+    }
     stub:
     "touch ${id}.${lib}.*bam"
 }
@@ -382,7 +407,7 @@ process lariat {
     // publishDir "${params.outdir}/$id/align/"
  
     script:
-    def ref = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
+    def ref = params.ref.startsWith('/') ? params.ref : "${params.DB}/${params.ref}/reference/${params.ref}.fa"
     def t = "${params.lariatStLFRBC}" ? 0 : 7
     cmd = """
     ${params.BIN}lariat -genome $ref -output . -reads $fq -threads=${task.cpus} -trim_length $t -read_groups "1:N:0:NAAGTGCT:0"
@@ -416,7 +441,7 @@ process sortbam {
     // publishDir "${params.outdir}/$id/align/"
  
     script:
-    def ref = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
+    def ref = params.ref.startsWith('/') ? params.ref : "${params.DB}/${params.ref}/reference/${params.ref}.fa"
     def t = "${params.lariatStLFRBC}" ? 0 : 7
     cmd = """
     ${params.BIN}samtools sort -@ ${task.cpus} -m 1G -o bc_re-sorted_bam.bam $bam
@@ -729,7 +754,7 @@ process stLFRQC {
  
     script:
     bam = bam.first()
-    def ref = "${params.DB}/${params.ref}/reference/${params.ref}.fa"    
+    def ref = params.ref.startsWith('/') ? params.ref : "${params.DB}/${params.ref}/reference/${params.ref}.fa"    
     """
     ${params.BIN}stLFRQC --samtools /usr/bin/samtools --python3 /usr/bin/python3 \
         --ref $ref \

@@ -248,7 +248,7 @@ process samtools_depth {
 
     script:
     def bam = bam.first()
-    def non = "${params.DB}/${params.ref}/reference/${params.ref}.nonN.region"
+    def non = params.ref.startsWith('/') ? params.ref.replaceAll(/\.fa$/, "") + ".nonN.region" : "${params.DB}/${params.ref}/reference/${params.ref}.nonN.region"
     """
     ${params.BIN}samtools depth -@ ${task.cpus} -a -b $non $bam | \\
     awk '\$3 >= 10 { sum10 += 1 } \$3 >= 1 { sum1 += 1 } END { print sum1/${params.ref_len}, sum10/${params.ref_len} }' > ${id}.${lib}.bamdepth.report
