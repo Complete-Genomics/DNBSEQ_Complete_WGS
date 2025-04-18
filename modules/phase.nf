@@ -1,3 +1,23 @@
+process getchrs {
+    executor = 'local'
+	container false
+
+    cpus params.CPU0
+    memory params.MEM1 + "g"
+    
+    output:
+    file("txt")
+
+    script:
+    def fai = "${params.ref}.fai"
+    """
+    awk '\$2 > ${params.cut_len} {print \$1}' $fai > txt 
+    """
+    stub:
+    "touch txt"
+
+}
+
 process phase {
     cpus params.CPU0
     memory params.MEM1 + "g"
@@ -225,14 +245,23 @@ process phase_cat {
     pvcfs=""
     vcfs=""
 
-    for i in {1..22} X;do
-        lfs="\$lfs ${prefix}.${chr1}\${i}.lf"
-        hapblocks="\$hapblocks ${prefix}.${chr1}\${i}.hapblock"
-        stat2s="\$stat2s ${prefix}.${chr1}\${i}.hapcut_stat.txt"
-        pvs="\$pvs ${params.DB}/${params.ref}/phasedvcf/${params.ref}.${params.std}.${chr1}\${i}.vcf.gz"
-        vcfs="\$vcfs ${prefix}.${chr1}\${i}.vcf.gz"
-        pvcfs="\$pvcfs ${prefix}.${chr1}\${i}.hapblock.phased.VCF.gz"
-    done
+    if [ "${params.chr}" = "all" ]; then
+        for i in {1..22} X;do
+            lfs="\$lfs ${prefix}.${chr1}\${i}.lf"
+            hapblocks="\$hapblocks ${prefix}.${chr1}\${i}.hapblock"
+            stat2s="\$stat2s ${prefix}.${chr1}\${i}.hapcut_stat.txt"
+            pvs="\$pvs ${params.DB}/${params.ref}/phasedvcf/${params.ref}.${params.std}.${chr1}\${i}.vcf.gz"
+            vcfs="\$vcfs ${prefix}.${chr1}\${i}.vcf.gz"
+            pvcfs="\$pvcfs ${prefix}.${chr1}\${i}.hapblock.phased.VCF.gz"
+        done
+    else 
+        lfs="${prefix}.${params.chr}.lf"
+        hapblocks="${prefix}.${params.chr}.hapblock"
+        stat2s="${prefix}.${params.chr}.hapcut_stat.txt"
+        pvs="${params.DB}/${params.ref}/phasedvcf/${params.ref}.${params.std}.${params.chr}.vcf.gz"
+        vcfs="${prefix}.${params.chr}.vcf.gz"
+        pvcfs="${prefix}.${params.chr}.hapblock.phased.VCF.gz"
+    fi
 
     cat \$lfs > ${prefix}.lf
     cat \$hapblocks > ${prefix}.hapblock
@@ -256,7 +285,67 @@ process phase_cat {
     stub:
     "touch *.phase.report *.phased.vcf.gz ${id}.${aligner}.${varcaller}.VCF.gz ${id}.${aligner}.${varcaller}.lf ${id}.${aligner}.${varcaller}.hapblock ${id}.${aligner}.${varcaller}.hapcut_stat.txt"
 }
+process phaseCatRef {
+    cpus params.CPU0
+    memory params.MEM0 + "g"
+    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    
+    input:
+    val(aligner)
+    val(varcaller)
+    path(txt)
+    tuple val(id), path(vcfs), path(pvs), path(lfs), path(hbs)
 
+    output:
+    tuple val(id), path("*hapblock"), emit: hb
+    path("*.phased.vcf.gz*")
+    // tuple val(id), path("*.phase.report"), emit: report 
+
+    tag "$id, $aligner, $varcaller"
+    publishDir "${params.outdir}/$id/phase/", mode: 'link'
+
+    // publishDir (
+    //     path: "${params.outdir}/$id/phase/", 
+    //     saveAs: { fn ->
+    //         if (fn.contains("vcf.gz") || fn.contains("hapblock") || fn.contains("hapcut_stat")) {"$fn"}
+    //         else {"../../report/$id/$fn"}
+    //     }
+    // )
+    // cache false
+    script:
+    def prefix = "${id}.${aligner}.${varcaller}"
+    """
+    lfs=""
+    hapblocks=""
+    pvs=""
+    pvcfs=""
+    vcfs=""
+
+    while IFS= read -r i; do
+        lfs="\$lfs ${prefix}.\${i}.lf"
+        hapblocks="\$hapblocks ${prefix}.\${i}.hapblock"
+        vcfs="\$vcfs ${prefix}.\${i}.vcf.gz"
+        pvcfs="\$pvcfs ${prefix}.\${i}.hapblock.phased.VCF.gz"
+    done < $txt
+
+
+    cat \$lfs > ${prefix}.lf
+    cat \$hapblocks > ${prefix}.hapblock
+
+
+ 	${params.BIN}bcftools concat *phased.VCF.gz -O b -o tmp.vcf.gz 
+    zcat tmp.vcf.gz | grep '^#' > header
+    zcat tmp.vcf.gz | grep -v '^#' | sort -k1,1d -k2,2n > body
+    cat header body |bgzip -c > ${prefix}.phased.vcf.gz
+    rm tmp.vcf.gz
+    
+    ${params.BIN}tabix ${prefix}.phased.vcf.gz
+
+    # python3 ${params.SCRIPT}/phase.py ${prefix} \$fai > ${prefix}.phase.report
+    """
+    stub:
+    "touch *.phase.report *.phased.vcf.gz ${id}.${aligner}.${varcaller}.VCF.gz ${id}.${aligner}.${varcaller}.lf ${id}.${aligner}.${varcaller}.hapblock ${id}.${aligner}.${varcaller}.hapcut_stat.txt"
+}
 process phaseCat_cwx {
     cpus params.CPU0
     memory params.MEM0 + "g"
