@@ -52,9 +52,7 @@ process phase {
     script:
     def bam = bam.first()
     def prefix = "${id}.${aligner}.${varcaller}.${chr}"
-    def pv = "${params.DB}/${params.ref}/phasedvcf/${params.ref}.${params.std}.${chr}.vcf.gz"
-    def fa = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
-    def fai = "${fa}.fai"
+
     cmd = """
     #export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:${params.DB}/htslib
     ${params.BIN}gzip -dc $vcf > tmp.vcf
@@ -69,24 +67,29 @@ process phase {
     rm tmp.vcf
     echo $chr > ${prefix}.hapcut_stat.txt
     """
-    if (params.stLFR_only) {
-        cmd += """
-        python3 ${params.SCRIPT}/calculate_haplotype_statistics.reseq.py \\
-        -h1 ${prefix}.hapblock -v1 ${prefix}.hapblock.phased.VCF.gz -f1 ${prefix}.lf -pv $pv -c $fai >> ${prefix}.hapcut_stat.txt
-        """
-    } else {
+    if (!params.ref.startsWith('/')) {
+        def pv = "${params.DB}/${params.ref}/phasedvcf/${params.ref}.${params.std}.${chr}.vcf.gz"
+
         cmd += """
         if [ -s ${prefix}.hapblock ]; then
             python3 ${params.SCRIPT}/calculate_haplotype_statistics_CWX.py \\
             -h1 ${prefix}.hapblock -v1 ${prefix}.hapblock.phased.VCF.gz -v2 $pv --indels >> ${prefix}.hapcut_stat.txt
         fi
         """
+    } else {
+        cmd += """
+        if [ -s ${prefix}.hapblock ]; then
+            python3 ${params.SCRIPT}/calc_n50.py \\
+            -h1 ${prefix}.hapblock -v1 ${prefix}.hapblock.phased.VCF.gz --indels >> ${prefix}.hapcut_stat.txt
+        fi
+        """
     }
+        
     return cmd
+    
     stub:
     "touch ${id}.${aligner}.${varcaller}.${chr}.VCF.gz ${id}.${aligner}.${varcaller}.${chr}.lf ${id}.${aligner}.${varcaller}.${chr}.hapblock ${id}.${aligner}.${varcaller}.${chr}.hapcut_stat.txt"
 }
-
 process eachstat_phase {
     cpus params.CPU0
     memory params.MEM0 + "g"
@@ -236,7 +239,7 @@ process phase_cat {
     def fai = "${params.DB}/${params.ref}/reference/${params.ref}.fa.fai"
     def fa = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
     def chr1 = (params.ref == "hs37d5") ? "" : "chr"
-    def py = (params.stLFR_only) ? "${params.SCRIPT}/calculate_haplotype_statistics.reseq.py -h1 \$hapblocks -v1 \$pvcfs -f1 \$lfs -pv \$pvs -c $fai >> ${prefix}.hapcut_stat.txt" : "${params.SCRIPT}/calculate_haplotype_statistics_CWX.py -h1 \$hapblocks -v1 \$pvcfs -v2 \$pvs --indels >> ${prefix}.hapcut_stat.txt"
+    def py = (params.stLFRreseq_mbp) ? "${params.SCRIPT}/calculate_haplotype_statistics.reseq.py -h1 \$hapblocks -v1 \$pvcfs -f1 \$lfs -pv \$pvs -c $fai >> ${prefix}.hapcut_stat.txt" : "${params.SCRIPT}/calculate_haplotype_statistics_CWX.py -h1 \$hapblocks -v1 \$pvcfs -v2 \$pvs --indels >> ${prefix}.hapcut_stat.txt"
     """
     lfs=""
     hapblocks=""
@@ -299,7 +302,7 @@ process phaseCatRef {
     output:
     tuple val(id), path("*hapblock"), emit: hb
     path("*.phased.vcf.gz*")
-    // tuple val(id), path("*.phase.report"), emit: report 
+    tuple val(id), path("*.phase.report"), emit: report 
 
     tag "$id, $aligner, $varcaller"
     publishDir "${params.outdir}/$id/phase/", mode: 'link'
@@ -341,7 +344,8 @@ process phaseCatRef {
     
     ${params.BIN}tabix ${prefix}.phased.vcf.gz
 
-    # python3 ${params.SCRIPT}/phase.py ${prefix} \$fai > ${prefix}.phase.report
+    python3 ${params.SCRIPT}/calc_n50.py -h1 \$hapblocks -v1 \$pvcfs --indels >> ${prefix}.hapcut_stat.txt
+    python3 ${params.SCRIPT}/phase.py ${prefix} 0 > ${prefix}.phase.report # allhetsnp, phasedhetsnp, allhetindel, phasedhetindel, fbn50, fbnum
     """
     stub:
     "touch *.phase.report *.phased.vcf.gz ${id}.${aligner}.${varcaller}.VCF.gz ${id}.${aligner}.${varcaller}.lf ${id}.${aligner}.${varcaller}.hapblock ${id}.${aligner}.${varcaller}.hapcut_stat.txt"

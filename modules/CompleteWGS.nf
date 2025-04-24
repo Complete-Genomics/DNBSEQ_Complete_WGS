@@ -185,6 +185,7 @@ include {
     report0 as reportBwaDv;
     report0 as reportLariatGatk;
     report0 as reportLariatDv;
+    reportref;
     report01 as reportBwaGatk1;
     report01 as reportBwaDv1;
     report01 as reportLariatGatk1;
@@ -504,7 +505,7 @@ workflow CWGS {
                         if (!params.ref.startsWith('/')) {
                             phaseCatLariatDv(ch_lariat, ch_dv, vcfs.join(pvcfs).join(lfs).join(hbs).join(stats)).report.set {ch_phasereport}//report
                         } else {
-                            phaseCatRef(ch_lariat, ch_dv, txt, vcfs.join(pvcfs).join(lfs).join(hbs)) //.report.set {ch_phasereport}
+                            phaseCatRef(ch_lariat, ch_dv, txt, vcfs.join(pvcfs).join(lfs).join(hbs)).report.set {ch_phasereport}
                         }
                         
                         // phaseCat_cwx(ch_lariat, ch_dv, vcfs.join(pvcfs).join(lfs).join(hbs).join(stats))
@@ -720,7 +721,11 @@ workflow CWGS {
                         reportLariatDv(ch_lariat, ch_dv, ch_vcf.join(splitLog).join(ch_lfr).join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatDv).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
                         report(ch_reports)
                     } else {
+                        ch_phase = ch_phasereport
+                        hb = phaseCatRef.out.hb
 
+                        reportref(ch_lariat, ch_dv, ch_vcf.join(splitLog).join(ch_lfr).join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
+                        report(ch_reports)
                     }
                     
                 } 
