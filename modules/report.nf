@@ -64,7 +64,73 @@ process reportref {
     stub:
     "touch ${id}.${aligner}.${varcaller}.report"
 }
-process report01 {
+process report_stlfronly {
+    executor = 'local'
+	container false
+
+    cpus params.CPU0
+    memory params.MEM0 + "g"
+    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+
+    input:
+    val(aligner)
+    val(varcaller)
+    tuple val(id), path(vcf), path(splitLog), path(lfr), path(aligncatstlfr), path(phase), path(vcfeval), val(stlfrbamdepth)
+
+    output:
+    path "${id}.*report"
+
+    tag "$id, $aligner, $varcaller"
+    // publishDir "${params.outdir}/$id/"
+    // cache false
+
+    script:
+    vcf = vcf.first()
+    """
+    ${params.BIN}bcftools stats $vcf > ${id}.bcftoolsStats.txt
+    hetsnp=`${params.BIN}bcftools view -v snps -g het $vcf |grep -v \\# |wc -l`
+    hetindel=`${params.BIN}bcftools view -v indels -g het $vcf |grep -v \\# |wc -l`
+    echo -e "\$hetsnp\\t\$hetindel" > het
+
+    ${params.BIN}python3 ${params.SCRIPT}/report_stlfronly.py $id $aligner $varcaller ${id}.bcftoolsStats.txt het $splitLog $lfr $aligncatstlfr $phase $vcfeval $stlfrbamdepth > ${id}.${aligner}.${varcaller}.report
+    """
+    stub:
+    "touch ${id}.${aligner}.${varcaller}.report"
+}
+process report_stlfronly_ref {
+    executor = 'local'
+	container false
+
+    cpus params.CPU0
+    memory params.MEM0 + "g"
+    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+
+    input:
+    val(aligner)
+    val(varcaller)
+    tuple val(id), path(vcf), path(splitLog), path(lfr), path(aligncatstlfr), path(phase), val(stlfrbamdepth)
+
+    output:
+    path "${id}.*report"
+
+    tag "$id, $aligner, $varcaller"
+    // publishDir "${params.outdir}/$id/"
+    // cache false
+
+    script:
+    vcf = vcf.first()
+    """
+    ${params.BIN}bcftools stats $vcf > ${id}.bcftoolsStats.txt
+    hetsnp=`${params.BIN}bcftools view -v snps -g het $vcf |grep -v \\# |wc -l`
+    hetindel=`${params.BIN}bcftools view -v indels -g het $vcf |grep -v \\# |wc -l`
+    echo -e "\$hetsnp\\t\$hetindel" > het
+
+    ${params.BIN}python3 ${params.SCRIPT}/report_stlfronly_ref.py $id $aligner $varcaller ${id}.bcftoolsStats.txt het $splitLog $lfr $aligncatstlfr $phase $stlfrbamdepth > ${id}.${aligner}.${varcaller}.report
+    """
+    stub:
+    "touch ${id}.${aligner}.${varcaller}.report"
+}
+process report01 { // from bam
     executor = 'local'
     container false
 
@@ -116,7 +182,15 @@ process report {
     publishDir "${params.outdir}", mode: 'link'
     
     script:
-    template = params.ref.startsWith('/') ? "${params.SCRIPT}/report_template_ref.txt" : "${params.SCRIPT}/report_template.txt"
+    if (!params.stLFR_only && !params.ref.startsWith('/')) {
+        template = "${params.SCRIPT}/report_template.txt"
+    } else if (!params.stLFR_only && params.ref.startsWith('/')) {
+        template = "${params.SCRIPT}/report_template_ref.txt"
+    } else if (params.stLFR_only && !params.ref.startsWith('/')) {
+        template = "${params.SCRIPT}/report_template_stlfronly.txt"
+    } else {
+        template = "${params.SCRIPT}/report_template_stlfronly_ref.txt"
+    }
     """
     paste -d "," ${template} $reports > report.csv
     """
