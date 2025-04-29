@@ -186,6 +186,8 @@ include {
     report0 as reportLariatGatk;
     report0 as reportLariatDv;
     reportref;
+    report_stlfronly;
+    report_stlfronly_ref;
     report01 as reportBwaGatk1;
     report01 as reportBwaDv1;
     report01 as reportLariatGatk1;
@@ -678,9 +680,8 @@ workflow CWGS {
             align_cat(ch_libstlfr, ch_flagstat.join(ch_stat).join(ch_depthreport).join(ch_insertsize)).set {ch_aligncatstlfr} //info
             stLFRQC(stlfrbam).report.set {ch_lfr}
             // if (!params.frombam) { fqstats_stlfr(ch_stlfrbssq) }//report 22
-
+            ch_reports = Channel.empty() 
             if (!params.stLFR_only) {
-                ch_reports = Channel.empty() 
                 if (params.align_tool.contains("bwa") && params.var_tool.contains("gatk")) {
                     ch_vcf = ch_mergevcf4
                     ch_phase = ch_phasereport4  
@@ -729,6 +730,18 @@ workflow CWGS {
                     }
                     
                 } 
+            } else { // stLFR only
+                ch_vcf = ch_mergevcf
+                phaseall = ch_phaseallLariatDv
+                ch_phase = ch_phasereport
+                if (!params.ref.startsWith('/')) {    
+                    report_stlfronly(ch_lariat, ch_dv, ch_vcf.join(splitLog).join(ch_lfr).join(ch_aligncatstlfr).join(ch_phase).join(ch_vcfevalLariatDv).join(ch_stlfrbamdepth)).collect().mix(ch_reports).set {ch_reports}
+                    report(ch_reports)
+                } else { 
+                    report_stlfronly_ref(ch_lariat, ch_dv, ch_vcf.join(splitLog).join(ch_lfr).join(ch_aligncatstlfr).join(ch_phase).join(ch_stlfrbamdepth)).collect().mix(ch_reports).set {ch_reports}
+                    report(ch_reports)
+                }
+
             }
         }
         
