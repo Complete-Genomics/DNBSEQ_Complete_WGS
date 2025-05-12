@@ -26,7 +26,7 @@ process report0 {
     hetindel=`${params.BIN}bcftools view -v indels -g het $vcf |grep -v \\# |wc -l`
     echo -e "\$hetsnp\\t\$hetindel" > het
 
-    ${params.BIN}python3 ${params.SCRIPT}/report.py $id $aligner $varcaller ${id}.bcftoolsStats.txt het $splitLog $lfr $aligncatstlfr $aligncatpf $phase $genecov $vcfeval $vcfevalPf $stlfrbamdepth $pfbamdepth > ${id}.${aligner}.${varcaller}.report
+    ${params.BIN}python3 ${params.SCRIPT}/report.py 0 $id $aligner $varcaller ${id}.bcftoolsStats.txt het $splitLog $lfr $aligncatstlfr $aligncatpf $phase $genecov $vcfeval $vcfevalPf $stlfrbamdepth $pfbamdepth > ${id}.${aligner}.${varcaller}.report
     """
     stub:
     "touch ${id}.${aligner}.${varcaller}.report"
@@ -59,7 +59,7 @@ process reportref {
     hetindel=`${params.BIN}bcftools view -v indels -g het $vcf |grep -v \\# |wc -l`
     echo -e "\$hetsnp\\t\$hetindel" > het
 
-    ${params.BIN}python3 ${params.SCRIPT}/reportref.py $id $aligner $varcaller ${id}.bcftoolsStats.txt het $splitLog $lfr $aligncatstlfr $aligncatpf $phase $stlfrbamdepth $pfbamdepth > ${id}.${aligner}.${varcaller}.report
+    ${params.BIN}python3 ${params.SCRIPT}/report.py ref $id $aligner $varcaller ${id}.bcftoolsStats.txt het $splitLog $lfr $aligncatstlfr $aligncatpf $phase $stlfrbamdepth $pfbamdepth > ${id}.${aligner}.${varcaller}.report
     """
     stub:
     "touch ${id}.${aligner}.${varcaller}.report"
@@ -92,7 +92,7 @@ process report_stlfronly {
     hetindel=`${params.BIN}bcftools view -v indels -g het $vcf |grep -v \\# |wc -l`
     echo -e "\$hetsnp\\t\$hetindel" > het
 
-    ${params.BIN}python3 ${params.SCRIPT}/report_stlfronly.py $id $aligner $varcaller ${id}.bcftoolsStats.txt het $splitLog $lfr $aligncatstlfr $phase $vcfeval $stlfrbamdepth > ${id}.${aligner}.${varcaller}.report
+    ${params.BIN}python3 ${params.SCRIPT}/report.py stlfronly $id $aligner $varcaller ${id}.bcftoolsStats.txt het $splitLog $lfr $aligncatstlfr $phase $vcfeval $stlfrbamdepth > ${id}.${aligner}.${varcaller}.report
     """
     stub:
     "touch ${id}.${aligner}.${varcaller}.report"
@@ -125,7 +125,7 @@ process report_stlfronly_ref {
     hetindel=`${params.BIN}bcftools view -v indels -g het $vcf |grep -v \\# |wc -l`
     echo -e "\$hetsnp\\t\$hetindel" > het
 
-    ${params.BIN}python3 ${params.SCRIPT}/report_stlfronly_ref.py $id $aligner $varcaller ${id}.bcftoolsStats.txt het $splitLog $lfr $aligncatstlfr $phase $stlfrbamdepth > ${id}.${aligner}.${varcaller}.report
+    ${params.BIN}python3 ${params.SCRIPT}/report.py stlfronly_ref $id $aligner $varcaller ${id}.bcftoolsStats.txt het $splitLog $lfr $aligncatstlfr $phase $stlfrbamdepth > ${id}.${aligner}.${varcaller}.report
     """
     stub:
     "touch ${id}.${aligner}.${varcaller}.report"
@@ -158,12 +158,44 @@ process report01 { // from bam
     hetindel=`${params.BIN}bcftools view -v indels -g het $vcf |grep -v \\# |wc -l`
     echo -e "\$hetsnp\\t\$hetindel" > het
 
-    ${params.BIN}python3 ${params.SCRIPT}/report_frombam.py $id $aligner $varcaller ${id}.bcftoolsStats.txt het $aligncatstlfr $aligncatpf $phase $genecov $vcfeval $vcfevalPf $stlfrbamdepth $pfbamdepth > ${id}.${aligner}.${varcaller}.report
+    ${params.BIN}python3 ${params.SCRIPT}/report.py frombam $id $aligner $varcaller ${id}.bcftoolsStats.txt het $aligncatstlfr $aligncatpf $phase $genecov $vcfeval $vcfevalPf $stlfrbamdepth $pfbamdepth > ${id}.${aligner}.${varcaller}.report
     """
     stub:
     "touch ${id}.${aligner}.${varcaller}.report"
 }
+process report_frombam_ref { // from bam
+    executor = 'local'
+    container false
 
+    cpus params.CPU0
+    memory params.MEM0 + "g"
+    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+
+    input:
+    val(aligner)
+    val(varcaller)
+    tuple val(id), path(vcf), path(aligncatstlfr), path(aligncatpf), path(phase), val(stlfrbamdepth), val(pfbamdepth)
+
+    output:
+    path "${id}.*report"
+
+    tag "$id, $aligner, $varcaller"
+    // publishDir "${params.outdir}/$id/"
+    // cache false
+
+    script:
+    vcf = vcf.first()
+    """
+    ${params.BIN}bcftools stats $vcf > ${id}.bcftoolsStats.txt
+    hetsnp=`${params.BIN}bcftools view -v snps -g het $vcf |grep -v \\# |wc -l`
+    hetindel=`${params.BIN}bcftools view -v indels -g het $vcf |grep -v \\# |wc -l`
+    echo -e "\$hetsnp\\t\$hetindel" > het
+
+    ${params.BIN}python3 ${params.SCRIPT}/report.py frombam_ref $id $aligner $varcaller ${id}.bcftoolsStats.txt het $aligncatstlfr $aligncatpf $phase $stlfrbamdepth $pfbamdepth > ${id}.${aligner}.${varcaller}.report
+    """
+    stub:
+    "touch ${id}.${aligner}.${varcaller}.report"
+}
 process report {
     executor = 'local'
 	container false
@@ -182,17 +214,16 @@ process report {
     publishDir "${params.outdir}", mode: 'link'
     
     script:
-    if (!params.stLFR_only && !params.ref.startsWith('/')) {
-        template = "${params.SCRIPT}/report_template.txt"
-    } else if (!params.stLFR_only && params.ref.startsWith('/')) {
-        template = "${params.SCRIPT}/report_template_ref.txt"
-    } else if (params.stLFR_only && !params.ref.startsWith('/')) {
-        template = "${params.SCRIPT}/report_template_stlfronly.txt"
-    } else {
-        template = "${params.SCRIPT}/report_template_stlfronly_ref.txt"
-    }
     """
-    paste -d "," ${template} $reports > report.csv
+    paste $reports | awk -F'\\t' '{
+        line = \$1  # 提取公共的第一列
+        # 遍历后续列，每隔两列提取一个（即每个文件的第二列）
+        for (i= 2; i <= NF; i += 2) {
+            line = line "," \$i
+        }
+        print line
+    }' > report.csv
+
     """
     stub:
     "touch report.csv"
@@ -204,7 +235,7 @@ process html {
     clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
     
     input:
-    tuple val(id), path(flg), path(flg2)
+    path(flg)
 
     output:
     path "*html"
@@ -215,17 +246,6 @@ process html {
     // cache false
     script:
     """
-    ${params.BIN}convert -resize 750x750 ${params.outdir}/report/$id/${id}.frag_cov.pdf ${id}.frag_cov.png
-    ${params.BIN}convert -resize 750x750 ${params.outdir}/report/$id/${id}.fraglen_distribution_min5000.pdf ${id}.fraglen_distribution_min5000.png
-    ${params.BIN}convert -resize 750x750 ${params.outdir}/report/$id/${id}.frag_per_barcode.pdf ${id}.frag_per_barcode.png
-    ${params.BIN}convert -resize 750x750 ${params.outdir}/report/$id/${id}.frag_cov.pdf ${id}.frag_cov.png
-    ${params.BIN}convert -resize 750x750 ${params.outdir}/report/$id/${id}.GCbias.pdf ${id}.GCbias.png
-    ${params.BIN}convert -resize 750x750 ${params.outdir}/report/$id/${id}.Insertsize.pdf ${id}.Insertsize.png
-    ${params.BIN}convert -resize 750x750 ${params.outdir}/report/$id/${id}.Sequencing.depth.accumulation.pdf ${id}.Sequencing.depth.accumulation.png
-    ${params.BIN}convert -resize 750x750 ${params.outdir}/report/$id/${id}.Sequencing.depth.pdf ${id}.Sequencing.depth.png
-    ${params.BIN}convert -resize 750x750 ${params.outdir}/report/$id/${id}.haplotype.pdf ${id}.haplotype.png
-    ${params.BIN}convert -resize 750x750 ${params.SCRIPT}/stat/legend_circos.pdf ${id}.legend_circos.png
-
-    ${params.BIN}python ${params.SCRIPT}/html/generate_DNApipe_report.py 'stLFR-reSeq V2.0.0.0' $id . ${params.outdir}/report/$id/ .
+    ${params.BIN}python ${params.SCRIPT}/html/generate_cwgs_report.py 'CompleteWGS V1' $id . ${params.outdir}/report/$id/ .
     """
 }

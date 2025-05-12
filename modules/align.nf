@@ -105,6 +105,81 @@ process bwaMegabolt {
     "touch ${id}.${lib}.*bam"
 }
 
+process kff {    
+    cpus params.cpu3
+    memory params.MEM2 + "g"
+    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+
+    tag "$id"
+
+    input:
+    tuple val(id), path(r1), path(r2)
+
+    output:
+    tuple val(id), path("${id}.kff") 
+
+    // publishDir "${params.outdir}/$id/align/", mode: 'link', enabled: !params.sampleBam
+ 
+    script:
+
+    """
+    echo -e "$r1\\n$r2" > file
+    kmc -k29 -m${task.memory.giga} -okff -t${task.cpus} @file ${id} .
+    """
+    stub:
+    "touch ${id}.kff"
+}
+process vg {    
+    cpus params.cpu3
+    memory params.MEM2 + "g"
+    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+
+    tag "$id"
+
+    input:
+    tuple val(id), path(kff), path(r1), path(r2)
+
+    output:
+    tuple val(id), path("${id}.unsort.bam*") 
+
+    // publishDir "${params.outdir}/$id/align/", mode: 'link', enabled: !params.sampleBam
+ 
+    script:
+    def gbz = "${params.DB}/panGenome/hprc-v1.1-mc-grch38.gbz"
+    def list = "${params.DB}/panGenome/GRCh38.path_list.txt"
+    def hapl = "${params.DB}/panGenome/hprc-v1.1-mc-grch38.hapl"
+    """
+    vg giraffe -Z $gbz --progress --read-group "ID:$id LB:lib1 SM:HG002 PL:CG PU:unit1" --sample "HG002" -o BAM \\
+        --ref-paths $list -P -L 3000 -f $r1 -f $r2 --kff-name $kff --haplotype-name $hapl -t ${task.cpus} > ${id}.unsort.bam
+    """
+    stub:
+    "touch ${id}.unsort.bam"
+}
+process changeid {    
+    cpus params.cpu3
+    memory params.MEM2 + "g"
+    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+
+    tag "$id"
+
+    input:
+    tuple val(id), path(bam)
+
+    output:
+    tuple val(id), path("${id}.pf.sort.bam*") 
+
+    // publishDir "${params.outdir}/$id/align/", mode: 'link', enabled: !params.sampleBam
+ 
+    script:
+    def bam = bam.first()
+    def list = "${params.DB}/panGenome/GRCh38.path_list.txt"
+    """
+    ${params.BIN}python ${params.SCRIPT}/changeid.py $bam ${task.cpus} bam $list
+    ${params.BIN}samtools sort bam -o ${id}.pf.sort.bam
+    """
+    stub:
+    "touch ${id}.pf.sort.bam"
+}
 process bqsr {
     cpus params.cpu3
     memory params.MEM2 + "g"
