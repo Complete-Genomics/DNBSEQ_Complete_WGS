@@ -33,7 +33,7 @@ process bwa {
 }
 process bwaMegabolt {
     cpus params.cpu3
-    memory params.MEM0 + "g"
+    memory params.MEM2 + "g"
     clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.boltq} ${params.extraCluOpt}"
 
     tag "$id, $lib"
