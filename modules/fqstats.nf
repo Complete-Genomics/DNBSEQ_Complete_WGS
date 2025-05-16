@@ -8,17 +8,23 @@ process fqstats {
     tuple val(id), path(bssq) //id.pcrfree.bssq
 
     output:
-    path("${id}.fqstats.xls")
+    path("*.out")
 
     tag "$id"
-    publishDir "${params.outdir}/report/$id/", mode: 'link'
+    // publishDir (
+    //     path: "${params.outdir}/report/",
+    //     saveAs: { fn -> 
+    //         if (fn.contains("stlfr")) {"${id}.22.qc-stlfr.xls"}
+    //         else {"${id}.21.qc-pf.xls"}
+    //     }
+    // )
      
     script:
     """
-    python3 ${params.SCRIPT}/fqstats.py $id $bssq > ${id}.fqstats.xls
+    python3 ${params.SCRIPT}/fqstats.py $bssq > ${bssq.getBaseName()}.out
     """
     stub:
-    "touch ${id}.fqstats.xls"
+    "touch ${bssq.getBaseName()}.out"
 }
 
 // process fqstats_stlfr {

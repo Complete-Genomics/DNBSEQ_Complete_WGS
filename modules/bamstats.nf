@@ -462,6 +462,31 @@ process align_cat {
     "touch ${flagstat.getBaseName()}.align_cat"
 }
 
+process align_cat3 {
+    
+    cpus params.CPU0
+    memory params.MEM0 + "g"
+    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    
+    input:
+    val(lib)
+    tuple val(id), path(flagstat), path(stats)
+
+    output:
+    tuple val(id), path("*.align_cat")
+
+    tag "$id, $lib"
+    // cache false
+    publishDir "${params.outdir}/$id/align/stats/"
+
+    script:
+    def non = "${params.DB}/reference/${params.ref}/${params.ref}.nonN.region"
+    prefix = "${flagstat.getBaseName()}"
+    """
+    python3 ${params.SCRIPT}/aligncat.py $flagstat $stats fdepth finsertsize Combined > ${prefix}.align_cat
+    """
+}
+
 process align_catAll {
     
     cpus params.CPU0
@@ -483,25 +508,4 @@ process align_catAll {
 
     paste tmp $align_cat $align_cat2 $align_cat3 > ${id}.align_catall 
     """
-}
-process bamstats {
-    cpus params.CPU0
-    memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
-    
-    input:
-    tuple val(id), path(aligncatstlfr), path(aligncatpf), path(genecov), val(stlfrbamdepth), val(pfbamdepth)
-
-    output:
-    tuple val(id), path("${id}.bamstats.xls")
-
-    tag "$id"
-    publishDir "${params.outdir}/report/$id/"
-
-    script:
-    """
-    python3 ${params.SCRIPT}/bamstats.py $id $aligncatstlfr $aligncatpf $genecov $stlfrbamdepth $pfbamdepth > ${id}.bamstats.xls
-    """
-    stub:
-    "touch ${id}.bamstats.xls"
 }

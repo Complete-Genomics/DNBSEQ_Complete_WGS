@@ -15,11 +15,10 @@ process bwa {
     // publishDir "${params.outdir}/$id/align/", mode: 'link', enabled: !params.sampleBam
  
     script:
-    def ref
     if (params.ref.startsWith('/')) {
-        ref = params.ref
+        def ref = params.ref
     } else {
-        ref = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
+        def ref = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
     }
     
     """
@@ -33,7 +32,7 @@ process bwa {
 }
 process bwaMegabolt {
     cpus params.cpu3
-    memory params.MEM2 + "g"
+    memory params.MEM0 + "g"
     clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.boltq} ${params.extraCluOpt}"
 
     tag "$id, $lib"
@@ -105,81 +104,6 @@ process bwaMegabolt {
     "touch ${id}.${lib}.*bam"
 }
 
-process kff {    
-    cpus params.cpu3
-    memory params.MEM2 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
-
-    tag "$id"
-
-    input:
-    tuple val(id), path(r1), path(r2)
-
-    output:
-    tuple val(id), path("${id}.kff") 
-
-    // publishDir "${params.outdir}/$id/align/", mode: 'link', enabled: !params.sampleBam
- 
-    script:
-
-    """
-    echo -e "$r1\\n$r2" > file
-    kmc -k29 -m${task.memory.giga} -okff -t${task.cpus} @file ${id} .
-    """
-    stub:
-    "touch ${id}.kff"
-}
-process vg {    
-    cpus params.cpu3
-    memory params.MEM2 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
-
-    tag "$id"
-
-    input:
-    tuple val(id), path(kff), path(r1), path(r2)
-
-    output:
-    tuple val(id), path("${id}.unsort.bam*") 
-
-    // publishDir "${params.outdir}/$id/align/", mode: 'link', enabled: !params.sampleBam
- 
-    script:
-    def gbz = "${params.DB}/panGenome/hprc-v1.1-mc-grch38.gbz"
-    def list = "${params.DB}/panGenome/GRCh38.path_list.txt"
-    def hapl = "${params.DB}/panGenome/hprc-v1.1-mc-grch38.hapl"
-    """
-    vg giraffe -Z $gbz --progress --read-group "ID:$id LB:lib1 SM:HG002 PL:CG PU:unit1" --sample "HG002" -o BAM \\
-        --ref-paths $list -P -L 3000 -f $r1 -f $r2 --kff-name $kff --haplotype-name $hapl -t ${task.cpus} > ${id}.unsort.bam
-    """
-    stub:
-    "touch ${id}.unsort.bam"
-}
-process changeid {    
-    cpus params.cpu3
-    memory params.MEM2 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
-
-    tag "$id"
-
-    input:
-    tuple val(id), path(bam)
-
-    output:
-    tuple val(id), path("${id}.pf.sort.bam*") 
-
-    // publishDir "${params.outdir}/$id/align/", mode: 'link', enabled: !params.sampleBam
- 
-    script:
-    def bam = bam.first()
-    def list = "${params.DB}/panGenome/GRCh38.path_list.txt"
-    """
-    ${params.BIN}python ${params.SCRIPT}/changeid.py $bam ${task.cpus} bam $list
-    ${params.BIN}samtools sort bam -o ${id}.pf.sort.bam
-    """
-    stub:
-    "touch ${id}.pf.sort.bam"
-}
 process bqsr {
     cpus params.cpu3
     memory params.MEM2 + "g"
@@ -788,31 +712,6 @@ process mergeBam {
     "touch ${id}.${aligner}.merge.bam"
 }
 
-process combinebam {
-    cpus params.cpu2
-    memory params.MEM3 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
-
-    input:
-    tuple val(id), path(pfbam), path(stlfrbam)
-
-    output:
-    tuple val(id), path("${id}.lariat.merge.bam*") 
-
-    publishDir "${params.outdir}/$id/align/", mode: 'link'
-
-    script:
-    def pfbam = pfbam.first()
-    def stlfrbam = stlfrbam.first()
-    def aligner = 'lariat'
-    """
-    ${params.BIN}samtools merge -@ ${task.cpus} -f ${id}.${aligner}.merge.bam $pfbam $stlfrbam && \\
-    ${params.BIN}samtools index -@ ${task.cpus} ${id}.${aligner}.merge.bam
-
-    """
-    stub:
-    "touch ${id}.lariat.merge.bam"
-}
 process stLFRQC {
     cpus params.CPU1
     memory params.MEM1 + "g"

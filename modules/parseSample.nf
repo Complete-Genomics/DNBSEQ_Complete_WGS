@@ -118,39 +118,25 @@ def create_fastq_channel(LinkedHashMap row) {
         def p = Paths.get(path)
         return p.isAbsolute() ? p : workflow.launchDir.parent.resolve(p).toAbsolutePath()
     }
-    def stlfr1, stlfr2, pcrfree1, pcrfree2
 
-    if ( !params.PF_only) {
-        stlfr1 = resolvePath(row.stlfr1).toString()
-        stlfr2 = resolvePath(row.stlfr2).toString()
+    def stlfr1 = resolvePath(row.stlfr1).toString()
+    def stlfr2 = resolvePath(row.stlfr2).toString()
+    def pcrfree1 = resolvePath(row.pcrfree1).toString()
+    def pcrfree2 = resolvePath(row.pcrfree2).toString()
 
-        if (!file(stlfr1).exists()) {
-            exit 1, "ERROR: Please check input samplesheet -> ${stlfr1} does not exist!\n"
-        }
-        if (!file(stlfr2).exists()) {
-            exit 1, "ERROR: Please check input samplesheet -> ${stlfr2} does not exist!\n"
-        }
+    if (!file(stlfr1).exists()) {
+        exit 1, "ERROR: Please check input samplesheet -> ${stlfr1} does not exist!\n"
     }
-
-    if ( !params.stLFR_only ) {
-        pcrfree1 = resolvePath(row.pcrfree1).toString()
-        pcrfree2 = resolvePath(row.pcrfree2).toString()
-
-        if (!file(pcrfree1).exists()) {
-            exit 1, "ERROR: Please check input samplesheet -> ${pcrfree1} does not exist!\n"
-        }
-        if (!file(pcrfree2).exists()) {
-            exit 1, "ERROR: Please check input samplesheet -> ${pcrfree2} does not exist!\n"
-        }
+    if (!file(stlfr2).exists()) {
+        exit 1, "ERROR: Please check input samplesheet -> ${stlfr2} does not exist!\n"
     }
-    
-    if (params.stLFR_only) {
-        return [row.sample, stlfr1, stlfr2]
-    } else if (params.PF_only) {
-        return [row.sample, pcrfree1, pcrfree2]
-    } else {
-        return [row.sample, stlfr1, stlfr2, pcrfree1, pcrfree2]
+    if (!file(pcrfree1).exists()) {
+        exit 1, "ERROR: Please check input samplesheet -> ${pcrfree1} does not exist!\n"
     }
+    if (!file(pcrfree2).exists()) {
+        exit 1, "ERROR: Please check input samplesheet -> ${pcrfree2} does not exist!\n"
+    }
+    return [row.sample, stlfr1, stlfr2, pcrfree1, pcrfree2]
 }
 
 def create_channel_frombam(LinkedHashMap row) {

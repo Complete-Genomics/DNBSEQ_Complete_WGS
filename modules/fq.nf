@@ -10,8 +10,8 @@ process fq {
 	tuple val(id), path(stlfr1), path(stlfr2), path(pf1), path(pf2)
 	
 	output:
-	tuple val(id), path("${id}_stlfr_1.fq.gz"),  path("${id}_stlfr_2.fq.gz"), emit: stlfr
-	tuple val(id), path("${id}_pcrfree_1.fq.gz"), path("${id}_pcrfree_2.fq.gz"), emit: pf
+	tuple val(id), path("${id}_stlfr_1.fq.gz"),  path("${id}_stlfr_2.fq.gz"),emit: stlfr
+	tuple val(id), path("${id}_pcrfree_1.fq.gz"), path("${id}_pcrfree_2.fq.gz"),emit: pf
 
 	tag "$id"
 	// publishDir "${params.outdir}/$id/fq/"	//, mode: 'copy'
@@ -39,56 +39,12 @@ process fq1 {
 	tuple val(id), path("${id}_stlfr_1.fq.gz"),  path("${id}_stlfr_2.fq.gz")
 
 	tag "$id"
+	publishDir "."	//, mode: 'copy'
 
 	script:
 	"""
 	mv $stlfr1 ${id}_stlfr_1.fq.gz
 	mv $stlfr2 ${id}_stlfr_2.fq.gz
-	"""
-}
-
-process fq_stlfronly {
-	executor = 'local'
-	container false
-	
-    cpus params.CPU0
-    memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
-    
-	input:
-	tuple val(id), path(stlfr1), path(stlfr2)
-	
-	output:
-	tuple val(id), path("${id}_stlfr_1.fq.gz"),  path("${id}_stlfr_2.fq.gz")
-
-	tag "$id"
-
-	script:
-	"""
-	mv $stlfr1 ${id}_stlfr_1.fq.gz
-	mv $stlfr2 ${id}_stlfr_2.fq.gz
-	"""
-}
-process fq_pfonly {
-	executor = 'local'
-	container false
-	
-    cpus params.CPU0
-    memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
-    
-	input:
-	tuple val(id), path(pf1), path(pf2)
-	
-	output:
-	tuple val(id), path("${id}_pcrfree_1.fq.gz"),  path("${id}_pcrfree_2.fq.gz")
-
-	tag "$id"
-
-	script:
-	"""
-	mv $pf1 ${id}_pcrfree_1.fq.gz
-	mv $pf2 ${id}_pcrfree_2.fq.gz
 	"""
 }
 process lineNum {
@@ -110,7 +66,7 @@ process lineNum {
 }
 
 process splitfq {
-	cpus params.CPU0
+	cpus params.lariatSplitFqNum / 2 
     memory params.MEM1 + "g"
     clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
 
