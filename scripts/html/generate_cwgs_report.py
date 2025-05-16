@@ -12,18 +12,6 @@ from io import open
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-def upload(host, username, password, cwd, file):
-    try:
-        name = file.split('/')[-1]
-        logging.info('Upload the file: ' + name)
-        with FTP(host, timeout=30) as ftp:
-            ftp.login(username, password)
-            ftp.cwd(cwd)
-            with open(file, 'rb') as f:
-                ftp.storbinary('STOR ' + name[:-4] + hashlib.md5(open(file, 'rb').read()).hexdigest(), f)
-            ftp.dir()
-    except:
-        logging.error('Error in using FTP to upload report.')
 
 def getTableContent(filePath, isWarpTitle = True, lang = 'cn'):
     try:
@@ -359,7 +347,7 @@ def get_png_div(path):
     else:
         return '<div class="noDataTitle">无图片文件:'+ path + '</div>'
 
-def create_sec_box(filePath, title, context_name, lang, type, linkPath):
+def create_sec_box(filePath, title, lang, type):
     html = '''
            <div class="secBox">
                <h1>%s</h1>
@@ -388,7 +376,7 @@ def create_sec_box(filePath, title, context_name, lang, type, linkPath):
              ''' % getContentLang(context_name, lang)
     return html
 
-def create_sample(name, lang, type):
+def create_sample(name, lang):
     html = '''
         <div class = "secBox">
             <h1>%s</h1>
@@ -399,69 +387,46 @@ def create_sample(name, lang, type):
     ''' % (getContentLang("SAMPLE", lang), name)
     return html
 
-def generate_html_report(path, version, name='rem', output_path='E:/codezlims/rem/Result/sample1', lang="cn"):
-    base_png        = path + "/" + name + "/" + name + ".Cleanfq.base.png"
-    qual_png        = path + "/" + name + "/" + name + ".Cleanfq.qual.png"
-    fragbarcode_png = path + "/" + name + "/" + name + ".frag_per_barcode.png"
-    fraglen1_png    = path + "/" + name + "/" + name + ".fraglen_distribution_min5000-0.png"
-    fragcov_png     = path + "/" + name + "/" + name + ".frag_cov.png"
-    insert_png      = path + "/" + name + "/" + name + ".Insertsize.png"
-    deep_png1       = path + "/" + name + "/" + name + ".Sequencing.depth.accumulation.png"
-    deep_png2       = path + "/" + name + "/" + name + ".Sequencing.depth.png"
-    gc_png          = path + "/" + name + "/" + name + ".GCbias.png"
-    circos_png      = path + "/" + name + "/" + name + ".circos.png"
-    circosleg_png   = path + "/" + name + "/" + name + ".legend_circos.png"
-    phase_png       = path + "/" + name + "/" + name + ".haplotype.png"
-
-    fragbarcode_pdf = path + "/" + name + "/" + name + ".frag_per_barcode.pdf"
-    fraglen_pdf     = path + "/" + name + "/" + name + ".fraglen_distribution_min5000.pdf"
-    fragcov_pdf     = path + "/" + name + "/" + name + ".frag_cov.pdf"
-    insert_pdf      = path + "/" + name + "/" + name + ".Insertsize.pdf"
-    deep_pdf1       = path + "/" + name + "/" + name + ".Sequencing.depth.accumulation.pdf"
-    deep_pdf2       = path + "/" + name + "/" + name + ".Sequencing.depth.pdf"
-    gc_pdf          = path + "/" + name + "/" + name + ".GCbias.pdf"
-    circos_svg      = path + "/" + name + "/" + name + ".circos.svg"
-    phase_pdf       = path + "/" + name + "/" + name + ".haplotype.pdf"
-    
-    fastq_table     = path + "/" + name + "/" + name + ".fqstats.xls"
-    frag_table      = path + "/" + name + "/" + name + ".fragtable.xls"
-    align_table     = path + "/" + name + "/" + name + ".aligntable.xls"
-    variant_table   = path + "/" + name + "/" + name + ".varianttable.xls"
-    phase_table     = path + "/" + name + "/" + name + ".haplotype.xls"
-    vcfeval_table   = path + "/" + name + "/" + name + ".evaluation.xls"
+def generate_html_report(path, version, name, lang="en"):
+    fastq_table     = path + "/" + name + ".fqstats.xls"
+    frag_table      = path + "/" + name + ".fragstats.xls"
+    align_table     = path + "/" + name + ".bamstats.xls"
+    variant_table   = path + "/" + name + ".vcfstats.xls"
+    # phase_table     = path2 + "/" + name + ".haplotype.xls"
+    # vcfeval_table   = path2 + "/" + name + ".evaluation.xls"
 
     fastqBoxContent = (
                         create_sample(name, lang, "png")
                       + create_sec_box(fastq_table, "FASTQTAB", "FASTQTABDES", lang, "table", fastq_table)
-                      + create_sec_box(base_png,    "BASEDIS",  "BASEDISDES",  lang, "png", base_png) 
-                      + create_sec_box(qual_png,    "BASEQUAL", "BASEQUALDES", lang, "png", qual_png)
+                    #   + create_sec_box(base_png,    "BASEDIS",  "BASEDISDES",  lang, "png", base_png) 
+                    #   + create_sec_box(qual_png,    "BASEQUAL", "BASEQUALDES", lang, "png", qual_png)
                       )
 
     fragmentBoxContent = (
                            create_sec_box(frag_table,      "FRAGTAB", "FRAGTABDES", lang, "table", frag_table)
-                         + create_sec_box(fragbarcode_png, "FRAGBAR", "FRAGBARDES", lang, "png", fragbarcode_pdf)
-                         + create_sec_box(fraglen1_png,    "FRAGLEN", "FRAGLENDES", lang, "png", fraglen_pdf)
-                         + create_sec_box(fragcov_png,     "FRAGCOV", "FRAGCOVDES", lang, "png", fragcov_pdf)
+                        #  + create_sec_box(fragbarcode_png, "FRAGBAR", "FRAGBARDES", lang, "png", fragbarcode_pdf)
+                        #  + create_sec_box(fraglen1_png,    "FRAGLEN", "FRAGLENDES", lang, "png", fraglen_pdf)
+                        #  + create_sec_box(fragcov_png,     "FRAGCOV", "FRAGCOVDES", lang, "png", fragcov_pdf)
                          )
 
     alignmentBoxContent = (
                             create_sec_box(align_table, "ALIGNTAB", "ALIGNTABDES", lang, "table", align_table)
-                          + create_sec_box(insert_png,  "INSERT",   "INSERTDES",   lang, "png", insert_pdf)
-                          + create_sec_box(deep_png1,   "DEEP",     "DEEPDES",     lang, "png", deep_pdf1)
-                          + create_sec_box(deep_png2,   "DEEP2",    "DEEP2DES",    lang, "png", deep_pdf2)
-                          + create_sec_box(gc_png,      "GCBIAS",   "GCBIASDES",   lang, "png", gc_pdf)
+                        #   + create_sec_box(insert_png,  "INSERT",   "INSERTDES",   lang, "png", insert_pdf)
+                        #   + create_sec_box(deep_png1,   "DEEP",     "DEEPDES",     lang, "png", deep_pdf1)
+                        #   + create_sec_box(deep_png2,   "DEEP2",    "DEEP2DES",    lang, "png", deep_pdf2)
+                        #   + create_sec_box(gc_png,      "GCBIAS",   "GCBIASDES",   lang, "png", gc_pdf)
                           )
 
     variantBoxContent = ( 
                           create_sec_box(variant_table, "VARIANTTAB", "VARIANTTABDES", lang, "table", variant_table)
-                        + create_sec_box(vcfeval_table, "VCFEVALTAB", "VCFEVALTABDES", lang, "table", vcfeval_table)
-                        + create_sec_box(circos_png, "CIRCOS", "CIRCOSDES", lang, "png", circos_svg)
-                        + get_png_div(circosleg_png)
+                        # + create_sec_box(vcfeval_table, "VCFEVALTAB", "VCFEVALTABDES", lang, "table", vcfeval_table)
+                        # + create_sec_box(circos_png, "CIRCOS", "CIRCOSDES", lang, "png", circos_svg)
+                        # + get_png_div(circosleg_png)
                         )
 
     phaseBoxContent = (
                         create_sec_box(phase_table, "PHASETAB", "PHASETABDES", lang, "table", phase_table)
-                      + create_sec_box(phase_png, "PHASE", "PHASEDES", lang, "png", phase_pdf)
+                    #   + create_sec_box(phase_png, "PHASE", "PHASEDES", lang, "png", phase_pdf)
                       )
 
     fastqBox     = create_hide_box("1." + getContentLang("FASTQTITLE", lang),   "boxOne",   fastqBoxContent, getContentLang("FASTQTDES", lang))
@@ -546,23 +511,14 @@ def generate_html_report(path, version, name='rem', output_path='E:/codezlims/re
     }
 
     with open(output_path + '/' + name + '_' + lang +'.html', 'w+', encoding='utf-8') as report:
-        print(output_path + '/' + name + '_' + lang +'.html') 
+        print(output_path + '/' + name +'.html') 
         report.write(html)
 
 
 if __name__ == '__main__':
 
-    if len(sys.argv) < 4:
-        logging.error("Usage: python3 %s [version] [name] [result_path] [outdir|default:result_path]\n" %sys.argv[0])
-        sys.exit(-1)
-    version = sys.argv[1]
-    name    = sys.argv[2]
-    path    = sys.argv[3]
-    outdir  = sys.argv[4]
-    product_type = "stLFR"
+    version, path= sys.argv[1:]
+    names = [ entry.name for entry in os.scandir(path) if entry.is_dir() ]
 
-    logging.info('\nResult folder is: %s\nSample name is: %s' % (path, name))
-    # Local test
-    # html_util.HtmlUtil.getPNGBinary('link.png')
-    generate_html_report(path, version, name, outdir, "en")
-    generate_html_report(path, version, name, outdir, "cn")
+    for name in names:
+        generate_html_report(path + '/' + name, version, name, "en")
