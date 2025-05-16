@@ -423,7 +423,7 @@ def generate_html_report(path, version, name='rem', output_path='E:/codezlims/re
     circos_svg      = path + "/" + name + "/" + name + ".circos.svg"
     phase_pdf       = path + "/" + name + "/" + name + ".haplotype.pdf"
     
-    fastq_table     = path + "/" + name + "/" + name + ".fqstats.xls"
+    fastq_table     = path + "/" + name + "/" + name + ".fastqtable.xls"
     frag_table      = path + "/" + name + "/" + name + ".fragtable.xls"
     align_table     = path + "/" + name + "/" + name + ".aligntable.xls"
     variant_table   = path + "/" + name + "/" + name + ".varianttable.xls"

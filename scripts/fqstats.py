@@ -17,51 +17,32 @@ Q20 number      80400624689 (98.18%)    76026074719 (98.24%)    80148316572 (97.
 Q30 number      76853234212 (93.85%)    72705798284 (93.95%)    75675454882 (92.41%)    71635513038 (92.56%)
 
 """
-sample, bssq = sys.argv[1:]
+fin = sys.argv[1]
 
-f = open(bssq)
-for line in f:
-    if line.startswith('Total number of reads'):
-        _, raw, clean, *_ = line.split('\t')
-        rawpenum = raw.split()[0]
-        cleanpenum = clean.split()[0]
-
-    if line.startswith('Total number of bases'):
-        _, raw, clean, *_ = line.split('\t')
-        rawbasenum = int(raw.split()[0]) * 2
-        cleanbasenum = int(clean.split()[0]) * 2
-
-    pattern = r"\((.*?)\)"
-    if line.startswith('Number of base C'):
-        c1,_,c2,_ = re.findall(pattern, line)
-        c1=float(c1.replace("%",""))
-        c2 = float(c2.replace("%",""))
-    if line.startswith('Number of base G'):
-        g1,_,g2,_ = re.findall(pattern, line)
-        g1=float(g1.replace("%",""))
-        g2=float(g2.replace("%",""))
-
-    if line.startswith('Q20'):
-        c1,_,c2,_ = re.findall(pattern, line)
-        c1=float(c1.replace("%",""))
-        c2 = float(c2.replace("%",""))
-        q20 = round((c1 + c2)/2,1)
-    if line.startswith('Q30'):
-        c1,_,c2,_ = re.findall(pattern, line)
-        c1=float(c1.replace("%",""))
-        c2 = float(c2.replace("%",""))
-        q30 = round((c1 + c2)/2,1)
-
-    # print('Raw reads %bases ≥ Q30' + "\t" + str(round(q30,2)) + "%")
-    # print('Total depth' + "\t" + str(round(rawbasenum/3000000000,2)))
-f.close()
-
+f = open(fin)
+f.readline()
+rl = int(float(f.readline().split("\t")[1]))
+print("Readlen" + "\t" + str(rl))
+rawpenum = f.readline().split("\t")[1].split()[0]
+print("number of raw PE reads" + "\t" + str(rawpenum))
+f.readline()
+rawbasenum = f.readline().split("\t")[1].split()[0]
+rawbasenum = int(rawbasenum)*2
+print("number of raw bases" + "\t" + str(rawbasenum))
+for _ in range(2): f.readline()
+pattern = r"\((.*?)\)"
+c1,_,c2,_ = re.findall(pattern, f.readline())
+c1=float(c1.replace("%",""))
+c2 = float(c2.replace("%",""))
+g1,_,g2,_ = re.findall(pattern, f.readline())
+g1=float(g1.replace("%",""))
+g2=float(g2.replace("%",""))
 cg = (c1 + c2 + g1 + g2)/2
-
-print(f"""sample\t{sample}
-#raw read pair\t{rawpenum}
-#raw bases\t{rawbasenum}
-#clean read pair\t{cleanpenum}
-#clean bases\t{cleanbasenum}
-Q20(%)\t{q20}%
-Q30(%)\t{q30}%""")
+print("Raw reads GC ratio" + "\t" + str(round(cg,2)) + "%")
+for _ in range(3): f.readline()
+c1,_,c2,_ = re.findall(pattern, f.readline())
+c1=float(c1.replace("%",""))
+c2 = float(c2.replace("%",""))
+q30 = (c1 + c2)/2
+print('Raw reads %bases ≥ Q30' + "\t" + str(round(q30,2)) + "%")
+print('Total depth' + "\t" + str(round(rawbasenum/3000000000,2)))
