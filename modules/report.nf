@@ -240,12 +240,11 @@ process html {
     output:
     path "*html"
 
-    tag "$id"
     publishDir "${params.outdir}/report/", mode: 'link'
     
     // cache false
     script:
     """
-    ${params.BIN}python ${params.SCRIPT}/html/generate_cwgs_report.py 'CompleteWGS V1' $id . ${params.outdir}/report/$id/ .
+    ${params.BIN}python ${params.SCRIPT}/html/generate_cwgs_report.py 'CompleteWGS V1' ${params.outdir}/report/
     """
 }

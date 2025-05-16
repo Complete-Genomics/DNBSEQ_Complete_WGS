@@ -388,29 +388,6 @@ def create_sample(name, lang):
     return html
 
 def generate_html_report(path, version, name, lang="en"):
-    # base_png        = path2 + "/" + name + ".stlfr.base.png"
-    # qual_png        = path2 + "/" + name + ".stlfr.qual.png"
-    # fragbarcode_png = path + "/" + name + ".frag_per_barcode.png"
-    # fraglen1_png    = path + "/" + name + ".fraglen_distribution_min5000-0.png"
-    # fragcov_png     = path + "/" + name + ".frag_cov.png"
-    # insert_png      = path + "/" + name + ".Insertsize.png"
-    # deep_png1       = path + "/" + name + ".Sequencing.depth.accumulation.png"
-    # deep_png2       = path + "/" + name + ".Sequencing.depth.png"
-    # gc_png          = path + "/" + name + ".GCbias.png"
-    # circos_png      = path + "/" + name + ".circos.png"
-    # circosleg_png   = path + "/" + name + ".legend_circos.png"
-    # phase_png       = path + "/" + name + ".haplotype.png"
-
-    # fragbarcode_pdf = path2 + "/" + name + ".frag_per_barcode.pdf"
-    # fraglen_pdf     = path2 + "/" + name + ".fraglen_distribution_min5000.pdf"
-    # fragcov_pdf     = path2 + "/" + name + ".frag_cov.pdf"
-    # insert_pdf      = path2 + "/" + name + ".Insertsize.pdf"
-    # deep_pdf1       = path2 + "/" + name + ".Sequencing.depth.accumulation.pdf"
-    # deep_pdf2       = path2 + "/" + name + ".Sequencing.depth.pdf"
-    # gc_pdf          = path2 + "/" + name + ".GCbias.pdf"
-    # circos_svg      = path2 + "/" + name + ".circos.svg"
-    # phase_pdf       = path2 + "/" + name + ".haplotype.pdf"
-    
     fastq_table     = path + "/" + name + ".fqstats.xls"
     frag_table      = path + "/" + name + ".fragstats.xls"
     align_table     = path + "/" + name + ".bamstats.xls"
@@ -540,12 +517,8 @@ def generate_html_report(path, version, name, lang="en"):
 
 if __name__ == '__main__':
 
-    if len(sys.argv) < 4:
-        logging.error("Usage: python3 %s [version] [name] [result_path] [outdir|default:result_path]\n" %sys.argv[0])
-        sys.exit(-1)
-    version, name, path, path2, outdir = sys.argv[1:]
-    product_type = "CompleteWGS"
+    version, path= sys.argv[1:]
+    names = [ entry.name for entry in os.scandir(path) if entry.is_dir() ]
 
-    logging.info('\nResult folder is: %s\nSample name is: %s' % (path, name))
-
-    generate_html_report(path, version, name, "en")
+    for name in names:
+        generate_html_report(path + '/' + name, version, name, "en")

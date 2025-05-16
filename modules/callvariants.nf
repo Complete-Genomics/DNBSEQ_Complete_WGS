@@ -486,7 +486,7 @@ process gatherVcfsVqsr {
     "touch ${prefix}.vcf.gz"
 }
 process dvMegabolt {
-  label 'megabolt'
+    label 'megabolt'
     cpus params.cpu3
     memory params.MEM1 + "g"
     clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.boltq} ${params.extraCluOpt}"

@@ -81,296 +81,300 @@ def cmrg(fgenecov):
 	f.close()
 	return pfcov, mergecov, pfdepth, mergedepth
 
-flg, *files = sys.argv[1:]
-	
-if flg == '0': 
-	id, aligner, varcaller, varstats, het, splitLog, lfr, aligncatstlfr,aligncatpf, phase, fgenecov, vcfeval, vcfevalpf, stlfrbamdepth, pfbamdepth = files
+def main():
+	flg, *files = sys.argv[1:]
+		
+	if flg == '0': 
+		id, aligner, varcaller, varstats, het, splitLog, lfr, aligncatstlfr,aligncatpf, phase, fgenecov, vcfeval, vcfevalpf, stlfrbamdepth, pfbamdepth = files
 
-	snps, indels = varcnt(varstats)
-	hetsnps, hetindels = hetvarcnt(het)
+		snps, indels = varcnt(varstats)
+		hetsnps, hetindels = hetvarcnt(het)
 
-	tp, fp, fn, prec, reca, f1, indel_tp, indel_fp, indel_fn, indel_prec, indel_reca, indel_f1 = fvcfeval(vcfeval)
-	pf_tp, pf_fp, pf_fn, pf_prec, pf_reca, pf_f1, pf_indel_tp, pf_indel_fp, pf_indel_fn, pf_indel_prec, pf_indel_reca, pf_indel_f1 = fvcfeval(vcfevalpf)
+		tp, fp, fn, prec, reca, f1, indel_tp, indel_fp, indel_fn, indel_prec, indel_reca, indel_f1 = fvcfeval(vcfeval)
+		pf_tp, pf_fp, pf_fn, pf_prec, pf_reca, pf_f1, pf_indel_tp, pf_indel_fp, pf_indel_fn, pf_indel_prec, pf_indel_reca, pf_indel_f1 = fvcfeval(vcfevalpf)
 
-	## barcode split rate (pe reads num/pe reads num after split)
-	bcsplitrate = fsplitrate(splitLog)
+		## barcode split rate (pe reads num/pe reads num after split)
+		bcsplitrate = fsplitrate(splitLog)
 
-	## lfr
-	lfrcnt, lfravglen = flfr(lfr)
+		## lfr
+		lfrcnt, lfravglen = flfr(lfr)
 
-	stlfrpemaprate, stlfr_genome_cov10 = bam(aligncatstlfr)
-	pfpemaprate, pf_genome_cov10 = bam(aligncatpf)
+		stlfrpemaprate, stlfr_genome_cov10 = bam(aligncatstlfr)
+		pfpemaprate, pf_genome_cov10 = bam(aligncatpf)
 
-	hetsnps, hetsnpsphased, hetindels, hetindelsphased, n50, phaseblock = fphase(phase)
+		hetsnps, hetsnpsphased, hetindels, hetindelsphased, n50, phaseblock = fphase(phase)
 
-	cmrg_cov_pf, cmrg_cov_merge, cmrg_depth_pf, cmrg_depth_merge = cmrg(fgenecov)
+		cmrg_cov_pf, cmrg_cov_merge, cmrg_depth_pf, cmrg_depth_merge = cmrg(fgenecov)
 
 
-	str = f"""
-		Sample\t{id}
-		stLFR aligner\t{aligner}
-		var caller\t{varcaller}
-		stLFR bam avg depth\t{stlfrbamdepth}
-		PCR-free bam avg depth\t{pfbamdepth}
-		snps\t{snps}
-		het snps\t{hetsnps}
-		indels\t{indels}
-		het indels\t{hetindels}
-		##snps eval\t#
-		TP\t{tp}
-		FP\t{fp}
-		FN\t{fn}
-		precision\t{prec}
-		recall\t{reca}
-		f1\t{f1}
-		##indels eval\t#
-		TP\t{indel_tp}
-		FP\t{indel_fp}
-		FN\t{indel_fn}
-		precision\t{indel_prec}
-		recall\t{indel_reca}
-		f1\t{indel_f1}
-		##PCR-free snps eval\t#
-		TP\t{pf_tp}
-		FP\t{pf_fp}
-		FN\t{pf_fn}
-		precision\t{pf_prec}
-		recall\t{pf_reca}
-		f1\t{pf_f1}
-		##PCR-free indels eval\t#
-		TP\t{pf_indel_tp}
-		FP\t{pf_indel_fp}
-		FN\t{pf_indel_fn}
-		precision\t{pf_indel_prec}
-		recall\t{pf_indel_reca}
-		f1\t{pf_indel_f1}
-		barcode split rate\t{bcsplitrate}
-		LFR count\t{lfrcnt}
-		LFR avg len\t{lfravglen}
-		stLFR PE map rate\t{stlfrpemaprate}
-		PCR-free PE map rate\t{pfpemaprate}
-		stLFR %genome cov > 10x\t{stlfr_genome_cov10}
-		PCR-free %genome cov > 10x\t{pf_genome_cov10}
-		het snps phased\t{hetsnpsphased}
-		het indels phased\t{hetindelsphased}
-		phase block count\t{phaseblock}
-		phase block N50\t{n50}
-		CMRG avg coverage (PCR-free)\t{cmrg_cov_pf}
-		CMRG avg coverage (merged)\t{cmrg_cov_merge}
-		CMRG avg depth (PCR-free)\t{cmrg_depth_pf}
-		CMRG avg depth (merged)\t{cmrg_depth_merge}
-		"""
+		str = f"""
+			Sample\t{id}
+			stLFR aligner\t{aligner}
+			var caller\t{varcaller}
+			stLFR bam avg depth\t{stlfrbamdepth}
+			PCR-free bam avg depth\t{pfbamdepth}
+			snps\t{snps}
+			het snps\t{hetsnps}
+			indels\t{indels}
+			het indels\t{hetindels}
+			##snps eval\t#
+			TP\t{tp}
+			FP\t{fp}
+			FN\t{fn}
+			precision\t{prec}
+			recall\t{reca}
+			f1\t{f1}
+			##indels eval\t#
+			TP\t{indel_tp}
+			FP\t{indel_fp}
+			FN\t{indel_fn}
+			precision\t{indel_prec}
+			recall\t{indel_reca}
+			f1\t{indel_f1}
+			##PCR-free snps eval\t#
+			TP\t{pf_tp}
+			FP\t{pf_fp}
+			FN\t{pf_fn}
+			precision\t{pf_prec}
+			recall\t{pf_reca}
+			f1\t{pf_f1}
+			##PCR-free indels eval\t#
+			TP\t{pf_indel_tp}
+			FP\t{pf_indel_fp}
+			FN\t{pf_indel_fn}
+			precision\t{pf_indel_prec}
+			recall\t{pf_indel_reca}
+			f1\t{pf_indel_f1}
+			barcode split rate\t{bcsplitrate}
+			LFR count\t{lfrcnt}
+			LFR avg len\t{lfravglen}
+			stLFR PE map rate\t{stlfrpemaprate}
+			PCR-free PE map rate\t{pfpemaprate}
+			stLFR %genome cov > 10x\t{stlfr_genome_cov10}
+			PCR-free %genome cov > 10x\t{pf_genome_cov10}
+			het snps phased\t{hetsnpsphased}
+			het indels phased\t{hetindelsphased}
+			phase block count\t{phaseblock}
+			phase block N50\t{n50}
+			CMRG avg coverage (PCR-free)\t{cmrg_cov_pf}
+			CMRG avg coverage (merged)\t{cmrg_cov_merge}
+			CMRG avg depth (PCR-free)\t{cmrg_depth_pf}
+			CMRG avg depth (merged)\t{cmrg_depth_merge}
+			"""
 
-elif flg == 'ref':
-	id, aligner, varcaller, varstats, het, splitLog, lfr, aligncatstlfr,aligncatpf, phase, stlfrbamdepth, pfbamdepth = files
+	elif flg == 'ref':
+		id, aligner, varcaller, varstats, het, splitLog, lfr, aligncatstlfr,aligncatpf, phase, stlfrbamdepth, pfbamdepth = files
 
-	snps, indels = varcnt(varstats)
-	hetsnps, hetindels = hetvarcnt(het)
+		snps, indels = varcnt(varstats)
+		hetsnps, hetindels = hetvarcnt(het)
 
-	## barcode split rate (pe reads num/pe reads num after split)
-	bcsplitrate = fsplitrate(splitLog)
+		## barcode split rate (pe reads num/pe reads num after split)
+		bcsplitrate = fsplitrate(splitLog)
 
-	## lfr
-	lfrcnt, lfravglen = flfr(lfr)
+		## lfr
+		lfrcnt, lfravglen = flfr(lfr)
 
-	stlfrpemaprate, stlfr_genome_cov10 = bam(aligncatstlfr)
-	pfpemaprate, pf_genome_cov10 = bam(aligncatpf)
+		stlfrpemaprate, stlfr_genome_cov10 = bam(aligncatstlfr)
+		pfpemaprate, pf_genome_cov10 = bam(aligncatpf)
 
-	hetsnps, hetsnpsphased, hetindels, hetindelsphased, n50, phaseblock = fphase(phase)
+		hetsnps, hetsnpsphased, hetindels, hetindelsphased, n50, phaseblock = fphase(phase)
 
-	str = f"""
-		Sample\t{id}
-		stLFR aligner\t{aligner}
-		var caller\t{varcaller}
-		stLFR bam avg depth\t{stlfrbamdepth}
-		PCR-free bam avg depth\t{pfbamdepth}
-		snps\t{snps}
-		het snps\t{hetsnps}
-		indels\t{indels}
-		het indels\t{hetindels}
-		barcode split rate\t{bcsplitrate}
-		LFR count\t{lfrcnt}
-		LFR avg len\t{lfravglen}
-		stLFR PE map rate\t{stlfrpemaprate}
-		PCR-free PE map rate\t{pfpemaprate}
-		stLFR %genome cov > 10x\t{stlfr_genome_cov10}
-		PCR-free %genome cov > 10x\t{pf_genome_cov10}
-		het snps phased\t{hetsnpsphased}
-		het indels phased\t{hetindelsphased}
-		phase block count\t{phaseblock}
-		phase block N50\t{n50}
-		"""
+		str = f"""
+			Sample\t{id}
+			stLFR aligner\t{aligner}
+			var caller\t{varcaller}
+			stLFR bam avg depth\t{stlfrbamdepth}
+			PCR-free bam avg depth\t{pfbamdepth}
+			snps\t{snps}
+			het snps\t{hetsnps}
+			indels\t{indels}
+			het indels\t{hetindels}
+			barcode split rate\t{bcsplitrate}
+			LFR count\t{lfrcnt}
+			LFR avg len\t{lfravglen}
+			stLFR PE map rate\t{stlfrpemaprate}
+			PCR-free PE map rate\t{pfpemaprate}
+			stLFR %genome cov > 10x\t{stlfr_genome_cov10}
+			PCR-free %genome cov > 10x\t{pf_genome_cov10}
+			het snps phased\t{hetsnpsphased}
+			het indels phased\t{hetindelsphased}
+			phase block count\t{phaseblock}
+			phase block N50\t{n50}
+			"""
 
-elif flg == 'stlfronly':
-	id, aligner, varcaller, varstats, het, splitLog, lfr, aligncatstlfr,phase, vcfeval, stlfrbamdepth = files
+	elif flg == 'stlfronly':
+		id, aligner, varcaller, varstats, het, splitLog, lfr, aligncatstlfr,phase, vcfeval, stlfrbamdepth = files
 
-	snps, indels = varcnt(varstats)
-	hetsnps, hetindels = hetvarcnt(het)
+		snps, indels = varcnt(varstats)
+		hetsnps, hetindels = hetvarcnt(het)
 
-	bcsplitrate = fsplitrate(splitLog)
+		bcsplitrate = fsplitrate(splitLog)
 
-	## lfr
-	lfrcnt, lfravglen = flfr(lfr)
-	stlfrpemaprate, stlfr_genome_cov10 = bam(aligncatstlfr)
-	
-	tp, fp, fn, prec, reca, f1, indel_tp, indel_fp, indel_fn, indel_prec, indel_reca, indel_f1 = fvcfeval(vcfeval)
-	hetsnps, hetsnpsphased, hetindels, hetindelsphased, n50, phaseblock = fphase(phase)
+		## lfr
+		lfrcnt, lfravglen = flfr(lfr)
+		stlfrpemaprate, stlfr_genome_cov10 = bam(aligncatstlfr)
+		
+		tp, fp, fn, prec, reca, f1, indel_tp, indel_fp, indel_fn, indel_prec, indel_reca, indel_f1 = fvcfeval(vcfeval)
+		hetsnps, hetsnpsphased, hetindels, hetindelsphased, n50, phaseblock = fphase(phase)
 
-	str = f"""
-		Sample\t{id}
-		stLFR aligner\t{aligner}
-		var caller\t{varcaller}
-		stLFR bam avg depth\t{stlfrbamdepth}
-		snps\t{snps}
-		het snps\t{hetsnps}
-		indels\t{indels}
-		het indels\t{hetindels}
-		##snps eval\t#
-		TP\t{tp}
-		FP\t{fp}
-		FN\t{fn}
-		precision\t{prec}
-		recall\t{reca}
-		f1\t{f1}
-		##indels eval\t#
-		TP\t{indel_tp}
-		FP\t{indel_fp}
-		FN\t{indel_fn}
-		precision\t{indel_prec}
-		recall\t{indel_reca}
-		f1\t{indel_f1}
-		barcode split rate\t{bcsplitrate}
-		LFR count\t{lfrcnt}
-		LFR avg len\t{lfravglen}
-		stLFR PE map rate\t{stlfrpemaprate}
-		stLFR %genome cov > 10x\t{stlfr_genome_cov10}
-		het snps phased\t{hetsnpsphased}
-		het indels phased\t{hetindelsphased}
-		phase block count\t{phaseblock}
-		phase block N50\t{n50}
-		"""
-elif flg == 'stlfronly_ref':
-	id, aligner, varcaller, varstats, het, splitLog, lfr, aligncatstlfr,phase, stlfrbamdepth = files
-	snps, indels = varcnt(varstats)
-	hetsnps, hetindels = hetvarcnt(het)
+		str = f"""
+			Sample\t{id}
+			stLFR aligner\t{aligner}
+			var caller\t{varcaller}
+			stLFR bam avg depth\t{stlfrbamdepth}
+			snps\t{snps}
+			het snps\t{hetsnps}
+			indels\t{indels}
+			het indels\t{hetindels}
+			##snps eval\t#
+			TP\t{tp}
+			FP\t{fp}
+			FN\t{fn}
+			precision\t{prec}
+			recall\t{reca}
+			f1\t{f1}
+			##indels eval\t#
+			TP\t{indel_tp}
+			FP\t{indel_fp}
+			FN\t{indel_fn}
+			precision\t{indel_prec}
+			recall\t{indel_reca}
+			f1\t{indel_f1}
+			barcode split rate\t{bcsplitrate}
+			LFR count\t{lfrcnt}
+			LFR avg len\t{lfravglen}
+			stLFR PE map rate\t{stlfrpemaprate}
+			stLFR %genome cov > 10x\t{stlfr_genome_cov10}
+			het snps phased\t{hetsnpsphased}
+			het indels phased\t{hetindelsphased}
+			phase block count\t{phaseblock}
+			phase block N50\t{n50}
+			"""
+	elif flg == 'stlfronly_ref':
+		id, aligner, varcaller, varstats, het, splitLog, lfr, aligncatstlfr,phase, stlfrbamdepth = files
+		snps, indels = varcnt(varstats)
+		hetsnps, hetindels = hetvarcnt(het)
 
-	bcsplitrate = fsplitrate(splitLog)
+		bcsplitrate = fsplitrate(splitLog)
 
-	lfrcnt, lfravglen = flfr(lfr)
-	stlfrpemaprate, stlfr_genome_cov10 = bam(aligncatstlfr)
-	hetsnps, hetsnpsphased, hetindels, hetindelsphased, n50, phaseblock = fphase(phase)
+		lfrcnt, lfravglen = flfr(lfr)
+		stlfrpemaprate, stlfr_genome_cov10 = bam(aligncatstlfr)
+		hetsnps, hetsnpsphased, hetindels, hetindelsphased, n50, phaseblock = fphase(phase)
 
-	str = f"""
-		Sample\t{id}
-		stLFR aligner\t{aligner}
-		var caller\t{varcaller}
-		stLFR bam avg depth\t{stlfrbamdepth}
-		snps\t{snps}
-		het snps\t{hetsnps}
-		indels\t{indels}
-		het indels\t{hetindels}
-		barcode split rate\t{bcsplitrate}
-		LFR count\t{lfrcnt}
-		LFR avg len\t{lfravglen}
-		stLFR PE map rate\t{stlfrpemaprate}
-		stLFR %genome cov > 10x\t{stlfr_genome_cov10}
-		het snps phased\t{hetsnpsphased}
-		het indels phased\t{hetindelsphased}
-		phase block count\t{phaseblock}
-		phase block N50\t{n50}
-		"""
-elif flg == 'frombam':
-	id, aligner, varcaller, varstats, het, aligncatstlfr,aligncatpf, phase, fgenecov, vcfeval, vcfevalpf, stlfrbamdepth, pfbamdepth = files
+		str = f"""
+			Sample\t{id}
+			stLFR aligner\t{aligner}
+			var caller\t{varcaller}
+			stLFR bam avg depth\t{stlfrbamdepth}
+			snps\t{snps}
+			het snps\t{hetsnps}
+			indels\t{indels}
+			het indels\t{hetindels}
+			barcode split rate\t{bcsplitrate}
+			LFR count\t{lfrcnt}
+			LFR avg len\t{lfravglen}
+			stLFR PE map rate\t{stlfrpemaprate}
+			stLFR %genome cov > 10x\t{stlfr_genome_cov10}
+			het snps phased\t{hetsnpsphased}
+			het indels phased\t{hetindelsphased}
+			phase block count\t{phaseblock}
+			phase block N50\t{n50}
+			"""
+	elif flg == 'frombam':
+		id, aligner, varcaller, varstats, het, aligncatstlfr,aligncatpf, phase, fgenecov, vcfeval, vcfevalpf, stlfrbamdepth, pfbamdepth = files
 
-	snps, indels = varcnt(varstats)
-	hetsnps, hetindels = hetvarcnt(het)
-	stlfrpemaprate, stlfr_genome_cov10 = bam(aligncatstlfr)
-	pfpemaprate, pf_genome_cov10 = bam(aligncatpf)
-	hetsnps, hetsnpsphased, hetindels, hetindelsphased, n50, phaseblock = fphase(phase)
+		snps, indels = varcnt(varstats)
+		hetsnps, hetindels = hetvarcnt(het)
+		stlfrpemaprate, stlfr_genome_cov10 = bam(aligncatstlfr)
+		pfpemaprate, pf_genome_cov10 = bam(aligncatpf)
+		hetsnps, hetsnpsphased, hetindels, hetindelsphased, n50, phaseblock = fphase(phase)
 
-	tp, fp, fn, prec, reca, f1, indel_tp, indel_fp, indel_fn, indel_prec, indel_reca, indel_f1 = fvcfeval(vcfeval)
-	pf_tp, pf_fp, pf_fn, pf_prec, pf_reca, pf_f1, pf_indel_tp, pf_indel_fp, pf_indel_fn, pf_indel_prec, pf_indel_reca, pf_indel_f1 = fvcfeval(vcfevalpf)
+		tp, fp, fn, prec, reca, f1, indel_tp, indel_fp, indel_fn, indel_prec, indel_reca, indel_f1 = fvcfeval(vcfeval)
+		pf_tp, pf_fp, pf_fn, pf_prec, pf_reca, pf_f1, pf_indel_tp, pf_indel_fp, pf_indel_fn, pf_indel_prec, pf_indel_reca, pf_indel_f1 = fvcfeval(vcfevalpf)
 
-	cmrg_cov_pf, cmrg_cov_merge, cmrg_depth_pf, cmrg_depth_merge = cmrg(fgenecov)
+		cmrg_cov_pf, cmrg_cov_merge, cmrg_depth_pf, cmrg_depth_merge = cmrg(fgenecov)
 
-	str = f"""
-		Sample\t{id}
-		stLFR aligner\t{aligner}
-		var caller\t{varcaller}
-		stLFR bam avg depth\t{stlfrbamdepth}
-		PCR-free bam avg depth\t{pfbamdepth}
-		snps\t{snps}
-		het snps\t{hetsnps}
-		indels\t{indels}
-		het indels\t{hetindels}
-		##snps eval\t#
-		TP\t{tp}
-		FP\t{fp}
-		FN\t{fn}
-		precision\t{prec}
-		recall\t{reca}
-		f1\t{f1}
-		##indels eval\t#
-		TP\t{indel_tp}
-		FP\t{indel_fp}
-		FN\t{indel_fn}
-		precision\t{indel_prec}
-		recall\t{indel_reca}
-		f1\t{indel_f1}
-		##PCR-free snps eval\t#
-		TP\t{pf_tp}
-		FP\t{pf_fp}
-		FN\t{pf_fn}
-		precision\t{pf_prec}
-		recall\t{pf_reca}
-		f1\t{pf_f1}
-		##PCR-free indels eval\t#
-		TP\t{pf_indel_tp}
-		FP\t{pf_indel_fp}
-		FN\t{pf_indel_fn}
-		precision\t{pf_indel_prec}
-		recall\t{pf_indel_reca}
-		f1\t{pf_indel_f1}
-		stLFR PE map rate\t{stlfrpemaprate}
-		PCR-free PE map rate\t{pfpemaprate}
-		stLFR %genome cov > 10x\t{stlfr_genome_cov10}
-		PCR-free %genome cov > 10x\t{pf_genome_cov10}
-		het snps phased\t{hetsnpsphased}
-		het indels phased\t{hetindelsphased}
-		phase block count\t{phaseblock}
-		phase block N50\t{n50}
-		CMRG avg coverage (PCR-free)\t{cmrg_cov_pf}
-		CMRG avg coverage (merged)\t{cmrg_cov_merge}
-		CMRG avg depth (PCR-free)\t{cmrg_depth_pf}
-		CMRG avg depth (merged)\t{cmrg_depth_merge}
-		"""
-elif flg == 'frombam_ref': # no vcfeval, 
-	id, aligner, varcaller, varstats, het, aligncatstlfr,aligncatpf, phase, stlfrbamdepth, pfbamdepth = files
-	snps, indels = varcnt(varstats)
-	hetsnps, hetindels = hetvarcnt(het)
-	stlfrpemaprate, stlfr_genome_cov10 = bam(aligncatstlfr)
-	pfpemaprate, pf_genome_cov10 = bam(aligncatpf)
-	hetsnps, hetsnpsphased, hetindels, hetindelsphased, n50, phaseblock = fphase(phase)
+		str = f"""
+			Sample\t{id}
+			stLFR aligner\t{aligner}
+			var caller\t{varcaller}
+			stLFR bam avg depth\t{stlfrbamdepth}
+			PCR-free bam avg depth\t{pfbamdepth}
+			snps\t{snps}
+			het snps\t{hetsnps}
+			indels\t{indels}
+			het indels\t{hetindels}
+			##snps eval\t#
+			TP\t{tp}
+			FP\t{fp}
+			FN\t{fn}
+			precision\t{prec}
+			recall\t{reca}
+			f1\t{f1}
+			##indels eval\t#
+			TP\t{indel_tp}
+			FP\t{indel_fp}
+			FN\t{indel_fn}
+			precision\t{indel_prec}
+			recall\t{indel_reca}
+			f1\t{indel_f1}
+			##PCR-free snps eval\t#
+			TP\t{pf_tp}
+			FP\t{pf_fp}
+			FN\t{pf_fn}
+			precision\t{pf_prec}
+			recall\t{pf_reca}
+			f1\t{pf_f1}
+			##PCR-free indels eval\t#
+			TP\t{pf_indel_tp}
+			FP\t{pf_indel_fp}
+			FN\t{pf_indel_fn}
+			precision\t{pf_indel_prec}
+			recall\t{pf_indel_reca}
+			f1\t{pf_indel_f1}
+			stLFR PE map rate\t{stlfrpemaprate}
+			PCR-free PE map rate\t{pfpemaprate}
+			stLFR %genome cov > 10x\t{stlfr_genome_cov10}
+			PCR-free %genome cov > 10x\t{pf_genome_cov10}
+			het snps phased\t{hetsnpsphased}
+			het indels phased\t{hetindelsphased}
+			phase block count\t{phaseblock}
+			phase block N50\t{n50}
+			CMRG avg coverage (PCR-free)\t{cmrg_cov_pf}
+			CMRG avg coverage (merged)\t{cmrg_cov_merge}
+			CMRG avg depth (PCR-free)\t{cmrg_depth_pf}
+			CMRG avg depth (merged)\t{cmrg_depth_merge}
+			"""
+	elif flg == 'frombam_ref': # no vcfeval, 
+		id, aligner, varcaller, varstats, het, aligncatstlfr,aligncatpf, phase, stlfrbamdepth, pfbamdepth = files
+		snps, indels = varcnt(varstats)
+		hetsnps, hetindels = hetvarcnt(het)
+		stlfrpemaprate, stlfr_genome_cov10 = bam(aligncatstlfr)
+		pfpemaprate, pf_genome_cov10 = bam(aligncatpf)
+		hetsnps, hetsnpsphased, hetindels, hetindelsphased, n50, phaseblock = fphase(phase)
 
-	str = f"""
-		Sample\t{id}
-		stLFR aligner\t{aligner}
-		var caller\t{varcaller}
-		stLFR bam avg depth\t{stlfrbamdepth}
-		PCR-free bam avg depth\t{pfbamdepth}
-		snps\t{snps}
-		het snps\t{hetsnps}
-		indels\t{indels}
-		het indels\t{hetindels}
-		stLFR PE map rate\t{stlfrpemaprate}
-		PCR-free PE map rate\t{pfpemaprate}
-		stLFR %genome cov > 10x\t{stlfr_genome_cov10}
-		PCR-free %genome cov > 10x\t{pf_genome_cov10}
-		het snps phased\t{hetsnpsphased}
-		het indels phased\t{hetindelsphased}
-		phase block count\t{phaseblock}
-		phase block N50\t{n50}
-		"""
+		str = f"""
+			Sample\t{id}
+			stLFR aligner\t{aligner}
+			var caller\t{varcaller}
+			stLFR bam avg depth\t{stlfrbamdepth}
+			PCR-free bam avg depth\t{pfbamdepth}
+			snps\t{snps}
+			het snps\t{hetsnps}
+			indels\t{indels}
+			het indels\t{hetindels}
+			stLFR PE map rate\t{stlfrpemaprate}
+			PCR-free PE map rate\t{pfpemaprate}
+			stLFR %genome cov > 10x\t{stlfr_genome_cov10}
+			PCR-free %genome cov > 10x\t{pf_genome_cov10}
+			het snps phased\t{hetsnpsphased}
+			het indels phased\t{hetindelsphased}
+			phase block count\t{phaseblock}
+			phase block N50\t{n50}
+			"""
 
-str = '\n'.join(line.strip() for line in str.strip().split('\n'))
-print(str)
+	str = '\n'.join(line.strip() for line in str.strip().split('\n'))
+	print(str)
+
+if __name__ == "__main__":
+    main()

@@ -117,6 +117,61 @@ process eachstat_phase {
     ${params.BIN}python ${params.SCRIPT}/stat/eachstat_phase.py $id $hapcutstat > ${id}.haplotype.xls
     """
 }
+process ideogram {
+    cpus params.CPU0
+    memory params.MEM0 + "g"
+    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    
+
+    input:
+    tuple val(id), path(hapblock)
+
+    output:
+    tuple val(id), path("*png"), emit: png
+    path("*svg")
+
+    // tag "$id, $aligner, $varcaller"
+    tag "$id"
+    publishDir "${params.outdir}/report/$id/", mode: 'link'
+
+    script:
+    def fai = "${params.DB}/${params.ref}/reference/${params.ref}.fa.fai"
+    """
+    # output: karyotype.id.genome.txt, karyotype.id.band.txt
+    ${params.BIN}python ${params.SCRIPT}/band.py $hapblock
+    /usr/local/miniconda3/envs/rideogram/bin/Rscript ${params.SCRIPT}/ideogram.R ${params.SCRIPT}/hg38.karyotype
+    """
+    stub:
+    "touch ${id}.haplotype.pdf karyotype.${id}.band.txt"
+}
+process cumu {
+    cpus params.CPU0
+    memory params.MEM0 + "g"
+    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    
+
+    input:
+    tuple val(id), path(hapblock)
+
+    output:
+    tuple val(id), path("*png"), emit: png
+    path("*svg")
+
+    // tag "$id, $aligner, $varcaller"
+    tag "$id"
+    publishDir "${params.outdir}/report/$id/", mode: 'link'
+
+    script:
+    def fai = "${params.DB}/${params.ref}/reference/${params.ref}.fa.fai"
+    """
+    # output: karyotype.id.genome.txt, karyotype.id.band.txt
+    ${params.BIN}python ${params.SCRIPT}/band.py $hapblock
+    /usr/local/miniconda3/envs/rideogram/bin/Rscript ${params.SCRIPT}/ideogram.R ${params.SCRIPT}/hg38.karyotype
+    """
+    stub:
+    "touch ${id}.haplotype.pdf karyotype.${id}.band.txt"
+}
+
 process hapKaryotype {
     cpus params.CPU0
     memory params.MEM0 + "g"
