@@ -183,6 +183,13 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
     --PF_lt_stLFR_depth INT
       Extract the intersection regions from the sampled cWGS (stLFR) bam with depth greater than (>) this value and PCRFree bam with depth less equal than (<=) this value. [10]
     ```
+   stlfr only, same sample.list as other runs  
+   ```
+   modules=$path_to_your_scirpts/DNBSEQ_Complete_WGS/modules
+   scripts=$path_to_your_scirpts/DNBSEQ_Complete_WGS/scripts
+
+   ./CWGS sample.list -sing $singularity_path -local -debug -module ${modules} -script ${scripts} --use_megabolt false --stLFR_only true > run.log 2>&1
+   ```
     Enable resuming the running
     ```
     --keepFiles BOOL
@@ -194,7 +201,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
     By default, each process only keeps the output files. If you want to check the intermediate files within a process, use this flag.
     ```
 
-4. Executor and MegaBOLT setting, four combinations:
+5. Executor and MegaBOLT setting, four combinations:
     Make sure CWGS is in your PATH.
     1. on clusters by SGE (Sun Grid Engine) and no MegaBOLT (default)
         Confirm the working queue and project number, which can be specified using --queue, and --project for regular queue, and project id, respectively. Use "--project none" if the system doesn't support a project id.
