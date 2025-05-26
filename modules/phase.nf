@@ -21,7 +21,7 @@ process getchrs {
 process phase {
     cpus params.CPU0
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
 
     input:
@@ -93,7 +93,7 @@ process phase {
 process eachstat_phase {
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
 
     input:
@@ -120,7 +120,7 @@ process eachstat_phase {
 process ideogram {
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
 
     input:
@@ -137,17 +137,18 @@ process ideogram {
     script:
     def fai = "${params.DB}/${params.ref}/reference/${params.ref}.fa.fai"
     """
-    # output: karyotype.id.genome.txt, karyotype.id.band.txt
     ${params.BIN}python ${params.SCRIPT}/band.py $hapblock
     /usr/local/miniconda3/envs/rideogram/bin/Rscript ${params.SCRIPT}/ideogram.R ${params.SCRIPT}/hg38.karyotype
+    convert -crop 1250x1250+900+200 chromosome.png tmp
+    mv tmp chromosome.png
     """
     stub:
-    "touch ${id}.haplotype.pdf karyotype.${id}.band.txt"
+    "touch chromosome.png chromosome.svg"
 }
-process cumu {
+process cumuplot {
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
 
     input:
@@ -155,27 +156,23 @@ process cumu {
 
     output:
     tuple val(id), path("*png"), emit: png
-    path("*svg")
 
     // tag "$id, $aligner, $varcaller"
     tag "$id"
     publishDir "${params.outdir}/report/$id/", mode: 'link'
 
     script:
-    def fai = "${params.DB}/${params.ref}/reference/${params.ref}.fa.fai"
     """
-    # output: karyotype.id.genome.txt, karyotype.id.band.txt
-    ${params.BIN}python ${params.SCRIPT}/band.py $hapblock
-    /usr/local/miniconda3/envs/rideogram/bin/Rscript ${params.SCRIPT}/ideogram.R ${params.SCRIPT}/hg38.karyotype
+    /usr/local/miniconda3/envs/six/bin/python ${params.SCRIPT}/cumuplot.py $hapblock
     """
     stub:
-    "touch ${id}.haplotype.pdf karyotype.${id}.band.txt"
+    "touch a.png"
 }
 
 process hapKaryotype {
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
 
     input:
@@ -205,7 +202,7 @@ process hapKaryotype {
 process hapKaryotype_bak {
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     // cache false
     input:
@@ -233,7 +230,7 @@ process hapKaryotype_bak {
 process circos {
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
 
     input:
@@ -265,7 +262,7 @@ process circos {
 process phase_cat {
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(aligner)
@@ -346,7 +343,7 @@ process phase_cat {
 process phaseCatRef {
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(aligner)
