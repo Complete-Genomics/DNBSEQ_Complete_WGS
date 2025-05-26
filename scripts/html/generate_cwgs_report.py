@@ -10,6 +10,7 @@ import hashlib
 import html_util
 from io import open
 
+title = 'CWGS analysis report'
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
 
@@ -352,12 +353,7 @@ def create_sec_box(filePath, title, lang, type):
            <div class="secBox">
                <h1>%s</h1>
            </div>
-           <div class = "dataLink">
-                <a href = "%s" download>%s</a>
-           </div>
-    ''' % (getContentLang(title, lang), 
-           linkPath, 
-           getContentLang("DOWNLOAD", lang)
+    ''' % (getContentLang(title, lang)
     )
     if type == 'table':
         html += '''
@@ -368,12 +364,7 @@ def create_sec_box(filePath, title, lang, type):
             </div>''' % getTableContent(filePath, False ,lang)
     else:
         html += get_png_div(filePath)
-    if getContentLang(context_name, lang):
-        html += '''
-                <div class="content">
-                     <p>%s</p>
-                </div>
-             ''' % getContentLang(context_name, lang)
+
     return html
 
 def create_sample(name, lang):
@@ -392,25 +383,28 @@ def generate_html_report(path, version, name, lang="en"):
     frag_table      = path + "/" + name + ".fragstats.xls"
     align_table     = path + "/" + name + ".bamstats.xls"
     variant_table   = path + "/" + name + ".vcfstats.xls"
+    phase_ideogram_png       = path + "/" + "chromosome.png"
+    phase_cumuplot_png       = path + "/" + "cumulative_coverage_plot.png"
+
     # phase_table     = path2 + "/" + name + ".haplotype.xls"
     # vcfeval_table   = path2 + "/" + name + ".evaluation.xls"
 
     fastqBoxContent = (
-                        create_sample(name, lang, "png")
-                      + create_sec_box(fastq_table, "FASTQTAB", "FASTQTABDES", lang, "table", fastq_table)
+                        create_sample(name, lang)
+                      + create_sec_box(fastq_table, "FASTQTAB", lang, "table")
                     #   + create_sec_box(base_png,    "BASEDIS",  "BASEDISDES",  lang, "png", base_png) 
                     #   + create_sec_box(qual_png,    "BASEQUAL", "BASEQUALDES", lang, "png", qual_png)
                       )
 
     fragmentBoxContent = (
-                           create_sec_box(frag_table,      "FRAGTAB", "FRAGTABDES", lang, "table", frag_table)
+                           create_sec_box(frag_table,      "FRAGTAB", lang, "table")
                         #  + create_sec_box(fragbarcode_png, "FRAGBAR", "FRAGBARDES", lang, "png", fragbarcode_pdf)
                         #  + create_sec_box(fraglen1_png,    "FRAGLEN", "FRAGLENDES", lang, "png", fraglen_pdf)
                         #  + create_sec_box(fragcov_png,     "FRAGCOV", "FRAGCOVDES", lang, "png", fragcov_pdf)
                          )
 
     alignmentBoxContent = (
-                            create_sec_box(align_table, "ALIGNTAB", "ALIGNTABDES", lang, "table", align_table)
+                            create_sec_box(align_table, "ALIGNTAB", lang, "table")
                         #   + create_sec_box(insert_png,  "INSERT",   "INSERTDES",   lang, "png", insert_pdf)
                         #   + create_sec_box(deep_png1,   "DEEP",     "DEEPDES",     lang, "png", deep_pdf1)
                         #   + create_sec_box(deep_png2,   "DEEP2",    "DEEP2DES",    lang, "png", deep_pdf2)
@@ -418,15 +412,15 @@ def generate_html_report(path, version, name, lang="en"):
                           )
 
     variantBoxContent = ( 
-                          create_sec_box(variant_table, "VARIANTTAB", "VARIANTTABDES", lang, "table", variant_table)
+                          create_sec_box(variant_table, "VARIANTTAB", lang, "table")
                         # + create_sec_box(vcfeval_table, "VCFEVALTAB", "VCFEVALTABDES", lang, "table", vcfeval_table)
                         # + create_sec_box(circos_png, "CIRCOS", "CIRCOSDES", lang, "png", circos_svg)
                         # + get_png_div(circosleg_png)
                         )
 
     phaseBoxContent = (
-                        create_sec_box(phase_table, "PHASETAB", "PHASETABDES", lang, "table", phase_table)
-                    #   + create_sec_box(phase_png, "PHASE", "PHASEDES", lang, "png", phase_pdf)
+                        create_sec_box(phase_ideogram_png, "PHASE", lang, "png")
+                    +   create_sec_box(phase_cumuplot_png, "PHASE", lang, "png")
                       )
 
     fastqBox     = create_hide_box("1." + getContentLang("FASTQTITLE", lang),   "boxOne",   fastqBoxContent, getContentLang("FASTQTDES", lang))
@@ -435,20 +429,22 @@ def generate_html_report(path, version, name, lang="en"):
     variantBox   = create_hide_box("4." + getContentLang("VARIANTTITLE", lang), "boxFour",  variantBoxContent, getContentLang("VARIANTTDES", lang))
     phaseBox     = create_hide_box("5." + getContentLang("PHASETITLE", lang),   "boxFive",  phaseBoxContent, getContentLang("PHASETDES", lang))
 
-    html=   '''
-            <!DOCTYPE html>
+    logo        = html_util.HtmlUtil.getPNGBinary('logo.png')
+    base_css    = html_util.HtmlUtil.getFileContent('base.css')
+    common_css  = html_util.HtmlUtil.getFileContent('common.css')
+    table_css   = html_util.HtmlUtil.getFileContent('table.css')
+
+    html = f"""
+    <!DOCTYPE html>
             <html>
             <head>
                 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-                <title>'''+ getContentLang(product_type, lang) + '''</title>
+                <title>CWGS analysis report</title>
                 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
                 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no">
                 <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
                 <!-- load css file -->
-                <style type="text/css">
-            ''' + html_util.HtmlUtil.getFileContent('base.css') + '''
-            ''' + html_util.HtmlUtil.getFileContent('common.css') + '''
-            ''' + html_util.HtmlUtil.getFileContent('table.css') + '''
+                <style type="text/css">{base_css}{common_css}{table_css}
                 </style>
             </head>
             <body>
@@ -458,25 +454,13 @@ def generate_html_report(path, version, name, lang="en"):
                 <div class="wrapper">
                     <div class="headerBox clearfloat">
                         <div class="headLeft fl">
-                        <h1>'''+ getContentLang(product_type, lang) + '''</h1>
-                        <div style="float:right; margin:-40px -130px 10px 160px; background-color: #f7faeb; width: 100px; height: 30px; border-radius: 8px;text-align:center;"><a href="./'''+ name 
-                        
-    if lang == "cn":
-        html+= "_en"
-    else:
-        html+= "_cn"
-    html+=               '''.html" style="color: #1c567f; font-size: 20px; padding-top: 2px;">'''
-    if lang == "cn":
-        html+= "English"
-    else:
-        html+= "中文"
-    html+=          '''</a></div>
-                        <h2>%(version)s</h2>
+                        <h1>{title}</h1>
+                        <h2>{version}</h2>
                         </div>
                         <!-- headLeft -->
                         <div class="headRight fr">
                         <div class="logo">
-                        <img src="%(logo)s">
+                        <img src="{logo}">
                         </div>
                         </div>
                     <!-- headRight -->
@@ -485,33 +469,25 @@ def generate_html_report(path, version, name, lang="en"):
             </div>
             <!--header ends-->
 
-            <!--container starts-->
+             <!--container starts-->
             <div class="container">
             <div class="wrapper">
 
-            %(fastqBox)s
-            %(fragmentBox)s
-            %(alignmentBox)s
-            %(variantBox)s
-            %(phaseBox)s
+            {fastqBox}
+            {fragmentBox}
+            {alignmentBox}
+            {variantBox}
+            {phaseBox}
 
         <div class="repeater"></div>
         <div class="secBottom"></div>
         </div>
         </body>
         </html>
-    ''' %{
-        "version": version,
-        "logo": html_util.HtmlUtil.getPNGBinary('logo.png'),
-        "fastqBox": fastqBox,
-        "fragmentBox" : fragmentBox,
-        "alignmentBox" : alignmentBox,
-        "variantBox" : variantBox,
-        "phaseBox" : phaseBox
-    }
 
-    with open(output_path + '/' + name + '_' + lang +'.html', 'w+', encoding='utf-8') as report:
-        print(output_path + '/' + name +'.html') 
+    """
+    
+    with open(name + '_' + lang +'.html', 'w+', encoding='utf-8') as report:
         report.write(html)
 
 
