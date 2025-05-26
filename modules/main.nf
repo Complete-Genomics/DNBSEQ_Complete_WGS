@@ -407,6 +407,7 @@ workflow CWGS {
                     stats = phaseLariatDv.out.stat.groupTuple()  
                     if (!params.ref.startsWith('/')) {
                         phaseCatLariatDv(ch_lariat, ch_dv, vcfs.join(pvcfs).join(lfs).join(hbs).join(stats)).report.set {ch_phasereport}//report
+                        vep(phaseCatLariatDv.out.phasedvcf)
                     } else {
                         phaseCatRef(ch_lariat, ch_dv, txt, vcfs.join(pvcfs).join(lfs).join(hbs)).report.set {ch_phasereport}
                     }
@@ -844,6 +845,7 @@ workflow CWGS_frombam {
         stats = phaseLariatDv.out.stat.groupTuple()  
         if (!params.ref.startsWith('/')) {
             phaseCatLariatDv(ch_lariat, ch_dv, vcfs.join(pvcfs).join(lfs).join(hbs).join(stats)).report.set {ch_phasereport}//report
+            vep(phaseCatLariatDv.out.phasedvcf)
         } else {
             phaseCatRef(ch_lariat, ch_dv, txt, vcfs.join(pvcfs).join(lfs).join(hbs)).report.set {ch_phasereport}
         }
