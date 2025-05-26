@@ -4,7 +4,7 @@ process hcMegabolt {
     label 'megabolt'
     cpus params.cpu3
     memory params.MEM2 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.boltq} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.boltq)
     
     input:
     val(aligner)
@@ -49,7 +49,7 @@ process vqsrMegabolt {
     label 'megabolt'
     cpus params.cpu3
     memory params.MEM2 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.boltq} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.boltq)
     
     input:
     val(aligner)
@@ -94,7 +94,7 @@ process vqsrMegabolt {
 process hc {
     cpus params.cpu3
     memory params.MEM2 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(aligner)
@@ -146,7 +146,7 @@ process hc {
 process vqsrSnp {
     cpus params.cpu3
     memory params.MEM2 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(aligner)
@@ -240,7 +240,7 @@ process vqsrSnp {
 process vqsrIndel {
     cpus params.cpu3
     memory params.MEM2 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(aligner)
@@ -332,7 +332,7 @@ process gatk_interval {
 
   cpus params.CPU0
   memory params.MEM0 + "g"
-  clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+  clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
   output:
   file("txt")
@@ -375,7 +375,7 @@ process gatk_interval {
 process hcSplit {
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(aligner)
@@ -428,7 +428,7 @@ process hcSplit {
 process gatherVcfsHc {
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(aligner)
@@ -463,7 +463,7 @@ process gatherVcfsHc {
 process gatherVcfsVqsr {
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(aligner)
@@ -489,7 +489,7 @@ process dvMegabolt {
     label 'megabolt'
     cpus params.cpu3
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.boltq} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.boltq)
     
     input:
     val(aligner)
@@ -523,17 +523,17 @@ process dvMegabolt {
     stub:
     "touch ${id}.${aligner}.dv.vcf.gz"
 }
-process deepvariantv16 {
+process deepvariant {
     cpus params.cpu3
     memory params.MEM3 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(aligner)
     tuple val(id), path(bam) //demo.stlfr.lariat.merge.bam
 
     output:
-    tuple val(id), path("${id}.*.dv.vcf.gz*") //demo.lariat.dv.vcf.gz
+    tuple val(id), path("${id}.*.dv*.vcf.gz*") //demo.lariat.dv.vcf.gz
 
     tag "$id"
     publishDir "${params.outdir}/$id/align/", mode: 'link'
@@ -542,10 +542,12 @@ process deepvariantv16 {
     def bam = bam.first()
     def ref = params.ref.startsWith('/') ? params.ref : "${params.DB}/${params.ref}/reference/${params.ref}.fa"
     def machine="${params.dv_machine}" // g400
+    def ver = (params.dv_version == 'v1.9') ? "dv19" : "dv16"
     def model="${params.DB}/DV_model/dv1.6-mgi-${machine}.ckpt"
-    def outvcf = bam.toString().contains("pf") ? "${id}.pf.bwa.dv.vcf.gz" : "${id}.${aligner}.dv.vcf.gz"
+    def outvcf = bam.toString().contains("pf") ? "${id}.pf.bwa.${ver}.vcf.gz" : "${id}.${aligner}.${ver}.vcf.gz"
+    def dv = (params.dv_version == 'v1.9') ? "/opt/deepvariant/bin/run_deepvariant" : "/opt/dv_1.6/bin/run_deepvariant"
     """
-    /opt/deepvariant/bin/run_deepvariant --model_type=WGS \\
+    $dv --model_type=WGS \\
       --ref=$ref \\
       --reads=$bam \\
       --output_vcf=$outvcf \\
@@ -558,5 +560,5 @@ process deepvariantv16 {
 
     """
     stub:
-    "touch ${id}.${aligner}.dv.vcf.gz"
+    "touch ${id}.${aligner}.${ver}.vcf.gz"
 }

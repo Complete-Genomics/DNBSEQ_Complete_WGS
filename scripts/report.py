@@ -1,18 +1,6 @@
 import sys,os,re
 
-#python3 ${params.SCRIPT}/report0.py $id $vcf $splitLog $lfr $aligncatstlfr $aligncatpf $phase $genecov > ${id}.report
-"""
-[biancai@cngb-xcompute-0-17 G400_ECR6_stLFR-1]$ head 01.filter/G400_ECR6_stLFR-1/split_stat_read1.log
-Barcode_types = 1536*1536*1536=3623878656
-Barcode_types_with_mismatch = 62976*62976*62976=249761340850176(1)
-Real_Barcode_types = 33574842
-Reads_pair_num = 818923261
-Reads_pair_num(after split) = 753672975(92.032186%)
-0       65250286        0_0_0
-8282618 1       1000_1000_1064
-11119045        1       1000_1000_1096
 
-"""
 def varcnt(varstats):
 	f = open(varstats)
 	for line in f:
@@ -161,6 +149,34 @@ def main():
 			CMRG avg depth (PCR-free)\t{cmrg_depth_pf}
 			CMRG avg depth (merged)\t{cmrg_depth_merge}
 			"""
+
+		# cmrg_hom, cmrg_het = cmrg_genes
+		# met = f"""
+		# 	Sample\t{id}
+		# 	%genome coverage >20X (merged bam){merge_genome_cov20}
+		# 	Total SNPs called\t{snps}
+		# 	Total heterozygous SNPs called\t{hetsnps}
+		# 	Total heterozygous SNPs phased\t{hetsnpsphased}
+		# 	Total Indels (< 50 bp) called\t{indels}
+		# 	Total heterozygous Indels (< 50 bp) called\t{hetindels}
+		# 	Total phased heterozygous indels\t{hetindelsphased}
+		# 	Ti/Tv\t{tt}
+		# 	Het/hom\t{hh}
+		# 	Total cWGS fragments\t{lfrcnt}
+		# 	Average cWGS length (kb)\t{int(float(lfravglen) / 1e3)}
+		# 	Phased contig N50 (Mb)\t{int(float(n50) /1e6)}
+		# 	Total bases in phase block\t{phaseblockbases}
+		# 	Average percent coverage of CMRG genes\t{cmrg_cov_merge}
+		# 	Average depth of coverage of CMRG genes\t{cmrg_depth_merge}
+		# 	Percent of genes covered by single phased contig\t{cmrg_pct}
+		# 	Number of genes with a homozygous coding variant\t{cmrg_hom}
+		# 	Number of genes with at least one coding heterozygous variant on each allele\t{cmrg_het}
+		# 	"""
+
+		# g = open(id + '_metrics.xls','w')
+		# met = '\n'.join(line.strip() for line in str.strip().split('\n'))
+		# g.write(met)
+		# g.close()
 
 	elif flg == 'ref':
 		id, aligner, varcaller, varstats, het, splitLog, lfr, aligncatstlfr,aligncatpf, phase, stlfrbamdepth, pfbamdepth = files
