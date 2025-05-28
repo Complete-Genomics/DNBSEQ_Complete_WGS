@@ -272,7 +272,7 @@ process phase_cat {
     output:
     tuple val(id), path("*hapblock"), emit: hb
     tuple val(id), path("${id}.${aligner}.${varcaller}.hapcut_stat.txt"), emit: hapcutstat
-    path("*.phased.vcf.gz*")
+    tuple val(id), path("*.phased.vcf.gz*"), emit: phasedvcf
     tuple val(id), path("*.phase.report"), emit: report 
 
     tag "$id, $aligner, $varcaller"

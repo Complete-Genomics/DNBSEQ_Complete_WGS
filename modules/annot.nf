@@ -5,14 +5,25 @@ process vep {
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
-    tuple val(id), path(bam)
+    tuple val(id), path(phasedvcf)
 
     output:
-    tuple val(id), path("bam.bed")
+    tuple val(id), path("${id}.vep.vcf.gz*")
+
+    tag "$id"
+    publishDir "${params.outdir}/$id/annot/", mode: 'link'
 
     script:
-    def bam = bam.first()
+    def vcf = phasedvcf.first()
+    def ref = "${params.DB}/hg38/reference/hg38.fa"
+    def db = "${params.DB}/hg38/"
     """
-    ${params.BIN}bedtools bamtobed -i $bam > bam.bed
+    set +u
+    source /usr/local/miniconda3/bin/activate /usr/local/miniconda3/envs/vep
+
+    vep -i $vcf -o ${id}.vep.vcf --cache --offline --dir_cache $db --fasta $ref --species homo_sapiens --assembly GRCh38 --cache_version 113 --vcf --fields Uploaded_variation,Location,Allele,Gene,Feature,Feature_type,Consequence,cDNA_position,CDS_position,Protein_position,Amino_acids,Codons,Existing_variation,IMPACT,SYMBOL
+
+    bgzip -c ${id}.vep.vcf > ${id}.vep.vcf.gz
+    tabix -p vcf ${id}.vep.vcf.gz
     """
 }
