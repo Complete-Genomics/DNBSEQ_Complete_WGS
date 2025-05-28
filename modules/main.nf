@@ -407,6 +407,7 @@ workflow CWGS {
                     stats = phaseLariatDv.out.stat.groupTuple()  
                     if (!params.ref.startsWith('/')) {
                         phaseCatLariatDv(ch_lariat, ch_dv, vcfs.join(pvcfs).join(lfs).join(hbs).join(stats)).report.set {ch_phasereport}//report
+                        vep(phaseCatLariatDv.out.phasedvcf)
                     } else {
                         phaseCatRef(ch_lariat, ch_dv, txt, vcfs.join(pvcfs).join(lfs).join(hbs)).report.set {ch_phasereport}
                     }
@@ -825,8 +826,8 @@ workflow CWGS_frombam {
     splitBam4phasing(ch_lariat, ch_lariatbam, chrs).set {ch_eachbamlariat}
 
     if (params.var_tool.contains("dv")) {
-        if (params.use_megabolt && params.dv_version != "v1.6") {dvMegabolt(ch_lariat, ch_mergeLariatBam).set {ch_mergevcf}}
-        else if (params.dv_version == "v1.6") {deepvariant(ch_lariat, ch_mergeLariatBam).set {ch_mergevcf}}
+        if (params.use_megabolt) {dvMegabolt(ch_lariat, ch_mergeLariatBam).set {ch_mergevcf}}
+        else {deepvariant(ch_lariat, ch_mergeLariatBam).set {ch_mergevcf}}
         
         if (!params.ref.startsWith('/')) {
             vcfevalLariatDv(ch_merge, ch_mergevcf).set {ch_vcfevalLariatDv}//report 52 
@@ -844,6 +845,7 @@ workflow CWGS_frombam {
         stats = phaseLariatDv.out.stat.groupTuple()  
         if (!params.ref.startsWith('/')) {
             phaseCatLariatDv(ch_lariat, ch_dv, vcfs.join(pvcfs).join(lfs).join(hbs).join(stats)).report.set {ch_phasereport}//report
+            vep(phaseCatLariatDv.out.phasedvcf)
         } else {
             phaseCatRef(ch_lariat, ch_dv, txt, vcfs.join(pvcfs).join(lfs).join(hbs)).report.set {ch_phasereport}
         }
