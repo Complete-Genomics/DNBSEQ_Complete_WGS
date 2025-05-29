@@ -128,6 +128,7 @@ def main():
     run_parser.add_argument('-debug',        action='store_true',        help='debug mode')
     run_parser.add_argument('-bolt',         action='store_true',        help='use megabolt')
     run_parser.add_argument('-host_mb',      action='store_true',        help='use host megabolt rather than local')
+    run_parser.add_argument('-preview',      action='store_true',        help='dry run')
 
     run_parser.add_argument('-db',           default=database_default,   help='database path')
     run_parser.add_argument('-script',       default=script_default,     help='script path')
@@ -139,6 +140,7 @@ def main():
     run_parser.add_argument('-project',      default='W21P0024',         help='set qsub job project, or set \'none\' [W21P0024]')
     run_parser.add_argument('-cpulimit',         help='limit cpu [None]')
 
+
     if (len(sys.argv) == 1) or (sys.argv[1] == '-h') or (sys.argv[1] == '-help') or (sys.argv[1] == '--help'):
         print_main_help()
         sys.exit(0)
@@ -149,6 +151,7 @@ def main():
     SGE_dir         = os.path.realpath(args.sge)
     executor        = args.exec
     runit           = os.path.realpath(args.runit) if args.runit != runit_default else args.runit
+    preview         = '-preview' if args.preview else ''
 
     if not os.path.exists(container):
         print(f"ERROR: {container} doesnt exist!")
@@ -322,7 +325,7 @@ def main():
                 -with-trace trace.txt \\
                 -with-timeline timeline.html \\
                 -resume \\
-                {nf_opts}
+                {nf_opts} {preview}
         """
         print(cmd)
         os.system(cmd)
