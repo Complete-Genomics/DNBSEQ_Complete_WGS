@@ -229,7 +229,27 @@ process report {
     stub:
     "touch report.csv"
 }
+process FQC {
+    executor = 'local'
+	container false
 
+    cpus params.CPU0
+    memory params.MEM0 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+    
+    input:
+    path(reports)
+
+    output:
+    path "report_fqc.csv"
+
+    publishDir "${params.outdir}", mode: 'link'
+    
+    script:
+    """
+    python ${params.SCRIPT}/fqc.py > report_fqc.csv
+    """
+}
 process html {
     cpus params.CPU0
     memory params.MEM0 + "g"

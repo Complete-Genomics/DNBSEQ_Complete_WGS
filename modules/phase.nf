@@ -37,17 +37,7 @@ process phase {
     tuple val(id), path("*.hapcut_stat.txt"), emit: stat
 
     tag "$id, $aligner, $varcaller, $chr"
-    // publishDir "${params.outdir}/$id/phase/phasesplit/"
-
-    // publishDir (
-    //     path: "${params.outdir}/$id/phase/", 
-    //     saveAs: { fn ->
-    //         if (fn.contains("lf") || fn.contains("hapblock") || fn.contains("hapcut_stat")) {"phasesplit/$fn"}
-    //         else {"svsplit/$fn"}
-    //     }
-    // )
-    
-    // cache false
+    publishDir "${params.outdir}/$id/phase/phasesplit", mode: 'link'
 
     script:
     def bam = bam.first()

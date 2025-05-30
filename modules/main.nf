@@ -36,8 +36,7 @@ include {fqstats as fqstats_pf                     } from "${params.MOD}/fqstats
 include {fqstats as fqstats_stlfr                  } from "${params.MOD}/fqstats"
 include {
     barcode_split;
-    barcode_split_stLFRreseq;
-    makeLog                                        } from "${params.MOD}/barcodeSplit"
+    barcode_split_stLFRreseq                                       } from "${params.MOD}/barcodeSplit"
 include {
     tofake10xHash;
     tofake10x;
@@ -196,7 +195,8 @@ include {
     report01 as reportLariatDv1;
     report_frombam_ref;
     report;
-    html } from "${params.MOD}/report"
+    html;
+    FQC } from "${params.MOD}/report"
 
 include { vep } from "${params.MOD}/annot"
 
@@ -642,12 +642,12 @@ workflow CWGS {
             ch_phase = ch_phasereport
             if (!params.ref.startsWith('/')) {    
                 report_stlfronly(ch_lariat, ch_dv, ch_vcf.join(splitLog).join(ch_lfr).join(ch_aligncatstlfr).join(ch_phase).join(ch_vcfevalLariatDv).join(ch_stlfrbamdepth)).collect().mix(ch_reports).set {ch_reports}
-                report(ch_reports)
+                report(ch_reports).set {ch_flg}
             } else { 
                 report_stlfronly_ref(ch_lariat, ch_dv, ch_vcf.join(splitLog).join(ch_lfr).join(ch_aligncatstlfr).join(ch_phase).join(ch_stlfrbamdepth)).collect().mix(ch_reports).set {ch_reports}
-                report(ch_reports)
+                report(ch_reports).set {ch_flg}
             }
-
+            FQC(ch_flg)
         }
     }
 }
@@ -948,6 +948,7 @@ workflow CWGS_frombam {
     } 
     report(ch_reports)
 }
+
 workflow.onComplete {
     println "CWGS started at: $workflow.start"
     println "CWGS completed at: $workflow.complete"

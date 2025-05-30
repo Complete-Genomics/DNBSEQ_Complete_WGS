@@ -145,11 +145,11 @@ process vg {
     // publishDir "${params.outdir}/$id/align/", mode: 'link', enabled: !params.sampleBam
  
     script:
-    def gbz = "${params.DB}/panGenome/hprc-v1.1-mc-grch38.gbz"
-    def list = "${params.DB}/panGenome/GRCh38.path_list.txt"
-    def hapl = "${params.DB}/panGenome/hprc-v1.1-mc-grch38.hapl"
+    def gbz = "${params.DB}/hg38/panGenome/hprc-v1.1-mc-grch38.gbz"
+    def list = "${params.DB}/hg38/panGenome/GRCh38.path_list.txt"
+    def hapl = "${params.DB}/hg38/panGenome/hprc-v1.1-mc-grch38.hapl"
     """
-    vg giraffe -Z $gbz --progress --read-group "ID:$id LB:lib1 SM:HG002 PL:CG PU:unit1" --sample "HG002" -o BAM \\
+    /usr/local/miniconda3/envs/vg/bin/vg giraffe -Z $gbz --progress --read-group "ID:$id LB:lib1 SM:HG002 PL:CG PU:unit1" --sample "HG002" -o BAM \\
         --ref-paths $list -P -L 3000 -f $r1 -f $r2 --kff-name $kff --haplotype-name $hapl -t ${task.cpus} > ${id}.unsort.bam
     """
     stub:

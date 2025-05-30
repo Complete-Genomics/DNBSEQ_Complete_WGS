@@ -28,14 +28,15 @@ def fvcfeval(vcfeval):
 	return L
 def fsplitrate(splitLog):
 	f = open(splitLog)
-	try:
-		for _ in range(4): f.readline()
-		bcsplitrate = re.split('\(|\%\)', f.readline().split()[-1])[1]
-		bcsplitrate = round(float(bcsplitrate), 2)
-	except:
-		bcsplitrate = f.readline().strip()
+	for line in f:
+		if line.startswith('Real_Barcode_types'):
+			bctype = line.strip().split()[-1]
+		if line.startswith('Reads_pair_num(after split)'):
+			bcsplitrate = re.split('\(|\%\)', line.strip().split()[-1])[1]
+			bcsplitrate = f"{round(float(bcsplitrate), 2)}%"
+			break
 	f.close()
-	return bcsplitrate
+	return bctype, bcsplitrate
 def flfr(lfr):
 	f = open(lfr)
 	for line in f:
@@ -56,6 +57,7 @@ def bam(aligncat):
 	pemaprate = f.readline().rstrip()
 	for _ in range(2): f.readline()
 	cov10 = f.readline().rstrip().split()[-1]
+	cov10 = f"{round(float(cov10) * 100, 1)}%"
 	f.close()
 	return pemaprate, cov10
 def fphase(phase):
@@ -217,14 +219,13 @@ def main():
 			phase block count\t{phaseblock}
 			phase block N50\t{n50}
 			"""
-
-	elif flg == 'stlfronly':
+	elif flg.startswith('stlfronly'):
 		id, aligner, varcaller, varstats, het, splitLog, lfr, aligncatstlfr,phase, vcfeval, stlfrbamdepth = files
 
 		snps, indels = varcnt(varstats)
 		hetsnps, hetindels = hetvarcnt(het)
 
-		bcsplitrate = fsplitrate(splitLog)
+		bcpersample, bcsplitrate = fsplitrate(splitLog)
 
 		## lfr
 		lfrcnt, lfravglen = flfr(lfr)
@@ -235,52 +236,6 @@ def main():
 
 		str = f"""
 			Sample\t{id}
-			stLFR aligner\t{aligner}
-			var caller\t{varcaller}
-			stLFR bam avg depth\t{stlfrbamdepth}
-			snps\t{snps}
-			het snps\t{hetsnps}
-			indels\t{indels}
-			het indels\t{hetindels}
-			##snps eval\t#
-			TP\t{tp}
-			FP\t{fp}
-			FN\t{fn}
-			precision\t{prec}
-			recall\t{reca}
-			f1\t{f1}
-			##indels eval\t#
-			TP\t{indel_tp}
-			FP\t{indel_fp}
-			FN\t{indel_fn}
-			precision\t{indel_prec}
-			recall\t{indel_reca}
-			f1\t{indel_f1}
-			barcode split rate\t{bcsplitrate}
-			LFR count\t{lfrcnt}
-			LFR avg len\t{lfravglen}
-			stLFR PE map rate\t{stlfrpemaprate}
-			stLFR %genome cov > 10x\t{stlfr_genome_cov10}
-			het snps phased\t{hetsnpsphased}
-			het indels phased\t{hetindelsphased}
-			phase block count\t{phaseblock}
-			phase block N50\t{n50}
-			"""
-	elif flg == 'stlfronly_ref':
-		id, aligner, varcaller, varstats, het, splitLog, lfr, aligncatstlfr,phase, stlfrbamdepth = files
-		snps, indels = varcnt(varstats)
-		hetsnps, hetindels = hetvarcnt(het)
-
-		bcsplitrate = fsplitrate(splitLog)
-
-		lfrcnt, lfravglen = flfr(lfr)
-		stlfrpemaprate, stlfr_genome_cov10 = bam(aligncatstlfr)
-		hetsnps, hetsnpsphased, hetindels, hetindelsphased, n50, phaseblock = fphase(phase)
-
-		str = f"""
-			Sample\t{id}
-			stLFR aligner\t{aligner}
-			var caller\t{varcaller}
 			stLFR bam avg depth\t{stlfrbamdepth}
 			snps\t{snps}
 			het snps\t{hetsnps}
@@ -289,12 +244,13 @@ def main():
 			barcode split rate\t{bcsplitrate}
 			LFR count\t{lfrcnt}
 			LFR avg len\t{lfravglen}
-			stLFR PE map rate\t{stlfrpemaprate}
+			stLFR PE map rate(unfiltered data)\t{stlfrpemaprate}
 			stLFR %genome cov > 10x\t{stlfr_genome_cov10}
 			het snps phased\t{hetsnpsphased}
 			het indels phased\t{hetindelsphased}
 			phase block count\t{phaseblock}
 			phase block N50\t{n50}
+			barcode detected per sample\t{bcpersample}
 			"""
 	elif flg == 'frombam':
 		id, aligner, varcaller, varstats, het, aligncatstlfr,aligncatpf, phase, fgenecov, vcfeval, vcfevalpf, stlfrbamdepth, pfbamdepth = files
