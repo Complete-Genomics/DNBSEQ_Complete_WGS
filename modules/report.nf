@@ -197,6 +197,35 @@ process report_frombam_ref { // from bam
     stub:
     "touch ${id}.${aligner}.${varcaller}.report"
 }
+process report_frombam_PFonly { // from bam
+    executor = 'local'
+    container false
+
+    cpus params.CPU0
+    memory params.MEM0 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+
+    input:
+    tuple val(id), path(vcf), path(aligncatpf), val(pfbamdepth)
+
+    output:
+    path "${id}.*report"
+
+    tag "$id"
+    // publishDir "${params.outdir}/$id/"
+    // cache false
+
+    script:
+    vcf = vcf.first()
+    """
+    ${params.BIN}bcftools stats $vcf > ${id}.bcftoolsStats.txt
+    hetsnp=`${params.BIN}bcftools view -v snps -g het $vcf |grep -v \\# |wc -l`
+    hetindel=`${params.BIN}bcftools view -v indels -g het $vcf |grep -v \\# |wc -l`
+    echo -e "\$hetsnp\\t\$hetindel" > het
+
+    ${params.BIN}python3 ${params.SCRIPT}/report.py frombam_ref_PFonly $id ${id}.bcftoolsStats.txt het $aligncatpf $pfbamdepth > ${id}.frombam.PFonly.report
+    """
+}
 process report {
     executor = 'local'
 	container false
@@ -226,8 +255,6 @@ process report {
     }' > report.csv
 
     """
-    stub:
-    "touch report.csv"
 }
 process FQC {
     executor = 'local'

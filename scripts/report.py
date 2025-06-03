@@ -344,7 +344,22 @@ def main():
 			phase block count\t{phaseblock}
 			phase block N50\t{n50}
 			"""
+	elif flg == 'frombam_ref_PFonly':
+		id, varstats, het, aligncatpf, pfbamdepth = files
+		snps, indels = varcnt(varstats)
+		hetsnps, hetindels = hetvarcnt(het)
+		pfpemaprate, pf_genome_cov10 = bam(aligncatpf)
 
+		str = f"""
+			Sample\t{id}
+			PCR-free bam avg depth\t{pfbamdepth}
+			snps\t{snps}
+			het snps\t{hetsnps}
+			indels\t{indels}
+			het indels\t{hetindels}
+			PCR-free PE map rate\t{pfpemaprate}
+			PCR-free %genome cov > 10x\t{pf_genome_cov10}
+			"""
 	str = '\n'.join(line.strip() for line in str.strip().split('\n'))
 	print(str)
 

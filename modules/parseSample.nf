@@ -79,13 +79,25 @@ process bam {
     // publishDir "${params.outdir}", mode: "copy"
 
     script:
-	"""
+	cmd = """
 	mv $stlfrbam ${id}_stlfr.bam
 	mv $pfbam ${id}_pf.bam
-
-    ${params.BIN}samtools index ${id}_stlfr.bam
-    ${params.BIN}samtools index ${id}_pf.bam
-	"""
+    """
+    if (params.stLFR_only) {
+        cmd += """
+        ${params.BIN}samtools index ${id}_stlfr.bam
+        """
+    } else if (params.PF_only) {
+        cmd += """
+        ${params.BIN}samtools index ${id}_pf.bam
+        """
+    } else {
+        cmd += """
+        ${params.BIN}samtools index ${id}_stlfr.bam
+        ${params.BIN}samtools index ${id}_pf.bam
+        """
+    }
+    return cmd
 }
 process bam2 {
     cpus params.CPU0
