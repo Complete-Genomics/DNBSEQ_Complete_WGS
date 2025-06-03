@@ -222,12 +222,13 @@ if (params.ref == 'hs37d5') {
         chrs = [params.chr]
     }
     
-} else {
-    getchrs().set { txt }
-    chrs = txt.splitText().map { it.trim() }.collect()
 }
 
 workflow CWGS {
+    if (params.ref.startsWith('/')) {
+        getchrs().set { txt }
+        chrs = txt.splitText().map { it.trim() }.collect()
+    }
     println("!!! run CWGS from fastq")
     parse_sample (ch_input)
     .reads
@@ -654,6 +655,10 @@ workflow CWGS {
 }
 
 workflow CWGS_alignOnly {
+    if (params.ref.startsWith('/')) {
+        getchrs().set { txt }
+        chrs = txt.splitText().map { it.trim() }.collect()
+    }
     parse_sample (ch_input)
     .reads
     .set { ch_fq }
@@ -767,6 +772,10 @@ workflow CWGS_alignOnly {
 }
 
 workflow CWGS_frombam {
+    if (params.ref.startsWith('/')) {
+        getchrs().set { txt }
+        chrs = txt.splitText().map { it.trim() }.collect()
+    }
     if (!params.fromMergedBam) {
         println("!!! run CWGS from stlfr and pf bams")
         parse_sample_frombam(ch_input).bam.set {ch_bam}
@@ -784,11 +793,6 @@ workflow CWGS_frombam {
             coveragePf(ch_libpf, ch_pfbam).join(coverageMeanPf(ch_libpf, ch_pfbam)).set { ch_PfGeneCov }
         }
         
-
-        
-        // mosdepthPf(ch_libpf, ch_pfbam).set {ch_}
-        //depth bed
-        // depth_pf(ch_libpf, ch_bwa, ch_pfbam).set {ch_pfbed}
 
         //pf bam stats
         samtoolsFlagstatPf(ch_libpf, ch_pfbam).set {ch_flagstat2}
@@ -950,6 +954,10 @@ workflow CWGS_frombam {
     report(ch_reports)
 }
 workflow CWGS_frombam_stLFRonly {
+    if (params.ref.startsWith('/')) {
+        getchrs().set { txt }
+        chrs = txt.splitText().map { it.trim() }.collect()
+    }
     if (!params.fromMergedBam) {
         println("!!! run CWGS from stlfr bams")
         parse_sample_frombam(ch_input).bam.set {ch_bam}
@@ -1134,6 +1142,7 @@ workflow CWGS_frombam_stLFRonly {
 }
 workflow CWGS_frombam_PFonly {
     println("!!! run CWGS from pf bams")
+    
     parse_sample_frombam(ch_input).bam.set {ch_bam}
     bam(ch_bam).stlfr.set {ch_lariatbam}
     bam.out.pf.set {ch_pfbam}       
