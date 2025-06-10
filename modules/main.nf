@@ -51,7 +51,6 @@ include {
     bwa as bwaPf;
     kff;
     vg;
-    changeid;
     lariatBC;
     fake10x2lariat;
     mergeFq;
@@ -310,7 +309,7 @@ workflow CWGS {
             } 
         } else { // pf vg
             kff(ch_pfsampledfq).set {ch_kff}
-            changeid(vg(ch_kff.join(ch_pfsampledfq))).set {ch_pfbam}
+            vg(ch_kff.join(ch_pfsampledfq)).set {ch_pfbam}
             //vg(ch_pfsampledfq).set {ch_pfbam}
         }
         if (params.var_tool.contains("gatk") && params.run_bqsr) { bqsrPf(ch_libpf, ch_bwa, ch_pfbam).set {ch_pfbam} }

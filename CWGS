@@ -2,6 +2,7 @@
 # -*- encoding: utf-8 -*-
 
 import os, sys, argparse
+
 N = 'CWGS'
 
 def print_main_help():
@@ -96,6 +97,16 @@ def main():
 
     parent_parser = argparse.ArgumentParser(add_help=False)
     parent_parser.add_argument('-sif',      default=container_default, help='singularity container path')
+    parent_parser.add_argument('-exec',         default='sge',              help='nf executor; support local, sge, or slurm [sge]')
+    parent_parser.add_argument('-sge',          default=SGE_DIR,            help=f'SGE_DIR [{SGE_DIR}]')
+    parent_parser.add_argument('-B',             help='singularity extra bind path')
+    parent_parser.add_argument('-runit',        default=runit_default,      help='runit path')
+    parent_parser.add_argument('-lusage',       default=2,                  help='runit log level 0:nolog; 1:final; 2:-O; 3:-OD; 4:-ODA [2]')
+    parent_parser.add_argument('-lsec',         default=15,                 help='runit log interval in seconds [15]')
+    parent_parser.add_argument('-cpulimit',         help='limit cpu usage [None]')
+    parent_parser.add_argument('-bolt',         action='store_true',        help='use megabolt')
+    parent_parser.add_argument('-host_mb',      action='store_true',        help='use host megabolt rather than local')
+    parent_parser.add_argument('-preview',      action='store_true',        help='dry run')
 
     parser = argparse.ArgumentParser(
         parents=[parent_parser],
@@ -108,27 +119,16 @@ def main():
     db_parser = subparsers.add_parser('createdb',             description='create database', parents=[parent_parser])
     run_parser= subparsers.add_parser('run',  description='run ' + N, formatter_class=argparse.RawTextHelpFormatter, parents=[parent_parser])
 
-    db_parser.add_argument('--dbdir',       default=N + "_db",          help=f'db dir to for RNAseq to create db [{N}_db]')
-    db_parser.add_argument('--db',          default=N + "_db.tar.xz",   help=f'the downloaded db [{N}_db.tar.xz]')
     db_parser.add_argument('--dl_only',     action='store_true',        help='download only')
     db_parser.add_argument('--make_only',   action='store_true',        help='make db only')
 
     run_parser.add_argument('samplelist',   help="""Sample info txt file, one line for one lane, each line with 4 columns split by tab:\nsample_name: Sample name\nlane: Lane name\nfastqs: Reads file path; if PE, separate by comma\nread len (single read len x2 if PE)""")
-    run_parser.add_argument('-exec',         default='sge',              help='nf executor; support local, sge, or slurm [sge]')
-    run_parser.add_argument('-sge',          default=SGE_DIR,            help=f'SGE_DIR [{SGE_DIR}]')
+
     run_parser.add_argument('-run',          default=N + '_run',         help=f'nextflow running dir [{N}_run]')
     run_parser.add_argument('-out', '-o',    default='result',           help='Output directory [result]')
-    run_parser.add_argument('-B',             help='singularity extra bind path')
-
-    run_parser.add_argument('-runit',        default=runit_default,      help='runit path')
-    run_parser.add_argument('-lusage',       default=2,                  help='runit log level 0:nolog; 1:final; 2:-O; 3:-OD; 4:-ODA [2]')
-    run_parser.add_argument('-lsec',         default=15,                 help='runit log interval in seconds [15]')
 
     run_parser.add_argument('-ansi',         action='store_true',        help='nextflow use ansi-log')
     run_parser.add_argument('-debug',        action='store_true',        help='debug mode')
-    run_parser.add_argument('-bolt',         action='store_true',        help='use megabolt')
-    run_parser.add_argument('-host_mb',      action='store_true',        help='use host megabolt rather than local')
-    run_parser.add_argument('-preview',      action='store_true',        help='dry run')
 
     run_parser.add_argument('-db',           default=database_default,   help='database path')
     run_parser.add_argument('-script',       default=script_default,     help='script path')
@@ -138,7 +138,6 @@ def main():
     run_parser.add_argument('-queue',        default='mgi.q',            help='set qsub job queue [mgi.q]')
     run_parser.add_argument('-boltq',        default='fpga4.q',          help='set qsub job fpga analysis queue [fpga4.q]')
     run_parser.add_argument('-project',      default='W21P0024',         help='set qsub job project, or set \'none\' [W21P0024]')
-    run_parser.add_argument('-cpulimit',         help='limit cpu [None]')
 
 
     if (len(sys.argv) == 1) or (sys.argv[1] == '-h') or (sys.argv[1] == '-help') or (sys.argv[1] == '--help'):
@@ -197,15 +196,19 @@ def main():
     MEGABOLT_RUNIT_CMD = f"{MEGABOLT_RUNIT} -s {MEGABOLT_RUNIT_OPT}" if MEGABOLT_RUNIT else ''
 
     if args.subparser_name == 'createdb':
-        opts = ' '.join(sys.argv[2:])
         binds = set([os.getcwd()])
-        for path in [container, args.dbdir]:
-            d = os.path.dirname(os.path.realpath(path))
-            binds.add(d)
+        binds.add(os.path.dirname(os.path.realpath(container)))
         binds = ','.join(binds)
+        
+        param = ""
+        if args.dl_only:
+            param = "--dl_only"
+        elif args.make_only:
+            param = "--make_only"
+
         cmd = f"""
         singularity  exec --no-home -C -e --pwd `pwd -P` -B {binds} {container} \\
-            createdb {N}_db --url_list {app_dir}/urls.txt {opts}
+            createdb CWGS_db --url_list /usr/local/app/CWGS/urls.txt --db /usr/local/app/CWGS/CWGS_db.tar.xz {param}
         """
         print(cmd)
         os.system(cmd)
