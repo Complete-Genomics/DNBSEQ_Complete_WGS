@@ -146,40 +146,16 @@ process vg {
  
     script:
     def gbz = "${params.DB}/hg38/panGenome/hprc-v1.1-mc-grch38.gbz"
-    def list = "${params.DB}/hg38/panGenome/GRCh38.path_list.txt"
+    def list = "${params.DB}/hg38/panGenome/GRCh38.path_list.sort.txt"
     def hapl = "${params.DB}/hg38/panGenome/hprc-v1.1-mc-grch38.hapl"
     """
     /usr/local/miniconda3/envs/vg/bin/vg giraffe -Z $gbz --progress --read-group "ID:$id LB:lib1 SM:HG002 PL:CG PU:unit1" --sample "HG002" -o BAM \\
-        --ref-paths $list -P -L 3000 -f $r1 -f $r2 --kff-name $kff --haplotype-name $hapl -t ${task.cpus} > ${id}.unsort.bam
+        --ref-paths $list -P -L 3000 -f $r1 -f $r2 --kff-name $kff --haplotype-name $hapl -t ${task.cpus} --named-coordinates | \\
+    samtools sort -@ ${task.cpus} -T `pwd`/sort.tmp. -o ${id}.sort.bam - 
+    ${params.BIN}samtools index -@ ${task.cpus} ${id}.sort.bam
     """
-    stub:
-    "touch ${id}.unsort.bam"
 }
-process changeid {    
-    cpus params.cpu3
-    memory params.MEM2 + "g"
-    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
-    tag "$id"
-
-    input:
-    tuple val(id), path(bam)
-
-    output:
-    tuple val(id), path("${id}.pf.sort.bam*") 
-
-    // publishDir "${params.outdir}/$id/align/", mode: 'link', enabled: !params.sampleBam
- 
-    script:
-    def bam = bam.first()
-    def list = "${params.DB}/panGenome/GRCh38.path_list.txt"
-    """
-    ${params.BIN}python ${params.SCRIPT}/changeid.py $bam ${task.cpus} bam $list
-    ${params.BIN}samtools sort bam -o ${id}.pf.sort.bam
-    """
-    stub:
-    "touch ${id}.pf.sort.bam"
-}
 process bqsr {
     cpus params.cpu3
     memory params.MEM2 + "g"
