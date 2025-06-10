@@ -140,7 +140,7 @@ process vg {
     tuple val(id), path(kff), path(r1), path(r2)
 
     output:
-    tuple val(id), path("${id}.unsort.bam*") 
+    tuple val(id), path("${id}.sort.bam*") 
 
     // publishDir "${params.outdir}/$id/align/", mode: 'link', enabled: !params.sampleBam
  
