@@ -503,25 +503,17 @@ process dvMegabolt {
  
     script:
     def bam = bam.first()
-    def ref = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
+    def ref = params.ref.startsWith('/') ? params.ref : "${params.DB}/${params.ref}/reference/${params.ref}.fa"
     """
-    dbsnp=`ls ${params.DB}/${params.ref}/gatk/*dbsnp*.vcf.gz`
-    kgsnp=`ls ${params.DB}/${params.ref}/gatk/1000G*snps*.vcf.gz`
-    mills=`ls ${params.DB}/${params.ref}/gatk/Mills*indel*.vcf.gz`
-    
     ${params.MEGABOLT_EXPORT}
 
     ${params.MEGABOLT_RUNIT}  -l\$(basename \$(dirname \$PWD))_\$(basename \$PWD).${task.process}.${task.index} ${params.MEGABOLT} \\
       --type haplotypecaller --haplotypecaller-input $bam --deepvariant 1 --fast-model 0 --ref $ref \\
-      --vcf \$dbsnp \\
-      --knownSites \$kgsnp --knownSites \$mills \\
       --outputdir .
 
     mv output/output.dv.vcf.gz ${id}.${aligner}.dv.vcf.gz
     mv output/output.dv.vcf.gz.tbi ${id}.${aligner}.dv.vcf.gz.tbi
     """
-    stub:
-    "touch ${id}.${aligner}.dv.vcf.gz"
 }
 process deepvariant {
     cpus params.cpu3
