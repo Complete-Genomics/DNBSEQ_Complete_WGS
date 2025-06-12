@@ -206,6 +206,7 @@ def ch_merge = "merge"
 
 def ch_bwa = "bwa"
 def ch_lariat = "lariat"
+def ch_vg = 'vg'
 
 def ch_dv = "dv"
 def ch_gatk = "gatk"
@@ -310,7 +311,7 @@ workflow CWGS {
         } else { // pf vg
             kff(ch_pfsampledfq).set {ch_kff}
             vg(ch_kff.join(ch_pfsampledfq)).set {ch_pfbam}
-            //vg(ch_pfsampledfq).set {ch_pfbam}
+            markdupPf(ch_libpf, ch_vg, ch_pfbam).set {ch_pfbam}
         }
         if (params.var_tool.contains("gatk") && params.run_bqsr) { bqsrPf(ch_libpf, ch_bwa, ch_pfbam).set {ch_pfbam} }
         if (params.sampleBam) { sampleBamPf(ch_libpf, ch_bwa, ch_pfbam).set {ch_pfbam} }
