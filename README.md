@@ -187,8 +187,9 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
    ```
    modules=$path_to_your_scirpts/DNBSEQ_Complete_WGS/modules
    scripts=$path_to_your_scirpts/DNBSEQ_Complete_WGS/scripts
-
-   ./CWGS sample.list -sing $singularity_path -local -debug -module ${modules} -script ${scripts} --use_megabolt false --stLFR_only true > run.log 2>&1
+   db=path to CWGS_db
+   
+   ./CWGS run sample.list -sif $sif -B $data_path:$data_path -module ${modules} -db $db -script ${scripts} -exec local -debug --use_megabolt false --stLFR_only true > run.log 2>&1
    ```
     Enable resuming the running
     ```
