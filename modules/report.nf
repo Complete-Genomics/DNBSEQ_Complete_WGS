@@ -9,11 +9,10 @@ process report0 {
     input:
     val(aligner)
     val(varcaller)
-    tuple val(id), path(vcf), path(splitLog), path(lfr), path(aligncatstlfr), path(aligncatpf), path(phase), path(genecov), path(vcfeval), path(vcfevalPf), val(stlfrbamdepth), val(pfbamdepth)
+    tuple val(id), path(vcf), path(lfr), path(histbed), path(meanbed), path(depthreport), path(phase)
 
     output:
     path "${id}.*report"
-    path "${id}_metrics.xls"
 
     tag "$id, $aligner, $varcaller"
     // publishDir "${params.outdir}/$id/"
@@ -22,12 +21,24 @@ process report0 {
     script:
     vcf = vcf.first()
     """
-    ${params.BIN}bcftools stats $vcf > ${id}.bcftoolsStats.txt
-    hetsnp=`${params.BIN}bcftools view -v snps -g het $vcf |grep -v \\# |wc -l`
-    hetindel=`${params.BIN}bcftools view -v indels -g het $vcf |grep -v \\# |wc -l`
-    echo -e "\$hetsnp\\t\$hetindel" > het
+    set +u
+    source /usr/local/miniconda3/bin/activate /usr/local/miniconda3/envs/six
 
-    ${params.BIN}python3 ${params.SCRIPT}/report.py 0 $id $aligner $varcaller ${id}.bcftoolsStats.txt het $splitLog $lfr $aligncatstlfr $aligncatpf $phase $genecov $vcfeval $vcfevalPf $stlfrbamdepth $pfbamdepth > ${id}.${aligner}.${varcaller}.report
+    snp=`bcftools view -v snps $vcf |grep -v \\# |wc -l`
+    indel=`bcftools view -v indels $vcf |grep -v \\# |wc -l`
+    hetsnp=`bcftools view -v snps -i 'GT="0/1" || GT="1|0" || GT="0|1"' $vcf |grep -v \\# |wc -l`
+    hetindel=`bcftools view -v indels -i 'GT="0/1" || GT="1|0" || GT="0|1"' $vcf |grep -v \\# |wc -l`
+    phasedhetsnp=`bcftools view -v snps -i 'GT="1|0" || GT="0|1"' $vcf |grep -v \\# |wc -l`
+    phasedhetindel=`bcftools view -v indels -i 'GT="1|0" || GT="0|1"' $vcf |grep -v \\# |wc -l`
+
+    echo -e "\$snp\\t\$indel\\t\$hetsnp\\t\$hetindel\\t\$phasedhetsnp\\t\$phasedhetindel" > varstat
+
+    ln -s ${params.DB}/hg38/GRCh38_CMRG_benchmark_gene_coordinates.bed bed
+    ln -s ${params.outdir}/$id/phase/${id}.lariat.dv.hapblock hapblock
+
+    bedtools intersect -a $vcf -b bed -wa -wb -header > coding_variants.txt
+
+    ${params.BIN}python3 ${params.SCRIPT}/report.py 0 $id $vcf $lfr $histbed $meanbed $depthreport $phase > ${id}.${aligner}.${varcaller}.report
     """
     stub:
     "touch ${id}.${aligner}.${varcaller}.report"
@@ -43,7 +54,7 @@ process reportref {
     input:
     val(aligner)
     val(varcaller)
-    tuple val(id), path(vcf), path(splitLog), path(lfr), path(aligncatstlfr), path(aligncatpf), path(phase), val(stlfrbamdepth), val(pfbamdepth)
+    tuple val(id), path(vcf), path(lfr), path(depthreport), path(phase)
 
     output:
     path "${id}.*report"
@@ -55,12 +66,21 @@ process reportref {
     script:
     vcf = vcf.first()
     """
-    ${params.BIN}bcftools stats $vcf > ${id}.bcftoolsStats.txt
-    hetsnp=`${params.BIN}bcftools view -v snps -g het $vcf |grep -v \\# |wc -l`
-    hetindel=`${params.BIN}bcftools view -v indels -g het $vcf |grep -v \\# |wc -l`
-    echo -e "\$hetsnp\\t\$hetindel" > het
+    set +u
+    source /usr/local/miniconda3/bin/activate /usr/local/miniconda3/envs/six
 
-    ${params.BIN}python3 ${params.SCRIPT}/report.py ref $id $aligner $varcaller ${id}.bcftoolsStats.txt het $splitLog $lfr $aligncatstlfr $aligncatpf $phase $stlfrbamdepth $pfbamdepth > ${id}.${aligner}.${varcaller}.report
+    snp=`bcftools view -v snps $vcf |grep -v \\# |wc -l`
+    indel=`bcftools view -v indels $vcf |grep -v \\# |wc -l`
+    hetsnp=`bcftools view -v snps -i 'GT="0/1" || GT="1|0" || GT="0|1"' $vcf |grep -v \\# |wc -l`
+    hetindel=`bcftools view -v indels -i 'GT="0/1" || GT="1|0" || GT="0|1"' $vcf |grep -v \\# |wc -l`
+    phasedhetsnp=`bcftools view -v snps -i 'GT="1|0" || GT="0|1"' $vcf |grep -v \\# |wc -l`
+    phasedhetindel=`bcftools view -v indels -i 'GT="1|0" || GT="0|1"' $vcf |grep -v \\# |wc -l`
+
+    echo -e "\$snp\\t\$indel\\t\$hetsnp\\t\$hetindel\\t\$phasedhetsnp\\t\$phasedhetindel" > varstat
+
+    ln -s ${params.outdir}/$id/phase/${id}.lariat.dv.hapblock hapblock
+
+    ${params.BIN}python3 ${params.SCRIPT}/report.py ref $id $vcf $lfr $depthreport $phase > ${id}.${aligner}.${varcaller}.report
     """
     stub:
     "touch ${id}.${aligner}.${varcaller}.report"
@@ -76,24 +96,33 @@ process report_stlfronly {
     input:
     val(aligner)
     val(varcaller)
-    tuple val(id), path(vcf), path(splitLog), path(lfr), path(aligncatstlfr), path(phase), path(vcfeval), val(stlfrbamdepth)
+    tuple val(id), path(vcf), path(lfr), path(flgstat), path(phase), val(stlfrbamdepth), path(stlfrbamdepthreport)
 
     output:
     path "${id}.*report"
 
     tag "$id, $aligner, $varcaller"
     // publishDir "${params.outdir}/$id/"
-    // cache false
+    cache false
 
     script:
     vcf = vcf.first()
     """
-    ${params.BIN}bcftools stats $vcf > ${id}.bcftoolsStats.txt
-    hetsnp=`${params.BIN}bcftools view -v snps -g het $vcf |grep -v \\# |wc -l`
-    hetindel=`${params.BIN}bcftools view -v indels -g het $vcf |grep -v \\# |wc -l`
-    echo -e "\$hetsnp\\t\$hetindel" > het
+    set +u
+    source /usr/local/miniconda3/bin/activate /usr/local/miniconda3/envs/six
 
-    ${params.BIN}python3 ${params.SCRIPT}/report.py stlfronly $id $aligner $varcaller ${id}.bcftoolsStats.txt het $splitLog $lfr $aligncatstlfr $phase $vcfeval $stlfrbamdepth > ${id}.${aligner}.${varcaller}.report
+    snp=`bcftools view -v snps $vcf |grep -v \\# |wc -l`
+    indel=`bcftools view -v indels $vcf |grep -v \\# |wc -l`
+    hetsnp=`bcftools view -v snps -i 'GT="0/1" || GT="1|0" || GT="0|1"' $vcf |grep -v \\# |wc -l`
+    hetindel=`bcftools view -v indels -i 'GT="0/1" || GT="1|0" || GT="0|1"' $vcf |grep -v \\# |wc -l`
+    phasedhetsnp=`bcftools view -v snps -i 'GT="1|0" || GT="0|1"' $vcf |grep -v \\# |wc -l`
+    phasedhetindel=`bcftools view -v indels -i 'GT="1|0" || GT="0|1"' $vcf |grep -v \\# |wc -l`
+
+    echo -e "\$snp\\t\$indel\\t\$hetsnp\\t\$hetindel\\t\$phasedhetsnp\\t\$phasedhetindel" > varstat
+
+    ln -s ${params.outdir}/$id/phase/${id}.lariat.dv.hapblock hapblock
+
+    ${params.BIN}python3 ${params.SCRIPT}/report.py stlfronly $id $vcf $lfr $flgstat $phase $stlfrbamdepth $stlfrbamdepthreport > ${id}.${aligner}.${varcaller}.report
     """
     stub:
     "touch ${id}.${aligner}.${varcaller}.report"
@@ -126,7 +155,7 @@ process report_stlfronly_ref {
     hetindel=`${params.BIN}bcftools view -v indels -g het $vcf |grep -v \\# |wc -l`
     echo -e "\$hetsnp\\t\$hetindel" > het
 
-    ${params.BIN}python3 ${params.SCRIPT}/report.py stlfronly_ref $id $aligner $varcaller ${id}.bcftoolsStats.txt het $splitLog $lfr $aligncatstlfr $phase $stlfrbamdepth > ${id}.${aligner}.${varcaller}.report
+    ${params.BIN}python3 ${params.SCRIPT}/report.py stlfronly_ref $id $lfr $aligncatstlfr $phase $stlfrbamdepth > ${id}.${aligner}.${varcaller}.report
     """
     stub:
     "touch ${id}.${aligner}.${varcaller}.report"

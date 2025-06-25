@@ -22,6 +22,4 @@ process vcfstats {
 
     python3 ${params.SCRIPT}/vcfstats.py $id $vcf ${id}.bcftoolsStats.txt het $phase > ${id}.vcfstats.xls
     """
-    stub:
-    "touch ${id}.vcfstats.xls"
 }
