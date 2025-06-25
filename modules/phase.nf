@@ -343,7 +343,7 @@ process phaseCatRef {
 
     output:
     tuple val(id), path("*hapblock"), emit: hb
-    path("*.phased.vcf.gz*")
+    tuple val(id), path("*.phased.vcf.gz*"), emit: phasedvcf
     tuple val(id), path("*.phase.report"), emit: report 
 
     tag "$id, $aligner, $varcaller"

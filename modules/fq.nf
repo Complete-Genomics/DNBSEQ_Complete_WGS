@@ -193,27 +193,31 @@ process samplePfFq {
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
-    tuple val(id), val(basecount), val(rlen), path(read) //${id}_qc_1.fq.gz
+    tuple val(id), val(basecount), val(rlen), path(r1), path(r2) //${id}_qc_1.fq.gz
 
     output:
-    tuple val(id), path("*sampled*fq.gz")
+    tuple val(id), path("${id}.pf.sampled_1.fq.gz"), path("${id}.pf.sampled_2.fq.gz")
 
     script:
     def cov = "${params.PF_fq_cov}"
+    def out1 = "${id}.pf.sampled_1.fq.gz"
+    def out2 = "${id}.pf.sampled_2.fq.gz"
     """
     targetreadnum=`echo "scale=0; ${params.ref_len}*$cov/($rlen*2)" | bc -l`
     targetreadbase=`echo "scale=0; " \$targetreadnum*$rlen | bc -l`
     echo ${params.ref_len}, $cov, ${rlen}. $basecount -\\> \$targetreadbase \$targetreadnum*$rlen > log
+
     if [ $basecount -gt \$targetreadbase ];then
         echo sample >> log
-        ${params.BIN}seqtk sample -2 -s111 $read \$targetreadnum  | ${params.BIN}seqtk trimfq -L $rlen - | ${params.BIN}gzip >  ${read.getBaseName(2)}.sampled.cov${cov}.fq.gz
+        ${params.BIN}seqtk sample -2 -s111 $r1 \$targetreadnum  | ${params.BIN}seqtk trimfq -L $rlen - | ${params.BIN}gzip >  $out1 &
+        ${params.BIN}seqtk sample -2 -s111 $r2 \$targetreadnum  | ${params.BIN}seqtk trimfq -L $rlen - | ${params.BIN}gzip >  $out2
+        wait
     else 
-        ln -s $read ${read.getBaseName(2)}.sampled.cov${cov}.fq.gz
+        ln -s $r1 $out1
+        ln -s $r2 $out2
         echo not sample >> log
     fi
     """
-    stub:
-    "touch ${read.getBaseName(2)}.sampled.cov${params.PF_fq_cov}.fq.gz"
 }
 
 process sampleStlfrFq {
@@ -222,22 +226,30 @@ process sampleStlfrFq {
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
-    tuple val(id), val(basecount), val(rlen), path(read) //${id}_qc_1.fq.gz
+    tuple val(id), val(basecount), val(rlen), path(r1), path(r2) //${id}_qc_1.fq.gz
 
     output:
-    tuple val(id), path("*sampled*fq.gz")
+    tuple val(id), path("${id}.stlfr.sampled_1.fq.gz"), path("${id}.stlfr.sampled_2.fq.gz")
 
     script:
     def cov = "${params.stLFR_fq_cov}"
+    def out1 = "${id}.stlfr.sampled_1.fq.gz"
+    def out2 = "${id}.stlfr.sampled_2.fq.gz"
     """
     targetreadnum=`echo "scale=0; ${params.ref_len}*$cov/($rlen*2)" | bc -l`
     targetreadbase=`echo "scale=0; " \$targetreadnum*$rlen | bc -l`
+
     echo ${params.ref_len}, $cov, ${rlen}. $basecount -\\> \$targetreadbase \$targetreadnum*$rlen > log
+
     if [ $basecount -gt \$targetreadbase ];then
         echo sample >> log
-        ${params.BIN}seqtk sample -2 -s111 $read \$targetreadnum  | ${params.BIN}gzip >  ${read.getBaseName(2)}.sampled.cov${cov}.fq.gz
+        ${params.BIN}seqtk sample -2 -s111 $r1 \$targetreadnum  | ${params.BIN}gzip >  $out1 &
+        ${params.BIN}seqtk sample -2 -s111 $r2 \$targetreadnum  | ${params.BIN}gzip >  $out2
+
+        wait
     else 
-        ln -s $read ${read.getBaseName(2)}.sampled.cov${cov}.fq.gz
+        ln -s $r1 $out1
+        ln -s $r2 $out2
         echo not sample >> log
     fi
     """
