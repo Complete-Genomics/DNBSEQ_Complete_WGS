@@ -38,7 +38,7 @@ process coverage {
     def fai = params.ref.startsWith('/') ? "${params.ref}.fai" : "${params.DB}/${params.ref}/reference/${params.ref}.fa.fai"
     def bed = "${params.DB}/hg38/GRCh38_CMRG_benchmark_gene_coordinates.bed"
     """
-    ${params.BIN}bedtools coverage -sorted -g $fai -a $bed -b $bam -hist > ${id}.${lib}.cmrg.hist.bed 
+    ${params.BIN}bedtools coverage -sorted -g $fai -a $bed -b $bam > ${id}.${lib}.cmrg.hist.bed 
     """
     stub:
     "touch ${id}.${lib}.cmrg.hist.bed "

@@ -251,11 +251,8 @@ process samtools_depth {
     def non = params.ref.startsWith('/') ? params.ref.replaceAll(/\.fa$/, "") + ".nonN.region" : "${params.DB}/${params.ref}/reference/${params.ref}.nonN.region"
     """
     ${params.BIN}samtools depth -@ ${task.cpus} -a -b $non $bam | \\
-    awk '\$3 >= 10 { sum10 += 1 } \$3 >= 1 { sum1 += 1 } END { print sum1/${params.ref_len}, sum10/${params.ref_len} }' > ${id}.${lib}.bamdepth.report
-    #python3 ${params.SCRIPT}/calcdepth.py ${id}.${lib}.bam.depth ${params.ref_len}> ${id}.${lib}.bamdepth.report
+    awk '\$3 >= 20 { sum20 += 1 } \$3 >= 10 { sum10 += 1 } \$3 >= 1 { sum1 += 1 } END { print sum1/${params.ref_len}, sum10/${params.ref_len}, sum20/${params.ref_len} }' > ${id}.${lib}.bamdepth.report
     """
-    stub:
-    "touch ${id}.${lib}.bamdepth.report"
 }
 
 process samtools_depth0 {
@@ -460,27 +457,4 @@ process align_cat {
     """
     stub:
     "touch ${flagstat.getBaseName()}.align_cat"
-}
-
-process align_catAll {
-    
-    cpus params.CPU0
-    memory params.MEM0 + "g"
-    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
-    
-    input:
-    tuple val(id), path(align_cat), path(align_cat2), path(align_cat3)
-
-    output:
-    path("${id}.align_catall")
-
-    tag "$id"
-    // publishDir "${params.outdir}/report/", saveAs: {"${id}.41.align.stats.xls"}
-
-    script:
-    """
-    echo -e "Library\\nMapping rate\\nPE mapping rate\\nMean insertsize\\nDuplicate rate\\nAverage depth\\n% genome coverage (euchromatic) ≥ 1x\\n% genome coverage (euchromatic) ≥ 10x\\n% genome coverage (euchromatic) ≥ 20x\\n% genome coverage (euchromatic) ≥ 30x\\n" > tmp
-
-    paste tmp $align_cat $align_cat2 $align_cat3 > ${id}.align_catall 
-    """
 }

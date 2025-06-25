@@ -169,16 +169,17 @@ include {
     eachstat_depth;
     samtools_depth;
     samtools_depth as samtoolsDepthPf;
+    samtools_depth as samtoolsDepthMerge;
     samtools_depth0;
     samtools_depth0 as samtoolsDepth0Pf;
+    samtools_depth0 as samtoolsDepth0Merge;
     splitDepth as splitDepthPf;
     splitDepth as splitDepthStlfr;
     genomeDepth as genomeDepthPf;
     genomeDepth as genomeDepthStlfr;
     align_cat;
     eachstat_aligncat;
-    align_cat as alignCatPf;
-    align_catAll } from "${params.MOD}/bamstats"
+    align_cat as alignCatPf } from "${params.MOD}/bamstats"
 
 include {
     report0 as reportBwaGatk;
@@ -265,34 +266,19 @@ workflow CWGS {
         fqstats_pf(ch_pfbssq) //report 21
     }
     
-    def ch_stlfrsampledfq, ch_pfsampledfq
     if (params.sampleFq) { 
         if (!params.PF_only) {
             // sample stlfr fq
             qc_stlfr_stats(ch_splitfq).basecnt.set {ch_stlfrbasecount}
             qc_stlfr_stats.out.rlen.set {ch_stLFRreadLen}
-            sampleStlfrFq(ch_stlfrbasecount.join(ch_stLFRreadLen).join(ch_splitfq).map {id, base, rlen, r1, r2 ->
-                tuple(id, base, rlen, [r1, r2])}.transpose())
-                .collect()
-                .map {id, read1, idd, read2 -> 
-                    def r1 = read1.toString().contains("_1.") ? read1 : read2
-                    def r2 = read1.toString().contains("_1.") ? read2 : read1
-                    tuple(id, r1, r2)}
-                .set {ch_stlfrsampledfq}
+            ch_stlfrbasecount.join(ch_stLFRreadLen).join(ch_splitfq).view()
+            sampleStlfrFq(ch_stlfrbasecount.join(ch_stLFRreadLen).join(ch_splitfq)).set {ch_stlfrsampledfq}
         }
         if ( !params.stLFR_only) {
             // sample pf fq
             basecountPf(ch_pfbssq).set {ch_pfbasecount}
-            samplePfFq(ch_pfbasecount.join(ch_PFreadLen).join(ch_qcpffq).map {id, base, rlen, r1, r2 ->
-            tuple(id, base, rlen, [r1, r2])}.transpose())
-                .collect()
-                .map {id, read1, idd, read2 -> 
-                    def r1 = read1.toString().contains("_1.") ? read1 : read2
-                    def r2 = read1.toString().contains("_1.") ? read2 : read1
-                    tuple(id, r1, r2)}
-                .set {ch_pfsampledfq}
+            samplePfFq(ch_pfbasecount.join(ch_PFreadLen).join(ch_qcpffq)).set {ch_pfsampledfq}
         }
-        
     } else {
         if (!params.PF_only) { ch_stlfrsampledfq = ch_splitfq }
         if (!params.stLFR_only) { ch_pfsampledfq = ch_qcpffq }
@@ -346,7 +332,6 @@ workflow CWGS {
                 lariatBC(ch_splitstlfrfq).groupTuple().set {ch_splitlariatfqs}
                 mergeFq(ch_splitlariatfqs).set {ch_lariatfq}
                 // ch_splitlariatfqs.map {it -> it[1]}.collect().view()
-                // cleanup(ch_splitlariatfqs.map {it -> it[1]}.collect())
             } else {
                 tofake10xHash(splitLog).set {ch_hash}
                 if (params.lariatSplitFqNum != 1) { 
@@ -409,9 +394,12 @@ workflow CWGS {
                     stats = phaseLariatDv.out.stat.groupTuple()  
                     if (!params.ref.startsWith('/')) {
                         phaseCatLariatDv(ch_lariat, ch_dv, vcfs.join(pvcfs).join(lfs).join(hbs).join(stats)).report.set {ch_phasereport}//report
-                        vep(phaseCatLariatDv.out.phasedvcf)
+                        phaseCatLariatDv.out.phasedvcf.set {ch_phasedvcf}
+                        vep(ch_phasedvcf)
+                        
                     } else {
                         phaseCatRef(ch_lariat, ch_dv, txt, vcfs.join(pvcfs).join(lfs).join(hbs)).report.set {ch_phasereport}
+                        phaseCatRef.out.phasedvcf.set {ch_phasedvcf}
                     }
                     
                     pvcfs.join(lfs).join(hbs).map { items ->
@@ -572,17 +560,20 @@ workflow CWGS {
         insertsize(ch_libstlfr, stlfrbam).insertsize.set {ch_insertsize} 
             
         if (!params.ref.startsWith('/')) {
-            coverage(ch_merge, ch_mergebam).join(coverageMean(ch_merge, ch_mergebam)).set { ch_MergeGeneCov }
-            if (!params.stLFR_only) {
-                coverageAvg(ch_PfGeneCov.join(ch_MergeGeneCov)).set {ch_avgCov}
-            } 
+            coverage(ch_merge, ch_mergebam).set {ch_cmrgMergebamhistbed}
+            coverageMean(ch_merge, ch_mergebam).set {ch_cmrgMergebammeanbed}
+            // coverage(ch_merge, ch_mergebam).join(coverageMean(ch_merge, ch_mergebam)).set { ch_MergeGeneCov }
+            // if (!params.stLFR_only) {
+            //     coverageAvg(ch_PfGeneCov.join(ch_MergeGeneCov)).set {ch_avgCov}
+            // } 
         }
 
-        samtools_depth(ch_libstlfr, stlfrbam).set {ch_depthreport}
-        align_cat(ch_libstlfr, ch_flagstat.join(ch_stat).join(ch_depthreport).join(ch_insertsize)).set {ch_aligncatstlfr} //info
+        // align_cat(ch_libstlfr, ch_flagstat.join(ch_stat).join(ch_depthreport).join(ch_insertsize)).set {ch_aligncatstlfr} //info
         stLFRQC(stlfrbam).report.set {ch_lfr}
+        ch_vcf = ch_phasedvcf
         ch_reports = Channel.empty() 
         if (!params.stLFR_only) {
+            samtoolsDepthMerge(ch_merge, ch_mergebam).set {ch_depthreport}
             if (params.align_tool.contains("bwa") && params.var_tool.contains("gatk")) {
                 ch_vcf = ch_mergevcf4
                 ch_phase = ch_phasereport4  
@@ -611,21 +602,18 @@ workflow CWGS {
                 reportLariatGatk(ch_lariat, ch_gatk, ch_vcf.join(splitLog).join(ch_lfr).join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatGatk).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
             } 
             if (params.align_tool.contains("lariat") && params.var_tool.contains("dv")) {
-                ch_vcf = ch_mergevcf
                 phaseall = ch_phaseallLariatDv
-
                 if (!params.ref.startsWith('/')) {
                     hapcutstat = phaseCatLariatDv.out.hapcutstat
                     ch_phase = ch_phasereport
                     hb = phaseCatLariatDv.out.hb
 
-                    // cmrg_cnt(ch_vcf) //TODO
                     ideogram(hb) 
                     cumuplot(hb)
 
-                    // reportLariatDv(ch_lariat, ch_dv, ch_vcf.join(splitLog).join(ch_lfr).join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatDv).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).set {ch_report}
-                    // ch_report.collect().mix(ch_reports).set {ch_reports}
-                    // report(ch_reports)
+                    reportLariatDv(ch_lariat, ch_dv, ch_vcf.join(ch_lfr).join(ch_cmrgMergebamhistbed).join(ch_cmrgMergebammeanbed).join(ch_depthreport).join(ch_phase)).set {ch_report}
+                    ch_report.collect().mix(ch_reports).set {ch_reports}
+                    report(ch_reports)
 
                     // html
                     // html(ch_reports)
@@ -633,23 +621,18 @@ workflow CWGS {
                     ch_phase = ch_phasereport
                     hb = phaseCatRef.out.hb
 
-                    reportref(ch_lariat, ch_dv, ch_vcf.join(splitLog).join(ch_lfr).join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
+                    reportref(ch_lariat, ch_dv, ch_vcf.join(ch_lfr).join(ch_depthreport).join(ch_phase)).collect().mix(ch_reports).set {ch_reports}
                     report(ch_reports)
                 }
                 
             } 
-        } else { // stLFR only
-            ch_vcf = ch_mergevcf
+        } else { // stLFR only (currently lariat-dv)
+            samtools_depth(ch_libstlfr, stlfrbam).set {ch_stlfrbamdepthreport}
             phaseall = ch_phaseallLariatDv
             ch_phase = ch_phasereport
-            if (!params.ref.startsWith('/')) {    
-                report_stlfronly(ch_lariat, ch_dv, ch_vcf.join(splitLog).join(ch_lfr).join(ch_aligncatstlfr).join(ch_phase).join(ch_vcfevalLariatDv).join(ch_stlfrbamdepth)).collect().mix(ch_reports).set {ch_reports}
-                report(ch_reports).set {ch_flg}
-            } else { 
-                report_stlfronly_ref(ch_lariat, ch_dv, ch_vcf.join(splitLog).join(ch_lfr).join(ch_aligncatstlfr).join(ch_phase).join(ch_stlfrbamdepth)).collect().mix(ch_reports).set {ch_reports}
-                report(ch_reports).set {ch_flg}
-            }
-            FQC(ch_flg)
+            report_stlfronly(ch_lariat, ch_dv, ch_vcf.join(ch_lfr).join(ch_flagstat).join(ch_phase).join(ch_stlfrbamdepth).join(ch_stlfrbamdepthreport)).set {ch_report}
+            ch_report.collect().mix(ch_reports).set {ch_reports}
+            FQC(report(ch_reports))
         }
     }
 }
@@ -910,6 +893,7 @@ workflow CWGS_frombam {
 
     //stlfr bam stats
     bamdepth(ch_libstlfr, stlfrbam).set {ch_stlfrbamdepth}
+    
     samtools_flagstat(ch_libstlfr, stlfrbam).set {ch_flagstat}
     samtools_stats(ch_libstlfr, stlfrbam).set {ch_stat}
     insertsize(ch_libstlfr, stlfrbam).insertsize.set {ch_insertsize} 
@@ -944,9 +928,9 @@ workflow CWGS_frombam {
 
         if (!params.fromMergedBam) {
             if (!params.ref.startsWith('/')) {
-                reportLariatDv1(ch_lariat, ch_dv, ch_vcf.join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatDv).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
+                reportLariatDv1(ch_lariat, ch_dv, ch_vcf.join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatDv).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth).join(ch_bamdepth)).collect().mix(ch_reports).set {ch_reports}
             } else {
-                report_frombam_ref(ch_lariat, ch_dv, ch_vcf.join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
+                report_frombam_ref(ch_lariat, ch_dv, ch_vcf.join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_stlfrbamdepth).join(ch_pfbamdepth).join(ch_bamdepth)).collect().mix(ch_reports).set {ch_reports}
             }
             
         }
