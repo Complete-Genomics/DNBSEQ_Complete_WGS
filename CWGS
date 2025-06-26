@@ -81,10 +81,10 @@ def main():
     SGE_ARCH = os.environ.get('SGE_ARCH', '')
 
     envPaths = '--env PATH=$PATH'
-    path_env = os.environ.get('PATH', '')
-    for path in path_env.split(':'):
-        envPaths += f":/_ROOT_{path}"
+    # path_env = os.environ.get('PATH', '')
 
+    # for path in path_env.split(':'):
+    #     envPaths += f":/_ROOT_{path}"
 
     script_path = os.path.dirname(os.path.realpath(__file__))
     app_dir = os.path.join('/usr/local/app', N)
@@ -135,6 +135,7 @@ def main():
     run_parser.add_argument('-module',       default=modules_default,    help='The directory of the nextflow modules')
 
     run_parser.add_argument('-partition',    default='debug',            help='set sbatch job partition [debug]')
+    run_parser.add_argument('-nodelist',     default=None,            help='sbatch --nodelist [None]')
     run_parser.add_argument('-queue',        default='mgi.q',            help='set qsub job queue [mgi.q]')
     run_parser.add_argument('-boltq',        default='fpga4.q',          help='set qsub job fpga analysis queue [fpga4.q]')
     run_parser.add_argument('-project',      default='W21P0024',         help='set qsub job project, or set \'none\' [W21P0024]')
@@ -150,17 +151,18 @@ def main():
     SGE_dir         = os.path.realpath(args.sge)
     executor        = args.exec
     runit           = os.path.realpath(args.runit) if args.runit != runit_default else args.runit
-    preview         = '-preview' if args.preview else ''
 
     if not os.path.exists(container):
         print(f"ERROR: {container} doesnt exist!")
         sys.exit(1)
 
     ## set environ
+    if executor == 'slurm':
+        envPaths += ' --env LD_LIBRARY_PATH=/usr/lib:/usr/lib64:$LD_LIBRARY_PATH --env SLURM_CONF=/etc/slurm/slurm.conf'
+
     cpulimit = ''
     if executor == 'local':
         SGE_ENV = ''
-        nf_sing = 'false'
         L_ENV = MEGA_ENV
         L_PATH = MEGA_PATH
         cpulimit = f"/usr/local/miniconda3/envs/six/bin/cpulimit -l {args.cpulimit}00 -z" if args.cpulimit else ''
@@ -171,7 +173,6 @@ def main():
             sys.exit(1)
         SGE_ENV = f"--env 'PATH={_SGE_BIN}:$PATH' --env SGE_ROOT=$SGE_ROOT --env SGE_QMASTER_PORT=$SGE_QMASTER_PORT --env SGE_EXECD_PORT=$SGE_EXECD_PORT"
 
-        nf_sing = 'true'
         L_ENV = ''
         L_PATH = ''
     MEGABOLT_CONTAINER = "withLabel: megabolt { container = null }" if args.host_mb else ""
@@ -236,6 +237,7 @@ def main():
                 path_list.append(a)
         path_list = merge_paths(path_list)
         bind_str = ','.join(path_list)
+        bind_str += ",/etc/slurm,/etc/passwd,/usr/lib/x86_64-linux-gnu/slurm-wlm,/run/munge" if executor == "slurm" else ""
 
         script_bind_para    = f'-B {script}:{app_dir}/scripts' if script_dir else ''
         modules_bind_para   = f'-B {modules}:{app_dir}/modules' if modules_dir else ''
@@ -270,8 +272,12 @@ def main():
         if args.debug:
             scratch = ""
             nf_opts += ' --keepFiles true'
+            
+        if args.preview:
+            nf_opts += ' -preview'
 
-        ENV = f"--env NXF_OFFLINE=true,MBP_USAGE_LOGDIR={usage_dir} {SGE_ENV} {L_PATH} "
+        ENV = f"--env NXF_OFFLINE=true,MBP_USAGE_LOGDIR={usage_dir} {SGE_ENV} {L_PATH} {envPaths}" 
+        # ENV += envPaths if executor == 'slurm' else ''
 
         ## nf executor setting
         project = args.project
@@ -279,8 +285,9 @@ def main():
         queue = args.queue
         boltq = args.boltq
         partition = args.partition
+        nodelist = "--nodelist " + args.nodelist if args.nodelist else "" 
         
-        clusterOptions = f'-clear -cwd -l vf=MEMORY,num_proc=CPUS  -binding linear:CPUS {project_para} QUEUE' if executor == 'sge' else f'--mem=MEMORY --ntasks=CPUS --cpus-per-task=1 --partition={partition}'
+        clusterOptions = f'-clear -cwd -l vf=MEMORY,num_proc=CPUS  -binding linear:CPUS {project_para} QUEUE' if executor == 'sge' else f'--mem=MEMORY --ntasks=CPUS --cpus-per-task=1 --partition={partition} {nodelist}'
         
         ## make config 
         nextflow_config =f"""
@@ -303,9 +310,9 @@ def main():
         }}
 
         singularity{{
-            enabled = {nf_sing}
+            enabled = true
             autoMounts = false
-            runOptions = "{envPaths} --env MBP_USAGE_LOGDIR={usage_dir},TMPDIR=/tmp --no-home -C --pwd `pwd -P` -B `pwd -P` -B /:/_ROOT_,/proc:/.__host_proc,/mnt -B {bind_str} -B {database}:{database_default} {script_bind_para} {modules_bind_para} -B {wd}:/tmp "
+            runOptions = "{envPaths} --env PATH=$PATH:/usr/local/miniconda3/bin,MBP_USAGE_LOGDIR={usage_dir},TMPDIR=/tmp --no-home -C --pwd `pwd -P` -B `pwd -P` -B /proc:/.__host_proc,/mnt -B {bind_str} -B {database}:{database_default} {script_bind_para} {modules_bind_para} -B {wd}:/tmp "
         }}
         """
 
@@ -313,22 +320,14 @@ def main():
             nf.write(nextflow_config)
 
         ## run nextflow
-        cmd = f"""
-        {L_ENV} singularity  exec \
-            --no-home -C -e \\
-            {ENV} \\
-            -B {SGE_dir},{bind_str} \\
-            -B {wd}/tmp:/tmp \\
-            --pwd {wd} \\
-            {container} {runit} -l MAIN -O15 {cpulimit} \\
-            /usr/local/bin/nextflow run {modules}/main.nf \\
-                --input {samplelist} \\
-                --outdir {output}   \\
-                -with-report report.html \\
-                -with-trace trace.txt \\
-                -with-timeline timeline.html \\
-                -resume \\
-                {nf_opts} {preview}
+        cmd = f"""nextflow run {modules}/main.nf \\
+            --input {samplelist} \\
+            --outdir {output}   \\
+            -with-report report.html \\
+            -with-trace trace.txt \\
+            -with-timeline timeline.html \\
+            -resume \\
+            {nf_opts}
         """
         print(cmd)
         os.system(cmd)

@@ -327,9 +327,6 @@ process vqsrIndel {
 }
 //run hc split
 process gatk_interval {
-  executor = 'local'
-	container false
-
   cpus params.CPU0
   memory params.MEM0 + "g"
   clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
