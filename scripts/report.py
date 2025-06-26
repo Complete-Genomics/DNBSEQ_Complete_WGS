@@ -382,7 +382,7 @@ def main():
 			"""
 	elif flg.startswith('stlfronly'): # FQC report
 		id, vcf, lfr, flgstat, phasereport, stlfrbamdepth, stlfrbamdepthreport = files
-		phasereport = round(float(phasereport), 1)
+		stlfrbamdepth = round(float(stlfrbamdepth), 1)
 
 		snps, indels, hetsnps, hetindels, hetsnpsphased, hetindelsphased = varcnt('varstat')
 		lfrcnt, lfravglen = flfr(lfr)

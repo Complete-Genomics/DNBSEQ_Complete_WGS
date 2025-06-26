@@ -63,9 +63,6 @@ process qc_stlfr_stats {
     "basecount=1;rlen=100"
 }
 process readNum {
-    executor = 'local'
-    container false
-
     cpus params.CPU0
     memory params.MEM0 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)

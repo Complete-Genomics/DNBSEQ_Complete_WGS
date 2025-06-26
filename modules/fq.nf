@@ -1,7 +1,4 @@
 process fq {
-	executor = 'local'
-	container false
-	
     cpus params.CPU0
     memory params.MEM0 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
@@ -25,9 +22,6 @@ process fq {
 	"""
 }
 process fq1 {
-	executor = 'local'
-	container false
-	
     cpus params.CPU0
     memory params.MEM0 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
@@ -48,9 +42,6 @@ process fq1 {
 }
 
 process fq_stlfronly {
-	executor = 'local'
-	container false
-	
     cpus params.CPU0
     memory params.MEM0 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
@@ -70,9 +61,6 @@ process fq_stlfronly {
 	"""
 }
 process fq_pfonly {
-	executor = 'local'
-	container false
-	
     cpus params.CPU0
     memory params.MEM0 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
@@ -92,9 +80,6 @@ process fq_pfonly {
 	"""
 }
 process lineNum {
-    executor = 'local'
-    container false
-
     input:
     tuple val(id), path(bssq) //
 
@@ -132,9 +117,6 @@ process splitfq {
 }
 
 process readLen {
-    executor = 'local'
-    container false
-
     cpus params.CPU0
     memory params.MEM0 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
@@ -167,9 +149,6 @@ process readLen {
 // Q30 number      230573011123 (94.63%)   227912264206 (94.70%)   198793819193 (81.52%)   196903734036 (81.74%)
 
 process basecount {
-    executor = 'local'
-    container false
-
     cpus params.CPU0
     memory params.MEM0 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)

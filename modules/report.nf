@@ -1,7 +1,4 @@
 process report0 {
-    executor = 'local'
-	container false
-
     cpus params.CPU0
     memory params.MEM0 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
@@ -44,9 +41,6 @@ process report0 {
     "touch ${id}.${aligner}.${varcaller}.report"
 }
 process reportref {
-    executor = 'local'
-	container false
-
     cpus params.CPU0
     memory params.MEM0 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
@@ -86,9 +80,6 @@ process reportref {
     "touch ${id}.${aligner}.${varcaller}.report"
 }
 process report_stlfronly {
-    executor = 'local'
-	container false
-
     cpus params.CPU0
     memory params.MEM0 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
@@ -128,9 +119,6 @@ process report_stlfronly {
     "touch ${id}.${aligner}.${varcaller}.report"
 }
 process report_stlfronly_ref {
-    executor = 'local'
-	container false
-
     cpus params.CPU0
     memory params.MEM0 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
@@ -161,9 +149,6 @@ process report_stlfronly_ref {
     "touch ${id}.${aligner}.${varcaller}.report"
 }
 process report01 { // from bam
-    executor = 'local'
-    container false
-
     cpus params.CPU0
     memory params.MEM0 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
@@ -194,9 +179,6 @@ process report01 { // from bam
     "touch ${id}.${aligner}.${varcaller}.report"
 }
 process report_frombam_ref { // from bam
-    executor = 'local'
-    container false
-
     cpus params.CPU0
     memory params.MEM0 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
@@ -227,9 +209,6 @@ process report_frombam_ref { // from bam
     "touch ${id}.${aligner}.${varcaller}.report"
 }
 process report_frombam_PFonly { // from bam
-    executor = 'local'
-    container false
-
     cpus params.CPU0
     memory params.MEM0 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
@@ -256,9 +235,6 @@ process report_frombam_PFonly { // from bam
     """
 }
 process report {
-    executor = 'local'
-	container false
-
     cpus params.CPU0
     memory params.MEM0 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
@@ -286,9 +262,6 @@ process report {
     """
 }
 process FQC {
-    executor = 'local'
-	container false
-
     cpus params.CPU0
     memory params.MEM0 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
