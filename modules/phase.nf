@@ -1,7 +1,4 @@
 process getchrs {
-    executor = 'local'
-	container false
-
     cpus params.CPU0
     memory params.MEM1 + "g"
     
