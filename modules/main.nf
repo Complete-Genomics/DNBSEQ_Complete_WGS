@@ -317,7 +317,7 @@ workflow CWGS {
         samtoolsDepthPf(ch_libpf, ch_pfbam).set {ch_depthreport2} 
 
         insertsizePf(ch_libpf, ch_pfbam).insertsize.set {ch_insertsize2} 
-        alignCatPf(ch_libpf, ch_flagstat2.join(ch_stat2).join(ch_depthreport2).join(ch_insertsize2)).set {ch_aligncatpf} //info
+        // alignCatPf(ch_libpf, ch_flagstat2.join(ch_stat2).join(ch_depthreport2).join(ch_insertsize2)).set {ch_aligncatpf} //info
         bamdepthPf(ch_libpf, ch_pfbam).set {ch_pfbamdepth}
     }
     
@@ -928,9 +928,9 @@ workflow CWGS_frombam {
 
         if (!params.fromMergedBam) {
             if (!params.ref.startsWith('/')) {
-                reportLariatDv1(ch_lariat, ch_dv, ch_vcf.join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatDv).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth).join(ch_bamdepth)).collect().mix(ch_reports).set {ch_reports}
+                reportLariatDv1(ch_lariat, ch_dv, ch_vcf.join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatDv).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
             } else {
-                report_frombam_ref(ch_lariat, ch_dv, ch_vcf.join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_stlfrbamdepth).join(ch_pfbamdepth).join(ch_bamdepth)).collect().mix(ch_reports).set {ch_reports}
+                report_frombam_ref(ch_lariat, ch_dv, ch_vcf.join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
             }
             
         }

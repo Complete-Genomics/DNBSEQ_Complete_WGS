@@ -47,8 +47,6 @@ process tosamplelist {
     "${params.BIN}python ${params.SCRIPT}/tosamplelist.py $samplesheet input.samplesheet"
 }
 process toCsv {
-    executor = 'local'
-    container false
     cpus params.CPU0
     memory params.MEM0 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)

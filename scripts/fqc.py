@@ -45,7 +45,7 @@ f.close()
 
 
 avg_depth = sum(depths) / len(depths)
-nums = [str(round(d/avg_depth, 2)) for d in depths]
+nums = [str(round(d/avg_depth, 2)) for d in depths] if avg_depth else ['0' for d in depths]
 a, b = round(min(depths),1), round(max(depths),1)
 spec = f"between {a} and {b}"
 print(f"sample variation from average,{spec}," + ','.join(nums))
