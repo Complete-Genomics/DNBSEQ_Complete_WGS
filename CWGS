@@ -80,6 +80,7 @@ def main():
     SGE_DIR = os.path.realpath(os.getenv('SGE_ROOT')) if os.getenv('SGE_ROOT') else ''
     SGE_ARCH = os.environ.get('SGE_ARCH', '')
 
+    os.environ['NXF_OFFLINE'] = 'true'
     envPaths = '--env PATH=$PATH'
     # path_env = os.environ.get('PATH', '')
 
@@ -320,7 +321,8 @@ def main():
             nf.write(nextflow_config)
 
         ## run nextflow
-        cmd = f"""nextflow run {modules}/main.nf \\
+        cmd = f"""
+        nextflow run {modules}/main.nf \\
             --input {samplelist} \\
             --outdir {output}   \\
             -with-report report.html \\

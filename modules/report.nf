@@ -12,7 +12,7 @@ process report0 {
     path "${id}.*report"
 
     tag "$id, $aligner, $varcaller"
-    // publishDir "${params.outdir}/$id/"
+    publishDir "${params.outdir}/report/$id/"
     // cache false
 
     script:
@@ -37,8 +37,6 @@ process report0 {
 
     ${params.BIN}python3 ${params.SCRIPT}/report.py 0 $id $vcf $lfr $histbed $meanbed $depthreport $phase > ${id}.${aligner}.${varcaller}.report
     """
-    stub:
-    "touch ${id}.${aligner}.${varcaller}.report"
 }
 process reportref {
     cpus params.CPU0
@@ -295,6 +293,6 @@ process html {
     // cache false
     script:
     """
-    ${params.BIN}python ${params.SCRIPT}/html.py ${params.outdir}/report/
+    ${params.BIN}python ${params.SCRIPT}/my_html.py ${params.outdir}/report/
     """
 }
