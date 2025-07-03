@@ -14,7 +14,7 @@ process bamdepth {
 
     script:
     def bam = bam.first()
-    "bamcov=`${params.BIN}samtools depth -@ ${task.cpus} $bam | awk '{sum += \$3}END{print sum/${params.ref_len}}'`"
+    "bamcov=`${params.BIN}samtools depth -@ ${task.cpus} $bam | awk '{sum += \$3}END{print sum/NR}'`"
     stub:
     "bamcov=30"
 }
