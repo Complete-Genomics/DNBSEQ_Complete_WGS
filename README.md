@@ -237,7 +237,7 @@ A more detailed flow chart.
 # Output of the demo example  
 **Results**  
 All output in the ./CWGS_run folder.   
-1. The report.csv (in ./CWGS_run/out or results) is a summary report, with all intermediate metrics, results of mapping, variant calling, phasing etc.     
+1. The report.csv (in ./CWGS_run/out or ./result) is a summary report, with all intermediate metrics, results of mapping, variant calling, phasing etc.     
 ![report.csv](CWGS_run/out/report.csv)  
 2. FQ, BAM, VCF output   
 The FQs are in ./CWGS_run/out/<sample_name>/fq, QC by SOAPnuke.  
