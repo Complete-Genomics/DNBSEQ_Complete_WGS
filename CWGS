@@ -312,6 +312,9 @@ def main():
 
         singularity{{
             enabled = true
+
+            autoMounts = false
+
             runOptions = "{envPaths} --env APPEND_PATH=/usr/local/miniconda3/bin,MBP_USAGE_LOGDIR={usage_dir},TMPDIR=/tmp --no-home -C --pwd `pwd -P` -B `pwd -P` -B /proc:/.__host_proc,/mnt -B {bind_str} -B {database}:{database_default} {script_bind_para} {modules_bind_para} -B {wd}:/tmp "
         }}
         """

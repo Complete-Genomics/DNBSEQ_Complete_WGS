@@ -1,8 +1,10 @@
 
-# CompleteWGS (cWGS)  
-This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' DNBSEQ Complete WGS (cWGS) (a DNA cobarcoding technology, previously known as stLFR) library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the cWGS library. Below is a flow chart which summarizes the pipeline processes. *Note, SV detection has not yet been enabled on the current version of the pipeline.
+# Complete WGS (cWGS)  
+This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' DNBSEQ Complete WGS (cWGS) (a DNA cobarcoding technology) library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the cWGS library. Below is a flow chart which summarizes the pipeline processes. *Note, SV detection has not yet been enabled on the current version of the pipeline.
 
-![image](images/new_flowchart.png)
+![flowchart](https://github.com/user-attachments/assets/59430c7d-8f5b-4117-9c52-404fb71d1e5d)
+
+
 
 # Requirements  
 **Hardware requirements**  
@@ -181,6 +183,14 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
     --PF_lt_stLFR_depth INT
       Extract the intersection regions from the sampled cWGS (stLFR) bam with depth greater than (>) this value and PCRFree bam with depth less equal than (<=) this value. [10]
     ```
+   stlfr only, same sample.list as other runs  
+   ```
+   modules=$path_to_your_scirpts/DNBSEQ_Complete_WGS/modules
+   scripts=$path_to_your_scirpts/DNBSEQ_Complete_WGS/scripts
+   db=path to CWGS_db
+   
+   ./CWGS run sample.list -sif $sif -B $data_path:$data_path -module ${modules} -db $db -script ${scripts} -exec local -debug --use_megabolt false --stLFR_only true > run.log 2>&1
+   ```
     Enable resuming the running
     ```
     --keepFiles BOOL
@@ -192,7 +202,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
     By default, each process only keeps the output files. If you want to check the intermediate files within a process, use this flag.
     ```
 
-4. Executor and MegaBOLT setting, four combinations:
+5. Executor and MegaBOLT setting, four combinations:
     Make sure CWGS is in your PATH.
     1. on clusters by SGE (Sun Grid Engine) and no MegaBOLT (default)
         Confirm the working queue and project number, which can be specified using --queue, and --project for regular queue, and project id, respectively. Use "--project none" if the system doesn't support a project id.
