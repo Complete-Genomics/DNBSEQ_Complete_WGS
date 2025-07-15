@@ -159,7 +159,7 @@ def main():
 
     ## set environ
     if executor == 'slurm':
-        envPaths += ' --env LD_LIBRARY_PATH=/usr/lib:/usr/lib64:$LD_LIBRARY_PATH --env SLURM_CONF=/etc/slurm/slurm.conf'
+        envPaths += '--env SLURM_CONF=/etc/slurm/slurm.conf'
 
     cpulimit = ''
     if executor == 'local':
@@ -312,7 +312,9 @@ def main():
 
         singularity{{
             enabled = true
+
             autoMounts = false
+
             runOptions = "{envPaths} --env APPEND_PATH=/usr/local/miniconda3/bin,MBP_USAGE_LOGDIR={usage_dir},TMPDIR=/tmp --no-home -C --pwd `pwd -P` -B `pwd -P` -B /proc:/.__host_proc,/mnt -B {bind_str} -B {database}:{database_default} {script_bind_para} {modules_bind_para} -B {wd}:/tmp "
         }}
         """
