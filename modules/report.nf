@@ -92,14 +92,11 @@ process report_stlfronly {
 
     tag "$id, $aligner, $varcaller"
     // publishDir "${params.outdir}/$id/"
-    cache false
+    // cache false
 
     script:
     vcf = vcf.first()
     """
-    set +u
-    source /usr/local/miniconda3/bin/activate /usr/local/miniconda3/envs/six
-
     snp=`bcftools view -v snps $vcf |grep -v \\# |wc -l`
     indel=`bcftools view -v indels $vcf |grep -v \\# |wc -l`
     hetsnp=`bcftools view -v snps -i 'GT="0/1" || GT="1|0" || GT="0|1"' $vcf |grep -v \\# |wc -l`
