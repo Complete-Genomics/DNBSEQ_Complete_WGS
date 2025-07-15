@@ -93,7 +93,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
    ```
    Updates are pushed to the github module and script folders, use the latest ones. Currently, it's recommended to remove PF reads of MAPQ<3 with the --pfmapq tag. Also, to customize and make the pipeline adapt to your needs, you may revise the scripts. An example run:  
    ```
-   ./CWGS sample.list -sing /usr/local/bin/singularity -module <module_path> -script <script_path> -local -debug --use_megabolt false --pfmapq 3
+   ./CWGS run sample.list -module <module_path> -script <script_path> -exec local -debug --use_megabolt false --pfmapq 3
    ```
    Run customized reference with --ref </absolute/path/to/ref/fasta>; prepare all indices etc. in the same directory before run.
 
@@ -217,17 +217,18 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
         ```
         CWGS sample.list -bolt --queue all.q --boltq bolt.q --project none > run.log 2>&1 &
         ```
-    3. locally run.
-        Run with "-local" option. 
+    3. locally run, or slurm run
+        Run with "-exec local" option.
+        Run with "-exec slurm" option.
         E.g.
         ```
-        CWGS sample.list -local > run.log 2>&1 &
+        CWGS sample.list -exce local > run.log 2>&1 &
         ```
-    4. locally run on a MegaBOLT machine.
-        Run with "-local" & "-bolt" option. 
+    5. locally run on a MegaBOLT machine.
+        Run with "-exce local" and "--use_megabolt true " option. 
         E.g.
         ```
-        CWGS sample.list -local -bolt > run.log 2>&1 &
+        CWGS sample.list -exce local --use_megabolt true > run.log 2>&1 &
         ```
 
 
