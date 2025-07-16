@@ -219,7 +219,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
         ```
     3. locally run, or slurm run
         Run with "-exec local" option.
-        Run with "-exec slurm --partition ${partition} --nodelist ${nodelist} " option.
+        Run with "-exec slurm -partition ${partition} -nodelist ${nodelist} " option.
         E.g.
         ```
         CWGS sample.list -exce local > run.log 2>&1 &
