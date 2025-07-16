@@ -39,11 +39,11 @@ singularity exec -B`pwd -P` --pwd `pwd -P` CWGS.sif cp -rL /usr/local/bin/CWGS /
 ```
 ./CWGS -createdb
 ```
-Or for MegaBolt or ZBolt nodes ((MGI's Bioinformatics analysis accelerator, including MegaBOLT/ZBOLT/ZBOLT Pro)  
+Or for MegaBolt or ZBolt nodes (MGI's Bioinformatics analysis accelerator, including MegaBOLT/ZBOLT/ZBOLT Pro)  
 ```
 ./CWGS -createdb --megabolt
 ```
-This command will download around 32G data from internet and build index locally, which will occupy another 30G storage.
+This command will download around 32G data from internet and build index locally, which will occupy another 30G storage. Use ![db_tree.txt](docs/db_tree.txt) to validate the completion of database creation.    
  
 4. Test demo data:
 
