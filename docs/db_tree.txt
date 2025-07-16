@@ -1,0 +1,726 @@
+./
+|-- DV_model
+|   |-- dv1.6-mgi-g400.ckpt.data-00000-of-00001 -> ../_RAWDATA_/weights-60-0.993753.ckpt.data-00000-of-00001
+|   |-- dv1.6-mgi-g400.ckpt.index -> ../_RAWDATA_/weights-60-0.993753.ckpt.index
+|   |-- dv1.6-mgi-t7.ckpt.data-00000-of-00001 -> ../_RAWDATA_/weights-51-0.995354.ckpt.data-00000-of-00001
+|   `-- dv1.6-mgi-t7.ckpt.index -> ../_RAWDATA_/weights-51-0.995354.ckpt.index
+|-- _RAWDATA_
+|   |-- 1000G_omni2.5.b37.vcf.gz
+|   |-- 1000G_omni2.5.b37.vcf.gz.tbi
+|   |-- 1000G_omni2.5.hg19.sites.vcf.gz
+|   |-- 1000G_omni2.5.hg19.sites.vcf.gz.tbi
+|   |-- 1000G_omni2.5.hg38.vcf.gz
+|   |-- 1000G_omni2.5.hg38.vcf.gz.tbi
+|   |-- 1000G_phase1.indels.hg19.sites.vcf.gz
+|   |-- 1000G_phase1.indels.hg19.sites.vcf.gz.tbi
+|   |-- 1000G_phase1.snps.high_confidence.b37.vcf.gz
+|   |-- 1000G_phase1.snps.high_confidence.b37.vcf.gz.tbi
+|   |-- 1000G_phase1.snps.high_confidence.hg19.sites.vcf.gz
+|   |-- 1000G_phase1.snps.high_confidence.hg19.sites.vcf.gz.tbi
+|   |-- 1000G_phase1.snps.high_confidence.hg38.vcf.gz
+|   |-- 1000G_phase1.snps.high_confidence.hg38.vcf.gz.tbi
+|   |-- 1000g_v37_phase2.sdf
+|   |   |-- done
+|   |   |-- format.log
+|   |   |-- mainIndex
+|   |   |-- nameIndex0
+|   |   |-- namedata0
+|   |   |-- namepointer0
+|   |   |-- progress
+|   |   |-- readme.txt
+|   |   |-- reference.txt
+|   |   |-- seqdata0
+|   |   |-- seqdata1
+|   |   |-- seqdata2
+|   |   |-- seqdata3
+|   |   |-- seqpointer0
+|   |   |-- seqpointer1
+|   |   |-- seqpointer2
+|   |   |-- seqpointer3
+|   |   |-- sequenceIndex0
+|   |   |-- suffixIndex0
+|   |   |-- suffixdata0
+|   |   |-- suffixpointer0
+|   |   `-- summary.txt
+|   |-- 1000g_v37_phase2.sdf.zip
+|   |-- All_20180418.vcf.gz
+|   |-- All_20180418.vcf.gz.tbi
+|   |-- GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz
+|   |-- GRCh38.sdf
+|   |   |-- done
+|   |   |-- format.log
+|   |   |-- mainIndex
+|   |   |-- nameIndex0
+|   |   |-- namedata0
+|   |   |-- namepointer0
+|   |   |-- progress
+|   |   |-- readme.txt
+|   |   |-- reference.txt
+|   |   |-- seqdata0
+|   |   |-- seqdata1
+|   |   |-- seqdata2
+|   |   |-- seqdata3
+|   |   |-- seqpointer0
+|   |   |-- seqpointer1
+|   |   |-- seqpointer2
+|   |   |-- seqpointer3
+|   |   |-- sequenceIndex0
+|   |   |-- suffixIndex0
+|   |   |-- suffixdata0
+|   |   |-- suffixpointer0
+|   |   `-- summary.txt
+|   |-- GRCh38.sdf.zip
+|   |-- HG001_GRCh37_1_22_v4.2.1_benchmark.bed
+|   |-- HG001_GRCh37_1_22_v4.2.1_benchmark.vcf.gz
+|   |-- HG001_GRCh37_1_22_v4.2.1_benchmark.vcf.gz.tbi
+|   |-- HG001_GRCh37_1_22_v4.2.1_benchmark_hifiasm_v11_phasetransfer.vcf.gz
+|   |-- HG001_GRCh37_1_22_v4.2.1_benchmark_hifiasm_v11_phasetransfer.vcf.gz.tbi
+|   |-- HG001_GRCh38_1_22_v4.2.1_benchmark.bed
+|   |-- HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+|   |-- HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
+|   |-- HG001_GRCh38_1_22_v4.2.1_benchmark_hifiasm_v11_phasetransfer.vcf.gz
+|   |-- HG001_GRCh38_1_22_v4.2.1_benchmark_hifiasm_v11_phasetransfer.vcf.gz.tbi
+|   |-- HG002_GRCh37_1_22_v4.2.1_benchmark.vcf.gz
+|   |-- HG002_GRCh37_1_22_v4.2.1_benchmark.vcf.gz.tbi
+|   |-- HG002_GRCh37_1_22_v4.2.1_benchmark_hifiasm_v11_phasetransfer.vcf.gz
+|   |-- HG002_GRCh37_1_22_v4.2.1_benchmark_hifiasm_v11_phasetransfer.vcf.gz.tbi
+|   |-- HG002_GRCh37_1_22_v4.2.1_benchmark_noinconsistent.bed
+|   |-- HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+|   |-- HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
+|   |-- HG002_GRCh38_1_22_v4.2.1_benchmark_hifiasm_v11_phasetransfer.vcf.gz
+|   |-- HG002_GRCh38_1_22_v4.2.1_benchmark_hifiasm_v11_phasetransfer.vcf.gz.tbi
+|   |-- HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+|   |-- Homo_sapiens_assembly38.known_indels.vcf.gz
+|   |-- Homo_sapiens_assembly38.known_indels.vcf.gz.tbi
+|   |-- Mills_and_1000G_gold_standard.indels.b37.vcf.gz
+|   |-- Mills_and_1000G_gold_standard.indels.b37.vcf.gz.tbi
+|   |-- Mills_and_1000G_gold_standard.indels.hg19.sites.vcf.gz
+|   |-- Mills_and_1000G_gold_standard.indels.hg19.sites.vcf.gz.tbi
+|   |-- Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
+|   |-- Mills_and_1000G_gold_standard.indels.hg38.vcf.gz.tbi
+|   |-- bad_region_hg19_nochr.bllist
+|   |-- bad_region_hg19_withchr.bllist
+|   |-- bad_region_hg38_withchr.bllist
+|   |-- ceph18.b37.lumpy.exclude.2014-01-15.bed
+|   |-- dbsnp_138.b37.vcf.gz
+|   |-- dbsnp_138.b37.vcf.gz.tbi
+|   |-- dbsnp_138.hg19.vcf.gz
+|   |-- dbsnp_138.hg19.vcf.gz.tbi
+|   |-- exclude.cnvnator_100bp.GRCh38.20170403.bed
+|   |-- hapmap_3.3.b37.vcf.gz
+|   |-- hapmap_3.3.b37.vcf.gz.tbi
+|   |-- hapmap_3.3.hg19.sites.vcf.gz
+|   |-- hapmap_3.3.hg19.sites.vcf.gz.tbi
+|   |-- hapmap_3.3.hg38.vcf.gz
+|   |-- hapmap_3.3.hg38.vcf.gz.tbi
+|   |-- hg19.fa
+|   |-- hg19.fa.gz
+|   |-- hg19.sdf
+|   |   |-- done
+|   |   |-- format.log
+|   |   |-- jmxmon.log
+|   |   |-- mainIndex
+|   |   |-- nameIndex0
+|   |   |-- namedata0
+|   |   |-- namepointer0
+|   |   |-- progress
+|   |   |-- readme.txt
+|   |   |-- reference.txt
+|   |   |-- seqdata0
+|   |   |-- seqdata1
+|   |   |-- seqdata2
+|   |   |-- seqdata3
+|   |   |-- seqpointer0
+|   |   |-- seqpointer1
+|   |   |-- seqpointer2
+|   |   |-- seqpointer3
+|   |   |-- sequenceIndex0
+|   |   `-- summary.txt
+|   |-- hg19.sdf.zip
+|   |-- hg38.fa
+|   |-- hs37d5.fa
+|   |-- hs37d5.fa.gz
+|   |-- human_hg19_2000_20000_20000_0.9995_0.95_nochr.conlist
+|   |-- human_hg19_2000_20000_20000_0.9995_0.95_withchr.conlist
+|   |-- human_hg38_1500_20000_2_0.15_withchr.conlist
+|   |-- map.file
+|   |-- weights-51-0.995354.ckpt.data-00000-of-00001
+|   |-- weights-51-0.995354.ckpt.index
+|   |-- weights-60-0.993753.ckpt.data-00000-of-00001
+|   `-- weights-60-0.993753.ckpt.index
+|-- barcode
+|   |-- barcode.list
+|   `-- tenx.whitelist
+|-- hg19
+|   |-- gatk
+|   |   |-- 1000G_omni2.5.hg19.sites.vcf.gz -> ../../_RAWDATA_/1000G_omni2.5.hg19.sites.vcf.gz
+|   |   |-- 1000G_omni2.5.hg19.sites.vcf.gz.tbi -> ../../_RAWDATA_/1000G_omni2.5.hg19.sites.vcf.gz.tbi
+|   |   |-- 1000G_phase1.indels.hg19.sites.vcf.gz -> ../../_RAWDATA_/1000G_phase1.indels.hg19.sites.vcf.gz
+|   |   |-- 1000G_phase1.indels.hg19.sites.vcf.gz.tbi -> ../../_RAWDATA_/1000G_phase1.indels.hg19.sites.vcf.gz.tbi
+|   |   |-- 1000G_phase1.snps.high_confidence.hg19.sites.vcf.gz -> ../../_RAWDATA_/1000G_phase1.snps.high_confidence.hg19.sites.vcf.gz
+|   |   |-- 1000G_phase1.snps.high_confidence.hg19.sites.vcf.gz.tbi -> ../../_RAWDATA_/1000G_phase1.snps.high_confidence.hg19.sites.vcf.gz.tbi
+|   |   |-- Mills_and_1000G_gold_standard.indels.hg19.sites.vcf.gz -> ../../_RAWDATA_/Mills_and_1000G_gold_standard.indels.hg19.sites.vcf.gz
+|   |   |-- Mills_and_1000G_gold_standard.indels.hg19.sites.vcf.gz.tbi -> ../../_RAWDATA_/Mills_and_1000G_gold_standard.indels.hg19.sites.vcf.gz.tbi
+|   |   |-- dbsnp_138.hg19.vcf.gz -> ../../_RAWDATA_/dbsnp_138.hg19.vcf.gz
+|   |   |-- dbsnp_138.hg19.vcf.gz.tbi -> ../../_RAWDATA_/dbsnp_138.hg19.vcf.gz.tbi
+|   |   |-- hapmap_3.3.hg19.sites.vcf.gz -> ../../_RAWDATA_/hapmap_3.3.hg19.sites.vcf.gz
+|   |   `-- hapmap_3.3.hg19.sites.vcf.gz.tbi -> ../../_RAWDATA_/hapmap_3.3.hg19.sites.vcf.gz.tbi
+|   |-- hg19.SDF -> ../_RAWDATA_/hg19.sdf
+|   |-- hg19.hg001.bed
+|   |-- hg19.hg001.vcf.gz
+|   |-- hg19.hg001.vcf.gz.tbi
+|   |-- hg19.hg002.bed
+|   |-- hg19.hg002.vcf.gz
+|   |-- hg19.hg002.vcf.gz.tbi
+|   |-- hg19.nonN.region
+|   |-- phasedvcf
+|   |   |-- hg19.hg001.chr1.vcf.gz
+|   |   |-- hg19.hg001.chr10.vcf.gz
+|   |   |-- hg19.hg001.chr11.vcf.gz
+|   |   |-- hg19.hg001.chr12.vcf.gz
+|   |   |-- hg19.hg001.chr13.vcf.gz
+|   |   |-- hg19.hg001.chr14.vcf.gz
+|   |   |-- hg19.hg001.chr15.vcf.gz
+|   |   |-- hg19.hg001.chr16.vcf.gz
+|   |   |-- hg19.hg001.chr17.vcf.gz
+|   |   |-- hg19.hg001.chr18.vcf.gz
+|   |   |-- hg19.hg001.chr19.vcf.gz
+|   |   |-- hg19.hg001.chr2.vcf.gz
+|   |   |-- hg19.hg001.chr20.vcf.gz
+|   |   |-- hg19.hg001.chr21.vcf.gz
+|   |   |-- hg19.hg001.chr22.vcf.gz
+|   |   |-- hg19.hg001.chr3.vcf.gz
+|   |   |-- hg19.hg001.chr4.vcf.gz
+|   |   |-- hg19.hg001.chr5.vcf.gz
+|   |   |-- hg19.hg001.chr6.vcf.gz
+|   |   |-- hg19.hg001.chr7.vcf.gz
+|   |   |-- hg19.hg001.chr8.vcf.gz
+|   |   |-- hg19.hg001.chr9.vcf.gz
+|   |   |-- hg19.hg001.chrX.vcf.gz
+|   |   |-- hg19.hg001.chrY.vcf.gz
+|   |   |-- hg19.hg002.chr1.vcf.gz
+|   |   |-- hg19.hg002.chr10.vcf.gz
+|   |   |-- hg19.hg002.chr11.vcf.gz
+|   |   |-- hg19.hg002.chr12.vcf.gz
+|   |   |-- hg19.hg002.chr13.vcf.gz
+|   |   |-- hg19.hg002.chr14.vcf.gz
+|   |   |-- hg19.hg002.chr15.vcf.gz
+|   |   |-- hg19.hg002.chr16.vcf.gz
+|   |   |-- hg19.hg002.chr17.vcf.gz
+|   |   |-- hg19.hg002.chr18.vcf.gz
+|   |   |-- hg19.hg002.chr19.vcf.gz
+|   |   |-- hg19.hg002.chr2.vcf.gz
+|   |   |-- hg19.hg002.chr20.vcf.gz
+|   |   |-- hg19.hg002.chr21.vcf.gz
+|   |   |-- hg19.hg002.chr22.vcf.gz
+|   |   |-- hg19.hg002.chr3.vcf.gz
+|   |   |-- hg19.hg002.chr4.vcf.gz
+|   |   |-- hg19.hg002.chr5.vcf.gz
+|   |   |-- hg19.hg002.chr6.vcf.gz
+|   |   |-- hg19.hg002.chr7.vcf.gz
+|   |   |-- hg19.hg002.chr8.vcf.gz
+|   |   |-- hg19.hg002.chr9.vcf.gz
+|   |   |-- hg19.hg002.chrX.vcf.gz
+|   |   `-- hg19.hg002.chrY.vcf.gz
+|   `-- reference
+|       |-- hg19.fa -> ../../_RAWDATA_/hg19.fa
+|       |-- hg19.fa.amb
+|       |-- hg19.fa.ann
+|       |-- hg19.fa.bwt
+|       |-- hg19.fa.fai
+|       |-- hg19.fa.pac
+|       `-- hg19.fa.sa
+|-- hg38
+|   |-- GRCh38_CMRG_benchmark_gene_coordinates.bed
+|   |-- gatk
+|   |   |-- 1000G.indels.vcf.gz -> ../../_RAWDATA_/Homo_sapiens_assembly38.known_indels.vcf.gz
+|   |   |-- 1000G.indels.vcf.gz.tbi -> ../../_RAWDATA_/Homo_sapiens_assembly38.known_indels.vcf.gz.tbi
+|   |   |-- 1000G_omni2.5.hg38.vcf.gz -> ../../_RAWDATA_/1000G_omni2.5.hg38.vcf.gz
+|   |   |-- 1000G_omni2.5.hg38.vcf.gz.tbi -> ../../_RAWDATA_/1000G_omni2.5.hg38.vcf.gz.tbi
+|   |   |-- 1000G_phase1.snps.high_confidence.hg38.vcf.gz -> ../../_RAWDATA_/1000G_phase1.snps.high_confidence.hg38.vcf.gz
+|   |   |-- 1000G_phase1.snps.high_confidence.hg38.vcf.gz.tbi -> ../../_RAWDATA_/1000G_phase1.snps.high_confidence.hg38.vcf.gz.tbi
+|   |   |-- Mills_and_1000G_gold_standard.indels.hg38.vcf.gz -> ../../_RAWDATA_/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz
+|   |   |-- Mills_and_1000G_gold_standard.indels.hg38.vcf.gz.tbi -> ../../_RAWDATA_/Mills_and_1000G_gold_standard.indels.hg38.vcf.gz.tbi
+|   |   |-- dbsnp.vcf.gz -> ../../_RAWDATA_/All_20180418.vcf.gz
+|   |   |-- dbsnp.vcf.gz.tbi -> ../../_RAWDATA_/All_20180418.vcf.gz.tbi
+|   |   |-- hapmap_3.3.hg38.vcf.gz -> ../../_RAWDATA_/hapmap_3.3.hg38.vcf.gz
+|   |   `-- hapmap_3.3.hg38.vcf.gz.tbi -> ../../_RAWDATA_/hapmap_3.3.hg38.vcf.gz.tbi
+|   |-- gene6col.sort.bed
+|   |-- hg38.SDF -> ../_RAWDATA_/GRCh38.sdf
+|   |-- hg38.hg001.bed -> ../_RAWDATA_/HG001_GRCh38_1_22_v4.2.1_benchmark.bed
+|   |-- hg38.hg001.vcf.gz -> ../_RAWDATA_/HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+|   |-- hg38.hg001.vcf.gz.tbi -> ../_RAWDATA_/HG001_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
+|   |-- hg38.hg002.bed -> ../_RAWDATA_/HG002_GRCh38_1_22_v4.2.1_benchmark_noinconsistent.bed
+|   |-- hg38.hg002.vcf.gz -> ../_RAWDATA_/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz
+|   |-- hg38.hg002.vcf.gz.tbi -> ../_RAWDATA_/HG002_GRCh38_1_22_v4.2.1_benchmark.vcf.gz.tbi
+|   |-- hg38.nonN.region
+|   |-- merge_1216_hg38.bed
+|   |-- phasedvcf
+|   |   |-- hg38.hg001.chr1.vcf.gz
+|   |   |-- hg38.hg001.chr10.vcf.gz
+|   |   |-- hg38.hg001.chr11.vcf.gz
+|   |   |-- hg38.hg001.chr12.vcf.gz
+|   |   |-- hg38.hg001.chr13.vcf.gz
+|   |   |-- hg38.hg001.chr14.vcf.gz
+|   |   |-- hg38.hg001.chr15.vcf.gz
+|   |   |-- hg38.hg001.chr16.vcf.gz
+|   |   |-- hg38.hg001.chr17.vcf.gz
+|   |   |-- hg38.hg001.chr18.vcf.gz
+|   |   |-- hg38.hg001.chr19.vcf.gz
+|   |   |-- hg38.hg001.chr2.vcf.gz
+|   |   |-- hg38.hg001.chr20.vcf.gz
+|   |   |-- hg38.hg001.chr21.vcf.gz
+|   |   |-- hg38.hg001.chr22.vcf.gz
+|   |   |-- hg38.hg001.chr3.vcf.gz
+|   |   |-- hg38.hg001.chr4.vcf.gz
+|   |   |-- hg38.hg001.chr5.vcf.gz
+|   |   |-- hg38.hg001.chr6.vcf.gz
+|   |   |-- hg38.hg001.chr7.vcf.gz
+|   |   |-- hg38.hg001.chr8.vcf.gz
+|   |   |-- hg38.hg001.chr9.vcf.gz
+|   |   |-- hg38.hg001.chrX.vcf.gz
+|   |   |-- hg38.hg001.chrY.vcf.gz
+|   |   |-- hg38.hg001.vcf.gz
+|   |   |-- hg38.hg001.vcf.gz.tbi
+|   |   |-- hg38.hg002.chr1.vcf.gz
+|   |   |-- hg38.hg002.chr10.vcf.gz
+|   |   |-- hg38.hg002.chr11.vcf.gz
+|   |   |-- hg38.hg002.chr12.vcf.gz
+|   |   |-- hg38.hg002.chr13.vcf.gz
+|   |   |-- hg38.hg002.chr14.vcf.gz
+|   |   |-- hg38.hg002.chr15.vcf.gz
+|   |   |-- hg38.hg002.chr16.vcf.gz
+|   |   |-- hg38.hg002.chr17.vcf.gz
+|   |   |-- hg38.hg002.chr18.vcf.gz
+|   |   |-- hg38.hg002.chr19.vcf.gz
+|   |   |-- hg38.hg002.chr2.vcf.gz
+|   |   |-- hg38.hg002.chr20.vcf.gz
+|   |   |-- hg38.hg002.chr21.vcf.gz
+|   |   |-- hg38.hg002.chr22.vcf.gz
+|   |   |-- hg38.hg002.chr3.vcf.gz
+|   |   |-- hg38.hg002.chr4.vcf.gz
+|   |   |-- hg38.hg002.chr5.vcf.gz
+|   |   |-- hg38.hg002.chr6.vcf.gz
+|   |   |-- hg38.hg002.chr7.vcf.gz
+|   |   |-- hg38.hg002.chr8.vcf.gz
+|   |   |-- hg38.hg002.chr9.vcf.gz
+|   |   |-- hg38.hg002.chrX.vcf.gz
+|   |   |-- hg38.hg002.chrY.vcf.gz
+|   |   |-- hg38.hg002.vcf.gz
+|   |   `-- hg38.hg002.vcf.gz.tbi
+|   `-- reference
+|       |-- hg38.fa -> ../../_RAWDATA_/hg38.fa
+|       |-- hg38.fa.amb
+|       |-- hg38.fa.ann
+|       |-- hg38.fa.bwt
+|       |-- hg38.fa.fai
+|       |-- hg38.fa.pac
+|       |-- hg38.fa.sa
+|       `-- hg38.nonN.region -> /prod/hustor-04/zebra/ycai/projects/completeWGS/pipeline/v1.0.6/CWGS_db/hg38/hg38.nonN.region
+|-- hs37d5
+|   |-- gatk
+|   |   |-- 1000G_omni2.5.b37.vcf.gz -> ../../_RAWDATA_/1000G_omni2.5.b37.vcf.gz
+|   |   |-- 1000G_omni2.5.b37.vcf.gz.tbi -> ../../_RAWDATA_/1000G_omni2.5.b37.vcf.gz.tbi
+|   |   |-- 1000G_phase1.snps.high_confidence.b37.vcf.gz -> ../../_RAWDATA_/1000G_phase1.snps.high_confidence.b37.vcf.gz
+|   |   |-- 1000G_phase1.snps.high_confidence.b37.vcf.gz.tbi -> ../../_RAWDATA_/1000G_phase1.snps.high_confidence.b37.vcf.gz.tbi
+|   |   |-- Mills_and_1000G_gold_standard.indels.b37.vcf.gz -> ../../_RAWDATA_/Mills_and_1000G_gold_standard.indels.b37.vcf.gz
+|   |   |-- Mills_and_1000G_gold_standard.indels.b37.vcf.gz.tbi -> ../../_RAWDATA_/Mills_and_1000G_gold_standard.indels.b37.vcf.gz.tbi
+|   |   |-- dbsnp_138.b37.vcf.gz -> ../../_RAWDATA_/dbsnp_138.b37.vcf.gz
+|   |   |-- dbsnp_138.b37.vcf.gz.tbi -> ../../_RAWDATA_/dbsnp_138.b37.vcf.gz.tbi
+|   |   |-- hapmap_3.3.b37.vcf.gz -> ../../_RAWDATA_/hapmap_3.3.b37.vcf.gz
+|   |   `-- hapmap_3.3.b37.vcf.gz.tbi -> ../../_RAWDATA_/hapmap_3.3.b37.vcf.gz.tbi
+|   |-- hs37d5.SDF -> ../_RAWDATA_/1000g_v37_phase2.sdf
+|   |-- hs37d5.hg001.bed -> ../_RAWDATA_/HG001_GRCh37_1_22_v4.2.1_benchmark.bed
+|   |-- hs37d5.hg001.vcf.gz -> ../_RAWDATA_/HG001_GRCh37_1_22_v4.2.1_benchmark.vcf.gz
+|   |-- hs37d5.hg001.vcf.gz.tbi -> ../_RAWDATA_/HG001_GRCh37_1_22_v4.2.1_benchmark.vcf.gz.tbi
+|   |-- hs37d5.hg002.bed -> ../_RAWDATA_/HG002_GRCh37_1_22_v4.2.1_benchmark_noinconsistent.bed
+|   |-- hs37d5.hg002.vcf.gz -> ../_RAWDATA_/HG002_GRCh37_1_22_v4.2.1_benchmark.vcf.gz
+|   |-- hs37d5.nonN.region
+|   |-- phasedvcf
+|   |   |-- hs37d5.hg001.1.vcf.gz
+|   |   |-- hs37d5.hg001.10.vcf.gz
+|   |   |-- hs37d5.hg001.11.vcf.gz
+|   |   |-- hs37d5.hg001.12.vcf.gz
+|   |   |-- hs37d5.hg001.13.vcf.gz
+|   |   |-- hs37d5.hg001.14.vcf.gz
+|   |   |-- hs37d5.hg001.15.vcf.gz
+|   |   |-- hs37d5.hg001.16.vcf.gz
+|   |   |-- hs37d5.hg001.17.vcf.gz
+|   |   |-- hs37d5.hg001.18.vcf.gz
+|   |   |-- hs37d5.hg001.19.vcf.gz
+|   |   |-- hs37d5.hg001.2.vcf.gz
+|   |   |-- hs37d5.hg001.20.vcf.gz
+|   |   |-- hs37d5.hg001.21.vcf.gz
+|   |   |-- hs37d5.hg001.22.vcf.gz
+|   |   |-- hs37d5.hg001.3.vcf.gz
+|   |   |-- hs37d5.hg001.4.vcf.gz
+|   |   |-- hs37d5.hg001.5.vcf.gz
+|   |   |-- hs37d5.hg001.6.vcf.gz
+|   |   |-- hs37d5.hg001.7.vcf.gz
+|   |   |-- hs37d5.hg001.8.vcf.gz
+|   |   |-- hs37d5.hg001.9.vcf.gz
+|   |   |-- hs37d5.hg001.X.vcf.gz
+|   |   |-- hs37d5.hg001.Y.vcf.gz
+|   |   |-- hs37d5.hg001.vcf.gz -> ../../_RAWDATA_/HG001_GRCh37_1_22_v4.2.1_benchmark_hifiasm_v11_phasetransfer.vcf.gz
+|   |   |-- hs37d5.hg001.vcf.gz.tbi -> ../../_RAWDATA_/HG001_GRCh37_1_22_v4.2.1_benchmark_hifiasm_v11_phasetransfer.vcf.gz.tbi
+|   |   |-- hs37d5.hg002.1.vcf.gz
+|   |   |-- hs37d5.hg002.10.vcf.gz
+|   |   |-- hs37d5.hg002.11.vcf.gz
+|   |   |-- hs37d5.hg002.12.vcf.gz
+|   |   |-- hs37d5.hg002.13.vcf.gz
+|   |   |-- hs37d5.hg002.14.vcf.gz
+|   |   |-- hs37d5.hg002.15.vcf.gz
+|   |   |-- hs37d5.hg002.16.vcf.gz
+|   |   |-- hs37d5.hg002.17.vcf.gz
+|   |   |-- hs37d5.hg002.18.vcf.gz
+|   |   |-- hs37d5.hg002.19.vcf.gz
+|   |   |-- hs37d5.hg002.2.vcf.gz
+|   |   |-- hs37d5.hg002.20.vcf.gz
+|   |   |-- hs37d5.hg002.21.vcf.gz
+|   |   |-- hs37d5.hg002.22.vcf.gz
+|   |   |-- hs37d5.hg002.3.vcf.gz
+|   |   |-- hs37d5.hg002.4.vcf.gz
+|   |   |-- hs37d5.hg002.5.vcf.gz
+|   |   |-- hs37d5.hg002.6.vcf.gz
+|   |   |-- hs37d5.hg002.7.vcf.gz
+|   |   |-- hs37d5.hg002.8.vcf.gz
+|   |   |-- hs37d5.hg002.9.vcf.gz
+|   |   |-- hs37d5.hg002.X.vcf.gz
+|   |   |-- hs37d5.hg002.Y.vcf.gz
+|   |   |-- hs37d5.hg002.vcf.gz -> ../../_RAWDATA_/HG002_GRCh37_1_22_v4.2.1_benchmark_hifiasm_v11_phasetransfer.vcf.gz
+|   |   `-- hs37d5.hg002.vcf.gz.tbi -> ../../_RAWDATA_/HG002_GRCh37_1_22_v4.2.1_benchmark_hifiasm_v11_phasetransfer.vcf.gz.tbi
+|   `-- reference
+|       |-- hs37d5.fa -> ../../_RAWDATA_/hs37d5.fa
+|       |-- hs37d5.fa.amb
+|       |-- hs37d5.fa.ann
+|       |-- hs37d5.fa.bwt
+|       |-- hs37d5.fa.fai
+|       |-- hs37d5.fa.pac
+|       `-- hs37d5.fa.sa
+|-- report_template.txt
+|-- smoove
+|   |-- exclude_hg19.bed
+|   |-- exclude_hg38.bed -> ../_RAWDATA_/exclude.cnvnator_100bp.GRCh38.20170403.bed
+|   `-- exclude_hs37d5.bed -> ../_RAWDATA_/ceph18.b37.lumpy.exclude.2014-01-15.bed
+|-- stLFRcnv
+|   |-- GRCH37
+|   |   |-- control-set
+|   |   |   |-- Female
+|   |   |   |   `-- 200
+|   |   |   |       |-- chr1.cnn
+|   |   |   |       |-- chr1.con
+|   |   |   |       |-- chr10.cnn
+|   |   |   |       |-- chr10.con
+|   |   |   |       |-- chr11.cnn
+|   |   |   |       |-- chr11.con
+|   |   |   |       |-- chr12.cnn
+|   |   |   |       |-- chr12.con
+|   |   |   |       |-- chr13.cnn
+|   |   |   |       |-- chr13.con
+|   |   |   |       |-- chr14.cnn
+|   |   |   |       |-- chr14.con
+|   |   |   |       |-- chr15.cnn
+|   |   |   |       |-- chr15.con
+|   |   |   |       |-- chr16.cnn
+|   |   |   |       |-- chr16.con
+|   |   |   |       |-- chr17.cnn
+|   |   |   |       |-- chr17.con
+|   |   |   |       |-- chr18.cnn
+|   |   |   |       |-- chr18.con
+|   |   |   |       |-- chr19.cnn
+|   |   |   |       |-- chr19.con
+|   |   |   |       |-- chr2.cnn
+|   |   |   |       |-- chr2.con
+|   |   |   |       |-- chr20.cnn
+|   |   |   |       |-- chr20.con
+|   |   |   |       |-- chr21.cnn
+|   |   |   |       |-- chr21.con
+|   |   |   |       |-- chr22.cnn
+|   |   |   |       |-- chr22.con
+|   |   |   |       |-- chr3.cnn
+|   |   |   |       |-- chr3.con
+|   |   |   |       |-- chr4.cnn
+|   |   |   |       |-- chr4.con
+|   |   |   |       |-- chr5.cnn
+|   |   |   |       |-- chr5.con
+|   |   |   |       |-- chr6.cnn
+|   |   |   |       |-- chr6.con
+|   |   |   |       |-- chr7.cnn
+|   |   |   |       |-- chr7.con
+|   |   |   |       |-- chr8.cnn
+|   |   |   |       |-- chr8.con
+|   |   |   |       |-- chr9.cnn
+|   |   |   |       |-- chr9.con
+|   |   |   |       |-- chrX.cnn
+|   |   |   |       `-- chrX.con
+|   |   |   `-- Male
+|   |   |       `-- 200
+|   |   |           |-- chr1.cnn
+|   |   |           |-- chr1.con
+|   |   |           |-- chr10.cnn
+|   |   |           |-- chr10.con
+|   |   |           |-- chr11.cnn
+|   |   |           |-- chr11.con
+|   |   |           |-- chr12.cnn
+|   |   |           |-- chr12.con
+|   |   |           |-- chr13.cnn
+|   |   |           |-- chr13.con
+|   |   |           |-- chr14.cnn
+|   |   |           |-- chr14.con
+|   |   |           |-- chr15.cnn
+|   |   |           |-- chr15.con
+|   |   |           |-- chr16.cnn
+|   |   |           |-- chr16.con
+|   |   |           |-- chr17.cnn
+|   |   |           |-- chr17.con
+|   |   |           |-- chr18.cnn
+|   |   |           |-- chr18.con
+|   |   |           |-- chr19.cnn
+|   |   |           |-- chr19.con
+|   |   |           |-- chr2.cnn
+|   |   |           |-- chr2.con
+|   |   |           |-- chr20.cnn
+|   |   |           |-- chr20.con
+|   |   |           |-- chr21.cnn
+|   |   |           |-- chr21.con
+|   |   |           |-- chr22.cnn
+|   |   |           |-- chr22.con
+|   |   |           |-- chr3.cnn
+|   |   |           |-- chr3.con
+|   |   |           |-- chr4.cnn
+|   |   |           |-- chr4.con
+|   |   |           |-- chr5.cnn
+|   |   |           |-- chr5.con
+|   |   |           |-- chr6.cnn
+|   |   |           |-- chr6.con
+|   |   |           |-- chr7.cnn
+|   |   |           |-- chr7.con
+|   |   |           |-- chr8.cnn
+|   |   |           |-- chr8.con
+|   |   |           |-- chr9.cnn
+|   |   |           |-- chr9.con
+|   |   |           |-- chrX.cnn
+|   |   |           |-- chrX.con
+|   |   |           |-- chrY.cnn
+|   |   |           `-- chrY.con
+|   |   `-- filter-region
+|   |       |-- 100
+|   |       |   |-- chr1.pos
+|   |       |   |-- chr10.pos
+|   |       |   |-- chr11.pos
+|   |       |   |-- chr12.pos
+|   |       |   |-- chr13.pos
+|   |       |   |-- chr14.pos
+|   |       |   |-- chr15.pos
+|   |       |   |-- chr16.pos
+|   |       |   |-- chr17.pos
+|   |       |   |-- chr18.pos
+|   |       |   |-- chr19.pos
+|   |       |   |-- chr2.pos
+|   |       |   |-- chr20.pos
+|   |       |   |-- chr21.pos
+|   |       |   |-- chr22.pos
+|   |       |   |-- chr3.pos
+|   |       |   |-- chr4.pos
+|   |       |   |-- chr5.pos
+|   |       |   |-- chr6.pos
+|   |       |   |-- chr7.pos
+|   |       |   |-- chr8.pos
+|   |       |   |-- chr9.pos
+|   |       |   |-- chrM.pos
+|   |       |   |-- chrX.pos
+|   |       |   `-- chrY.pos
+|   |       |-- 150
+|   |       |   |-- chr1.pos
+|   |       |   |-- chr10.pos
+|   |       |   |-- chr11.pos
+|   |       |   |-- chr12.pos
+|   |       |   |-- chr13.pos
+|   |       |   |-- chr14.pos
+|   |       |   |-- chr15.pos
+|   |       |   |-- chr16.pos
+|   |       |   |-- chr17.pos
+|   |       |   |-- chr18.pos
+|   |       |   |-- chr19.pos
+|   |       |   |-- chr2.pos
+|   |       |   |-- chr20.pos
+|   |       |   |-- chr21.pos
+|   |       |   |-- chr22.pos
+|   |       |   |-- chr3.pos
+|   |       |   |-- chr4.pos
+|   |       |   |-- chr5.pos
+|   |       |   |-- chr6.pos
+|   |       |   |-- chr7.pos
+|   |       |   |-- chr8.pos
+|   |       |   |-- chr9.pos
+|   |       |   |-- chrX.pos
+|   |       |   `-- chrY.pos
+|   |       |-- Nregion.bed
+|   |       |-- abnormalband.bed
+|   |       |-- region1
+|   |       `-- region2
+|   `-- GRCH38
+|       |-- control-set
+|       |   |-- Female
+|       |   |   `-- 200
+|       |   |       |-- chr1.cnn
+|       |   |       |-- chr1.con
+|       |   |       |-- chr10.cnn
+|       |   |       |-- chr10.con
+|       |   |       |-- chr11.cnn
+|       |   |       |-- chr11.con
+|       |   |       |-- chr12.cnn
+|       |   |       |-- chr12.con
+|       |   |       |-- chr13.cnn
+|       |   |       |-- chr13.con
+|       |   |       |-- chr14.cnn
+|       |   |       |-- chr14.con
+|       |   |       |-- chr15.cnn
+|       |   |       |-- chr15.con
+|       |   |       |-- chr16.cnn
+|       |   |       |-- chr16.con
+|       |   |       |-- chr17.cnn
+|       |   |       |-- chr17.con
+|       |   |       |-- chr18.cnn
+|       |   |       |-- chr18.con
+|       |   |       |-- chr19.cnn
+|       |   |       |-- chr19.con
+|       |   |       |-- chr2.cnn
+|       |   |       |-- chr2.con
+|       |   |       |-- chr20.cnn
+|       |   |       |-- chr20.con
+|       |   |       |-- chr21.cnn
+|       |   |       |-- chr21.con
+|       |   |       |-- chr22.cnn
+|       |   |       |-- chr22.con
+|       |   |       |-- chr3.cnn
+|       |   |       |-- chr3.con
+|       |   |       |-- chr4.cnn
+|       |   |       |-- chr4.con
+|       |   |       |-- chr5.cnn
+|       |   |       |-- chr5.con
+|       |   |       |-- chr6.cnn
+|       |   |       |-- chr6.con
+|       |   |       |-- chr7.cnn
+|       |   |       |-- chr7.con
+|       |   |       |-- chr8.cnn
+|       |   |       |-- chr8.con
+|       |   |       |-- chr9.cnn
+|       |   |       |-- chr9.con
+|       |   |       |-- chrX.cnn
+|       |   |       `-- chrX.con
+|       |   `-- Male
+|       |       `-- 200
+|       |           |-- chr1.cnn
+|       |           |-- chr1.con
+|       |           |-- chr10.cnn
+|       |           |-- chr10.con
+|       |           |-- chr11.cnn
+|       |           |-- chr11.con
+|       |           |-- chr12.cnn
+|       |           |-- chr12.con
+|       |           |-- chr13.cnn
+|       |           |-- chr13.con
+|       |           |-- chr14.cnn
+|       |           |-- chr14.con
+|       |           |-- chr15.cnn
+|       |           |-- chr15.con
+|       |           |-- chr16.cnn
+|       |           |-- chr16.con
+|       |           |-- chr17.cnn
+|       |           |-- chr17.con
+|       |           |-- chr18.cnn
+|       |           |-- chr18.con
+|       |           |-- chr19.cnn
+|       |           |-- chr19.con
+|       |           |-- chr2.cnn
+|       |           |-- chr2.con
+|       |           |-- chr20.cnn
+|       |           |-- chr20.con
+|       |           |-- chr21.cnn
+|       |           |-- chr21.con
+|       |           |-- chr22.cnn
+|       |           |-- chr22.con
+|       |           |-- chr3.cnn
+|       |           |-- chr3.con
+|       |           |-- chr4.cnn
+|       |           |-- chr4.con
+|       |           |-- chr5.cnn
+|       |           |-- chr5.con
+|       |           |-- chr6.cnn
+|       |           |-- chr6.con
+|       |           |-- chr7.cnn
+|       |           |-- chr7.con
+|       |           |-- chr8.cnn
+|       |           |-- chr8.con
+|       |           |-- chr9.cnn
+|       |           |-- chr9.con
+|       |           |-- chrX.cnn
+|       |           |-- chrX.con
+|       |           |-- chrY.cnn
+|       |           `-- chrY.con
+|       `-- filter-region
+|           |-- 100
+|           |   |-- chr1.pos
+|           |   |-- chr10.pos
+|           |   |-- chr11.pos
+|           |   |-- chr12.pos
+|           |   |-- chr13.pos
+|           |   |-- chr14.pos
+|           |   |-- chr15.pos
+|           |   |-- chr16.pos
+|           |   |-- chr17.pos
+|           |   |-- chr18.pos
+|           |   |-- chr19.pos
+|           |   |-- chr2.pos
+|           |   |-- chr20.pos
+|           |   |-- chr21.pos
+|           |   |-- chr22.pos
+|           |   |-- chr3.pos
+|           |   |-- chr4.pos
+|           |   |-- chr5.pos
+|           |   |-- chr6.pos
+|           |   |-- chr7.pos
+|           |   |-- chr8.pos
+|           |   |-- chr9.pos
+|           |   |-- chrX.pos
+|           |   `-- chrY.pos
+|           |-- 150
+|           |   |-- chr1.pos
+|           |   |-- chr10.pos
+|           |   |-- chr11.pos
+|           |   |-- chr12.pos
+|           |   |-- chr13.pos
+|           |   |-- chr14.pos
+|           |   |-- chr15.pos
+|           |   |-- chr16.pos
+|           |   |-- chr17.pos
+|           |   |-- chr18.pos
+|           |   |-- chr19.pos
+|           |   |-- chr2.pos
+|           |   |-- chr20.pos
+|           |   |-- chr21.pos
+|           |   |-- chr22.pos
+|           |   |-- chr3.pos
+|           |   |-- chr4.pos
+|           |   |-- chr5.pos
+|           |   |-- chr6.pos
+|           |   |-- chr7.pos
+|           |   |-- chr8.pos
+|           |   |-- chr9.pos
+|           |   |-- chrX.pos
+|           |   `-- chrY.pos
+|           |-- Nregion.bed
+|           |-- abnormalband.bed
+|           |-- region1
+|           `-- region2
+|-- stLFRsv
+|   |-- hg19.bllist -> ../_RAWDATA_/bad_region_hg19_withchr.bllist
+|   |-- hg19.conlist -> ../_RAWDATA_/human_hg19_2000_20000_20000_0.9995_0.95_withchr.conlist
+|   |-- hg38.bllist -> ../_RAWDATA_/bad_region_hg38_withchr.bllist
+|   |-- hg38.conlist -> ../_RAWDATA_/human_hg38_1500_20000_2_0.15_withchr.conlist
+|   |-- hs37d5.bllist -> ../_RAWDATA_/bad_region_hg19_nochr.bllist
+|   `-- hs37d5.conlist -> ../_RAWDATA_/human_hg19_2000_20000_20000_0.9995_0.95_nochr.conlist
+`-- tree.txt
+
+43 directories, 681 files
