@@ -395,7 +395,7 @@ workflow CWGS {
                     if (!params.ref.startsWith('/')) {
                         phaseCatLariatDv(ch_lariat, ch_dv, vcfs.join(pvcfs).join(lfs).join(hbs).join(stats)).report.set {ch_phasereport}//report
                         phaseCatLariatDv.out.phasedvcf.set {ch_phasedvcf}
-                        vep(ch_phasedvcf)
+                        if (!params.stLFR_only) { vep(ch_phasedvcf) }
                         
                     } else {
                         phaseCatRef(ch_lariat, ch_dv, txt, vcfs.join(pvcfs).join(lfs).join(hbs)).report.set {ch_phasereport}
