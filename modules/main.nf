@@ -180,7 +180,9 @@ include {
     align_cat;
     eachstat_aligncat;
     align_cat as alignCatPf } from "${params.MOD}/bamstats"
-
+include {gangstr} from "${params.MOD}/gangstr"
+include {pangenie} from "${params.MOD}/pangenie"
+include {hlala} from "${params.MOD}/hlala"
 include {
     report0 as reportBwaGatk;
     report0 as reportBwaDv;
@@ -286,6 +288,8 @@ workflow CWGS {
     
     // pf align
     if (!params.stLFR_only) {
+        pangenie(ch_pfsampledfq)
+
         if (params.pfAligner == "bwa") {
             if (params.use_megabolt) {
                 bwaMegaboltPf(ch_libpf, ch_pfsampledfq).set {ch_pfbam}
@@ -558,6 +562,10 @@ workflow CWGS {
         samtools_flagstat(ch_libstlfr, stlfrbam).set {ch_flagstat}
         samtools_stats(ch_libstlfr, stlfrbam).set {ch_stat}
         insertsize(ch_libstlfr, stlfrbam).insertsize.set {ch_insertsize} 
+
+        //
+        gangstr(ch_mergebam)
+        hlala(ch_mergebam)
             
         if (!params.ref.startsWith('/')) {
             coverage(ch_merge, ch_mergebam).set {ch_cmrgMergebamhistbed}
