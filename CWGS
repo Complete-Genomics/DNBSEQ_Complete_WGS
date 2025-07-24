@@ -95,9 +95,11 @@ def main():
     modules_default     = os.path.join(app_dir, 'modules')
     runit_default       = os.path.join(app_dir, 'runit')
     container_default   = os.path.join(script_path, N + '.sif')
+    sifs_default        = os.path.join(script_path, 'sifs')
 
     parent_parser = argparse.ArgumentParser(add_help=False)
-    parent_parser.add_argument('-sif',      default=container_default, help='singularity container path')
+    parent_parser.add_argument('-sif',      default=container_default, help=f'singularity container path[{container_default}]')
+    parent_parser.add_argument('-sifs',      default=None, help=f'singularity containers dir')
     parent_parser.add_argument('-exec',         default='sge',              help='nf executor; support local, sge, or slurm [sge]')
     parent_parser.add_argument('-sge',          default=SGE_DIR,            help=f'SGE_DIR [{SGE_DIR}]')
     parent_parser.add_argument('-B',             help='singularity extra bind path')
@@ -148,13 +150,21 @@ def main():
 
     args, unknowns  = parser.parse_known_args()
 
-    container       = os.path.realpath(args.sif)
+    sifs            = os.path.realpath(args.sifs) if args.sifs else None
+    container       = os.path.join(sifs, 'CWGS.sif') if sifs else os.path.realpath(args.sif)
     SGE_dir         = os.path.realpath(args.sge)
     executor        = args.exec
     runit           = os.path.realpath(args.runit) if args.runit != runit_default else args.runit
+    modules         = os.path.realpath(args.module) if args.module != modules_default else args.module
+    conf2           = os.path.join(modules, 'sifs.config')
 
+    
     if not os.path.exists(container):
         print(f"ERROR: {container} doesnt exist!")
+        sys.exit(1)
+
+    if sifs and not os.path.exists(conf2): 
+        print(f"ERROR: cant find {conf2}! use the latest modules")
         sys.exit(1)
 
     ## set environ
@@ -219,7 +229,6 @@ def main():
         samplelist  = os.path.realpath(args.samplelist)
         output      = os.path.realpath(args.out)
         database    = os.path.realpath(args.db)
-        modules     = os.path.realpath(args.module) if args.module != modules_default else args.module
         script      = os.path.realpath(args.script) if args.script != script_default else args.script
 
         ## find paths to bind
@@ -277,6 +286,8 @@ def main():
         if args.preview:
             nf_opts += ' -preview'
 
+        nf_opts += f' -c {conf2} --sifs {sifs}' if sifs else ''
+
         ENV = f"--env NXF_OFFLINE=true,MBP_USAGE_LOGDIR={usage_dir} {SGE_ENV} {L_PATH} {envPaths}" 
         # ENV += envPaths if executor == 'slurm' else ''
 
@@ -304,10 +315,11 @@ def main():
         process{{
             {scratch}
             container = \'{container}\'
+            sifs = \'{sifs}\'
             executor = \'{executor}\'
             {MEGABOLT_CONTAINER}
             beforeScript = 'echo "===vvv---HOST_INFO---vvv==="; uname -a; lscpu|grep -P "MHz:|Model name:|^CPU.s.:"; uptime; free -h; echo "===^^^---HOST_INFO---^^^==="; export MBP_USAGE_LOGDIR={usage_dir}; export PATH=$BIN_PATH:$PATH'
-            shell = '{RUNIT_CMD} -s -l`echo \\$(basename \\$(dirname \\$PWD))_\\$(basename \\$PWD)` /bin/bash -euo pipefail'
+            // shell = '{RUNIT_CMD} -s -l`echo \\$(basename \\$(dirname \\$PWD))_\\$(basename \\$PWD)` /bin/bash -euo pipefail'
         }}
 
         singularity{{
