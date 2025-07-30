@@ -180,7 +180,9 @@ include {
     align_cat;
     eachstat_aligncat;
     align_cat as alignCatPf } from "${params.MOD}/bamstats"
-
+include {gangstr} from "${params.MOD}/gangstr"
+include {pangenie} from "${params.MOD}/pangenie"
+include {hlala} from "${params.MOD}/hlala"
 include {
     report0 as reportBwaGatk;
     report0 as reportBwaDv;
@@ -286,6 +288,8 @@ workflow CWGS {
     
     // pf align
     if (!params.stLFR_only) {
+        pangenie(ch_pfsampledfq)
+
         if (params.pfAligner == "bwa") {
             if (params.use_megabolt) {
                 bwaMegaboltPf(ch_libpf, ch_pfsampledfq).set {ch_pfbam}
@@ -558,6 +562,10 @@ workflow CWGS {
         samtools_flagstat(ch_libstlfr, stlfrbam).set {ch_flagstat}
         samtools_stats(ch_libstlfr, stlfrbam).set {ch_stat}
         insertsize(ch_libstlfr, stlfrbam).insertsize.set {ch_insertsize} 
+
+        //
+        gangstr(ch_mergebam)
+        hlala(ch_mergebam)
             
         if (!params.ref.startsWith('/')) {
             coverage(ch_merge, ch_mergebam).set {ch_cmrgMergebamhistbed}
@@ -814,7 +822,7 @@ workflow CWGS_frombam {
     splitBam4phasing(ch_lariat, ch_lariatbam, chrs).set {ch_eachbamlariat}
 
     if (params.var_tool.contains("dv")) {
-        if (params.use_megabolt) {dvMegabolt(ch_lariat, ch_mergeLariatBam).set {ch_mergevcf}}
+        if (params.use_megabolt && params.dv_version == 'v0.6') {dvMegabolt(ch_lariat, ch_mergeLariatBam).set {ch_mergevcf}}
         else {deepvariant(ch_lariat, ch_mergeLariatBam).set {ch_mergevcf}}
         
         if (!params.ref.startsWith('/')) {
@@ -946,37 +954,11 @@ workflow CWGS_frombam_stLFRonly {
         println("!!! run CWGS from stlfr bams")
         parse_sample_frombam(ch_input).bam.set {ch_bam}
         bam(ch_bam).stlfr.set {ch_lariatbam}
-        bam.out.pf.set {ch_pfbam}       
 
         if (params.sampleBam) { 
-            sampleBamPf(ch_libpf, ch_bwa, ch_pfbam).set {ch_pfbam} 
             sampleBamStlfrLariat(ch_libstlfr, ch_lariat, ch_lariatbam).set {ch_lariatbam}
         }
-        mapq_frombam(ch_pfbam).set {ch_pfbam}
-        dvBwaPf(ch_bwa, ch_pfbam).set {ch_pfdvvcf} 
-        if (!params.ref.startsWith('/')) {
-            vcfevalPf(ch_libpf, ch_pfdvvcf).set {ch_vcfevalPf}
-            coveragePf(ch_libpf, ch_pfbam).join(coverageMeanPf(ch_libpf, ch_pfbam)).set { ch_PfGeneCov }
-        }
-        
 
-        
-        // mosdepthPf(ch_libpf, ch_pfbam).set {ch_}
-        //depth bed
-        // depth_pf(ch_libpf, ch_bwa, ch_pfbam).set {ch_pfbed}
-
-        //pf bam stats
-        samtoolsFlagstatPf(ch_libpf, ch_pfbam).set {ch_flagstat2}
-        samtoolsStatsPf(ch_libpf, ch_pfbam).set {ch_stat2}
-        samtoolsDepthPf(ch_libpf, ch_pfbam).set {ch_depthreport2} 
-
-        insertsizePf(ch_libpf, ch_pfbam).insertsize.set {ch_insertsize2} 
-        alignCatPf(ch_libpf, ch_flagstat2.join(ch_stat2).join(ch_depthreport2).join(ch_insertsize2)).set {ch_aligncatpf} //info
-        bamdepthPf(ch_libpf, ch_pfbam).set {ch_pfbamdepth}
-
-        //merge bam
-        intersectLariat(ch_lariat, ch_lariatbam.join(ch_pfbam)).set {ch_bed}
-        mergeBamLariat(ch_lariat, ch_pfbam.join(ch_lariatbam).join(ch_bed)).set {ch_mergeLariatBam} 
     } else {
         println("!!! run CWGS from merge bam")
         parse_sample_frombam(ch_input).bam.set {ch_bam}
@@ -984,7 +966,6 @@ workflow CWGS_frombam_stLFRonly {
         bam2.out.merge.set {ch_mergeLariatBam}
     }
     
-
 
     if (params.var_tool.contains("gatk") && !params.use_megabolt && params.split_by_intervals) { //run gatk-hc with -L and then vqsr on each vcf
         gatk_interval().splitText().map { it.trim() }.collect().set {intervals}
@@ -1002,17 +983,12 @@ workflow CWGS_frombam_stLFRonly {
     splitBam4phasing(ch_lariat, ch_lariatbam, chrs).set {ch_eachbamlariat}
 
     if (params.var_tool.contains("dv")) {
-        if (params.use_megabolt) {dvMegabolt(ch_lariat, ch_mergeLariatBam).set {ch_mergevcf}}
-        else {deepvariant(ch_lariat, ch_mergeLariatBam).set {ch_mergevcf}}
-        
-        if (!params.ref.startsWith('/')) {
-            vcfevalLariatDv(ch_merge, ch_mergevcf).set {ch_vcfevalLariatDv}//report 52 
-            varStatsLariatDv(ch_mergevcf) //report 51
-        }
+        if (params.use_megabolt && params.dv_version == "v0.6" ) {dvMegabolt(ch_lariat, ch_mergeLariatBam).set {ch_mergevcf}}
+        else {deepvariant(ch_lariat, ch_lariatbam).set {ch_vcf}}
         
 
         //phase
-        splitVcfLariatDv(ch_lariat, ch_dv, ch_mergevcf, chrs).eachvcf.set {ch_eachvcf}
+        splitVcfLariatDv(ch_lariat, ch_dv, ch_vcf, chrs).eachvcf.set {ch_eachvcf}
         vcfs = splitVcfLariatDv.out.vcf.groupTuple()
         ch_eachbamlariat.combine(ch_eachvcf, by: [0,1]).set {ch_eachchr}
         pvcfs = phaseLariatDv(ch_lariat, ch_dv, ch_eachchr).phasedvcf.groupTuple()  
@@ -1021,9 +997,10 @@ workflow CWGS_frombam_stLFRonly {
         stats = phaseLariatDv.out.stat.groupTuple()  
         if (!params.ref.startsWith('/')) {
             phaseCatLariatDv(ch_lariat, ch_dv, vcfs.join(pvcfs).join(lfs).join(hbs).join(stats)).report.set {ch_phasereport}//report
-            vep(phaseCatLariatDv.out.phasedvcf)
+            phaseCatLariatDv.out.phasedvcf.set {ch_phasedvcf}
         } else {
             phaseCatRef(ch_lariat, ch_dv, txt, vcfs.join(pvcfs).join(lfs).join(hbs)).report.set {ch_phasereport}
+            phaseCatRef.out.phasedvcf.set {ch_phasedvcf}
         }
 
         pvcfs.join(lfs).join(hbs).map { items ->
@@ -1075,25 +1052,17 @@ workflow CWGS_frombam_stLFRonly {
     }
     
     stlfrbam = ch_lariatbam 
-    ch_mergebam = ch_mergeLariatBam
     ch_eachbam = ch_eachbamlariat
 
 
     //stlfr bam stats
     bamdepth(ch_libstlfr, stlfrbam).set {ch_stlfrbamdepth}
     samtools_flagstat(ch_libstlfr, stlfrbam).set {ch_flagstat}
-    samtools_stats(ch_libstlfr, stlfrbam).set {ch_stat}
-    insertsize(ch_libstlfr, stlfrbam).insertsize.set {ch_insertsize} 
-    
-    if (!params.ref.startsWith('/')) {
-        coverage(ch_merge, ch_mergebam).join(coverageMean(ch_merge, ch_mergebam)).set { ch_MergeGeneCov }
-        if (!params.fromMergedBam) {
-            coverageAvg(ch_PfGeneCov.join(ch_MergeGeneCov)).set {ch_avgCov}
-        }
-    }
-    
-    samtools_depth(ch_libstlfr, stlfrbam).set {ch_depthreport}
-    align_cat(ch_libstlfr, ch_flagstat.join(ch_stat).join(ch_depthreport).join(ch_insertsize)).set {ch_aligncatstlfr} //info
+    // samtools_stats(ch_libstlfr, stlfrbam).set {ch_stat}
+    // insertsize(ch_libstlfr, stlfrbam).insertsize.set {ch_insertsize} 
+
+    samtools_depth(ch_libstlfr, stlfrbam).set {ch_stlfrbamdepthreport}
+    // align_cat(ch_libstlfr, ch_flagstat.join(ch_stat).join(ch_depthreport).join(ch_insertsize)).set {ch_aligncatstlfr} //info
     stLFRQC(stlfrbam).report.set {ch_lfr}
 
     ch_reports = Channel.empty() 
@@ -1109,20 +1078,16 @@ workflow CWGS_frombam_stLFRonly {
         
     } 
     if (params.align_tool.contains("lariat") && params.var_tool.contains("dv")) {
-        ch_vcf = ch_mergevcf
+        ch_vcf = ch_phasedvcf
         ch_phase = ch_phasereport
         
 
         if (!params.fromMergedBam) {
-            if (!params.ref.startsWith('/')) {
-                reportLariatDv1(ch_lariat, ch_dv, ch_vcf.join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_avgCov).join(ch_vcfevalLariatDv).join(ch_vcfevalPf).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
-            } else {
-                report_frombam_ref(ch_lariat, ch_dv, ch_vcf.join(ch_aligncatstlfr).join(ch_aligncatpf).join(ch_phase).join(ch_stlfrbamdepth).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
-            }
-            
+            report_stlfronly(ch_lariat, ch_dv, ch_vcf.join(ch_lfr).join(ch_flagstat).join(ch_phase).join(ch_stlfrbamdepth).join(ch_stlfrbamdepthreport)).set {ch_report}
+            ch_report.collect().mix(ch_reports).set {ch_reports}
+            FQC(report(ch_reports))
         }
     } 
-    report(ch_reports)
 }
 workflow CWGS_frombam_PFonly {
     println("!!! run CWGS from pf bams")
