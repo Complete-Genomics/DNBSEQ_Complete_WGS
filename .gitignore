@@ -1,3 +1,5 @@
 CWGS_run/out/.DS_Store
 *.nfs*
 *.pyc
+.DS_Store
+

@@ -1,8 +1,10 @@
 
-# CompleteWGS (cWGS)  
-This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' DNBSEQ Complete WGS (cWGS) (a DNA cobarcoding technology, previously known as stLFR) library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the cWGS library. Below is a flow chart which summarizes the pipeline processes. *Note, SV detection has not yet been enabled on the current version of the pipeline.
+# Complete WGS (cWGS)  
+This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' DNBSEQ Complete WGS (cWGS) (a DNA cobarcoding technology) library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the cWGS library. Below is a flow chart which summarizes the pipeline processes. *Note, SV detection has not yet been enabled on the current version of the pipeline.
 
-![image](images/new_flowchart.png)
+![flowchart](https://github.com/user-attachments/assets/59430c7d-8f5b-4117-9c52-404fb71d1e5d)
+
+
 
 # Requirements  
 **Hardware requirements**  
@@ -37,11 +39,11 @@ singularity exec -B`pwd -P` --pwd `pwd -P` CWGS.sif cp -rL /usr/local/bin/CWGS /
 ```
 ./CWGS -createdb
 ```
-Or for MegaBolt or ZBolt nodes ((MGI's Bioinformatics analysis accelerator, including MegaBOLT/ZBOLT/ZBOLT Pro)  
+Or for MegaBolt or ZBolt nodes (MGI's Bioinformatics analysis accelerator, including MegaBOLT/ZBOLT/ZBOLT Pro)  
 ```
 ./CWGS -createdb --megabolt
 ```
-This command will download around 32G data from internet and build index locally, which will occupy another 30G storage.
+This command will download around 32G data from internet and build index locally, which will occupy another 30G storage. Use ![db_tree.txt](docs/db_tree.txt) to validate the completion of database creation.    
  
 4. Test demo data:
 
@@ -91,7 +93,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
    ```
    Updates are pushed to the github module and script folders, use the latest ones. Currently, it's recommended to remove PF reads of MAPQ<3 with the --pfmapq tag. Also, to customize and make the pipeline adapt to your needs, you may revise the scripts. An example run:  
    ```
-   ./CWGS sample.list -sing /usr/local/bin/singularity -module <module_path> -script <script_path> -local -debug --use_megabolt false --pfmapq 3
+   ./CWGS run sample.list -module <module_path> -script <script_path> -exec local -debug --use_megabolt false --pfmapq 3
    ```
    Run customized reference with --ref </absolute/path/to/ref/fasta>; prepare all indices etc. in the same directory before run.
 
@@ -181,6 +183,14 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
     --PF_lt_stLFR_depth INT
       Extract the intersection regions from the sampled cWGS (stLFR) bam with depth greater than (>) this value and PCRFree bam with depth less equal than (<=) this value. [10]
     ```
+   stlfr only, same sample.list as other runs  
+   ```
+   modules=$path_to_your_scirpts/DNBSEQ_Complete_WGS/modules
+   scripts=$path_to_your_scirpts/DNBSEQ_Complete_WGS/scripts
+   db=path to CWGS_db
+   
+   ./CWGS run sample.list -sif $sif -B $data_path:$data_path -module ${modules} -db $db -script ${scripts} -exec local -debug --use_megabolt false --stLFR_only true > run.log 2>&1
+   ```
     Enable resuming the running
     ```
     --keepFiles BOOL
@@ -192,7 +202,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
     By default, each process only keeps the output files. If you want to check the intermediate files within a process, use this flag.
     ```
 
-4. Executor and MegaBOLT setting, four combinations:
+5. Executor and MegaBOLT setting, four combinations:
     Make sure CWGS is in your PATH.
     1. on clusters by SGE (Sun Grid Engine) and no MegaBOLT (default)
         Confirm the working queue and project number, which can be specified using --queue, and --project for regular queue, and project id, respectively. Use "--project none" if the system doesn't support a project id.
@@ -207,17 +217,18 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
         ```
         CWGS sample.list -bolt --queue all.q --boltq bolt.q --project none > run.log 2>&1 &
         ```
-    3. locally run.
-        Run with "-local" option. 
+    3. locally run, or slurm run
+        Run with "-exec local" option.
+        Run with "-exec slurm -partition ${partition} -nodelist ${nodelist} " option.
         E.g.
         ```
-        CWGS sample.list -local > run.log 2>&1 &
+        CWGS sample.list -exce local > run.log 2>&1 &
         ```
-    4. locally run on a MegaBOLT machine.
-        Run with "-local" & "-bolt" option. 
+    5. locally run on a MegaBOLT machine.
+        Run with "-exce local" and "--use_megabolt true " option. 
         E.g.
         ```
-        CWGS sample.list -local -bolt > run.log 2>&1 &
+        CWGS sample.list -exce local --use_megabolt true > run.log 2>&1 &
         ```
 
 
@@ -227,7 +238,7 @@ A more detailed flow chart.
 # Output of the demo example  
 **Results**  
 All output in the ./CWGS_run folder.   
-1. The ./CWGS_run/out/report.csv is a summary report, with all intermediate metrics, results of mapping, variant calling, phasing etc.     
+1. The report.csv (in ./CWGS_run/out or ./result) is a summary report, with all intermediate metrics, results of mapping, variant calling, phasing etc.     
 ![report.csv](CWGS_run/out/report.csv)  
 2. FQ, BAM, VCF output   
 The FQs are in ./CWGS_run/out/<sample_name>/fq, QC by SOAPnuke.  
