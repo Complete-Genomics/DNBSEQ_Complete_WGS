@@ -278,7 +278,7 @@ process phase_cat {
     def fai = "${params.DB}/${params.ref}/reference/${params.ref}.fa.fai"
     def fa = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
     def chr1 = (params.ref == "hs37d5") ? "" : "chr"
-    def py = (params.stLFRreseq_mbp) ? "${params.SCRIPT}/calculate_haplotype_statistics.reseq.py -h1 \$hapblocks -v1 \$pvcfs -f1 \$lfs -pv \$pvs -c $fai >> ${prefix}.hapcut_stat.txt" : "${params.SCRIPT}/calculate_haplotype_statistics_CWX.py -h1 \$hapblocks -v1 \$pvcfs -v2 \$pvs --indels >> ${prefix}.hapcut_stat.txt"
+    def py = "${params.SCRIPT}/calculate_haplotype_statistics_CWX.py -h1 \$hapblocks -v1 \$pvcfs -v2 \$pvs --indels >> ${prefix}.hapcut_stat.txt"
     """
     lfs=""
     hapblocks=""
