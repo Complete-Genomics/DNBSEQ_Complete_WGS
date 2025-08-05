@@ -1,5 +1,4 @@
 import sys,os,re,gzip, csv
-import pandas as pd
 from collections import defaultdict
 from intervaltree import IntervalTree
 
@@ -130,6 +129,7 @@ def cmrg(histbed, meanbed):
 	return cov, depth
 
 def load_gene_bed(bed_path):
+    import pandas as pd
     """解析基因 BED 文件，返回染色体索引的区间树"""
 
     # 读取 BED (0-based)
@@ -146,6 +146,7 @@ def load_gene_bed(bed_path):
     return trees
 
 def parse_hapblock(hap_path):
+    import pandas as pd
     """解析 hapblock 文件，提取相位变异"""
     blocks = []
     current_block = []
@@ -177,6 +178,7 @@ def classify_variant(gt_str):
         return 'heterozygous'
     return None
 def map_variants_to_genes(variants_df, gene_trees):
+    import pandas as pd
     """将变异映射到重叠的基因"""
     results = []
     
@@ -293,20 +295,21 @@ def calculate_gene_coverage(gene_trees, block_tree):
     return covered_genes, total_genes
 
 def cmrg_genes():
-	gene_trees = load_gene_bed('bed')
-	hap_variants = parse_hapblock('hapblock')
+    import pandas as pd
+    gene_trees = load_gene_bed('bed')
+    hap_variants = parse_hapblock('hapblock')
 
-	mapped_variants = map_variants_to_genes(hap_variants, gene_trees)
-	if mapped_variants.empty:
-		cmrg_hom = cmrg_het = 0
-	else:
-		cmrg_hom = count_homozygous_genes(mapped_variants)
-		cmrg_het = count_dual_hetero_genes(mapped_variants)
+    mapped_variants = map_variants_to_genes(hap_variants, gene_trees)
+    if mapped_variants.empty:
+        cmrg_hom = cmrg_het = 0
+    else:
+        cmrg_hom = count_homozygous_genes(mapped_variants)
+        cmrg_het = count_dual_hetero_genes(mapped_variants)
 
-	##
-	blocks = parse_hapblock_blocks("hapblock")
-	block_tree = build_block_tree(blocks)
-	covered_genes, total_genes = calculate_gene_coverage(gene_trees, block_tree)
-	cmrg_pct = f"{round((covered_genes / total_genes) * 100, 1)}%"
+    ##
+    blocks = parse_hapblock_blocks("hapblock")
+    block_tree = build_block_tree(blocks)
+    covered_genes, total_genes = calculate_gene_coverage(gene_trees, block_tree)
+    cmrg_pct = f"{round((covered_genes / total_genes) * 100, 1)}%"
 
-	return cmrg_pct, cmrg_het, cmrg_hom
+    return cmrg_pct, cmrg_het, cmrg_hom
