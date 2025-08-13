@@ -18,22 +18,22 @@ def main():
 		cmrg_cov_merge, cmrg_depth_merge = cmrg(histbed, meanbed)
 
 		tt, hh = vcfstats(vcf)
-		cmrg_pct, cmrg_het, cmrg_hom = cmrg_genes()
+		cmrg_pct, cmrg_het, cmrg_hom = cmrg_genes(vcf)
 		str = f"""
 			Sample\t{id}
-			Percent of genome coverage >20X (merged bam){merge_genome_cov20}
-			Total SNPs called\t{snps}
-			Total heterozygous SNPs called\t{hetsnps}
-			Total heterozygous SNPs phased\t{hetsnpsphased}
-			Total Indels (<50 bp) called\t{indels}
-			Total heterozygous Indels (<50 bp) called\t{hetindels}
-			Total phased heterozygous indels\t{hetindelsphased}
+			Percent of genome coverage >20X (merged bam)\t{merge_genome_cov20}
+			Total SNPs called\t{snps:,}
+			Total heterozygous SNPs called\t{hetsnps:,}
+			Total heterozygous SNPs phased\t{hetsnpsphased:,}
+			Total Indels (<50 bp) called\t{indels:,}
+			Total heterozygous Indels (<50 bp) called\t{hetindels:,}
+			Total phased heterozygous indels\t{hetindelsphased:,}
 			Ti/Tv\t{tt}
 			Het/hom\t{hh}
-			Total cWGS fragments\t{lfrcnt}
-			Average cWGS length (kb)\t{lfravglen}
-			Phased contig N50 (Mb)\t{n50}
-			Total bases in phase block\t{phaseblockbases}
+			Total cWGS fragments\t{lfrcnt:,}
+			Average cWGS length (kb)\t{lfravglen:,}
+			Phased contig N50 (Mb)\t{n50:,}
+			Total bases in phase block\t{phaseblockbases:,}
 			Average percent coverage of CMRG genes\t{cmrg_cov_merge}
 			Average depth of coverage of CMRG genes\t{cmrg_depth_merge}
 			Percent of genes covered by single phased contig\t{cmrg_pct}
