@@ -142,7 +142,7 @@ process cumuplot {
     tuple val(id), path(hapblock)
 
     output:
-    tuple val(id), path("*png"), emit: png
+    tuple val(id), path("cumulative_coverage_plot.png")
 
     // tag "$id, $aligner, $varcaller"
     tag "$id"
@@ -152,8 +152,6 @@ process cumuplot {
     """
     /usr/local/miniconda3/envs/six/bin/python ${params.SCRIPT}/cumuplot.py $hapblock
     """
-    stub:
-    "touch a.png"
 }
 
 process hapKaryotype {
@@ -278,7 +276,7 @@ process phase_cat {
     def fai = "${params.DB}/${params.ref}/reference/${params.ref}.fa.fai"
     def fa = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
     def chr1 = (params.ref == "hs37d5") ? "" : "chr"
-    def py = (params.stLFRreseq_mbp) ? "${params.SCRIPT}/calculate_haplotype_statistics.reseq.py -h1 \$hapblocks -v1 \$pvcfs -f1 \$lfs -pv \$pvs -c $fai >> ${prefix}.hapcut_stat.txt" : "${params.SCRIPT}/calculate_haplotype_statistics_CWX.py -h1 \$hapblocks -v1 \$pvcfs -v2 \$pvs --indels >> ${prefix}.hapcut_stat.txt"
+    def py = "${params.SCRIPT}/calculate_haplotype_statistics_CWX.py -h1 \$hapblocks -v1 \$pvcfs -v2 \$pvs --indels >> ${prefix}.hapcut_stat.txt"
     """
     lfs=""
     hapblocks=""

@@ -7,7 +7,7 @@ process pangenie {
     tuple val(id), path(r1), path(r2)
 
     output:
-    path "pangenie_genotyping_biallelic.vcf"
+    tuple val(id), path("pangenie_genotyping_biallelic.vcf")
 
     tag "$id"
     publishDir "${params.outdir}/report/$id/"
@@ -22,5 +22,25 @@ process pangenie {
     cat pangenie_genotyping.vcf | $python $py ${params.DB}/pangenie/cactus_filtered_ids_biallelic.vcf.gz > pangenie_genotyping_biallelic.vcf
 
     rm merge.fq
+    """
+}
+
+process pangenie_var_plot {
+    cpus params.CPU0
+    memory params.MEM1 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+
+    input:
+    tuple val(id), path(vcf)
+
+    output:
+    path "pangenie_var_plot.png"
+
+    tag "$id"
+    publishDir "${params.outdir}/report/$id/"
+
+    script:
+    """
+    python ${params.SCRIPT}/pangenie_var_plot.py $vcf
     """
 }
