@@ -142,7 +142,7 @@ process cumuplot {
     tuple val(id), path(hapblock)
 
     output:
-    tuple val(id), path("*png"), emit: png
+    tuple val(id), path("cumulative_coverage_plot.png")
 
     // tag "$id, $aligner, $varcaller"
     tag "$id"
@@ -152,8 +152,6 @@ process cumuplot {
     """
     /usr/local/miniconda3/envs/six/bin/python ${params.SCRIPT}/cumuplot.py $hapblock
     """
-    stub:
-    "touch a.png"
 }
 
 process hapKaryotype {

@@ -7,7 +7,7 @@ process gangstr {
     tuple val(id), path(bam)
 
     output:
-    path "GangSTR_out"
+    path "GangSTR_out*"
 
     tag "$id"
     publishDir "${params.outdir}/report/$id/"

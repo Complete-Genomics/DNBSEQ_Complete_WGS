@@ -15,7 +15,7 @@ process hlala {
     script:
     bam = bam.first()
     """
-    if [ ! -e ${params.DB}/hlala/PRG_MHC_GRCh38_withIMGT/knownReferences/hg38_corrected.txt ];do
+    if [ ! -e ${params.DB}/hlala/PRG_MHC_GRCh38_withIMGT/knownReferences/hg38_corrected.txt ];then
         samtools idxstats $bam > tmp
         (
             echo -e "contigID\\tcontigLength\\tExtractCompleteContig\\tPartialExtraction_Start\\tPartialExtraction_Stop"
