@@ -17,6 +17,7 @@ process report0 {
 
     script:
     vcf = vcf.first()
+    cmrg_exon_bed = "${params.SCRIPT}/cmrg273_exon.bed"
     """
     set +u
     source /usr/local/miniconda3/bin/activate /usr/local/miniconda3/envs/six
@@ -33,7 +34,9 @@ process report0 {
     ln -s ${params.DB}/hg38/GRCh38_CMRG_benchmark_gene_coordinates.bed bed
     ln -s ${params.outdir}/$id/phase/${id}.lariat.dv.hapblock hapblock
 
-    bedtools intersect -a $vcf -b bed -wa -wb -header > coding_variants.txt
+    bedtools intersect -a $vcf -b $cmrg_exon_bed -wb > cmrg_exon.vcf
+    # chr1    1046551 .       A       G       47.2    PASS    .       GT:GQ:DP:AD:VAF:MID:PL:PS       1/1:39:20:0,20:1:small_model:47,39,0:.  chr1    1046397 1046735       AGRN
+
 
     ${params.BIN}python3 ${params.SCRIPT}/report.py 0 $id $vcf $lfr $histbed $meanbed $depthreport $phase > ${id}.${aligner}.${varcaller}.report
     """
@@ -280,12 +283,13 @@ process html {
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
-    path(flg)
+    val signal
 
     output:
-    path "*html"
+    path "*.html"
+    // path "*.pdf"
 
-    publishDir "${params.outdir}/report/", mode: 'link'
+    publishDir "${params.outdir}", mode: 'link'
     
     // cache false
     script:

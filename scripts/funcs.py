@@ -3,8 +3,9 @@ from collections import defaultdict
 from intervaltree import IntervalTree
 
 def varcnt(varstats):
-	*cnt, = open(varstats).readline().strip().split()
-	return cnt
+    *cnt, = open(varstats).readline().strip().split()
+    cnt = [int(i) for i in cnt]
+    return cnt
 def vcfstats(vcf):
 	ti = tv = het = hom = 0
 	f = gzip.open(vcf, 'rt')
@@ -72,7 +73,8 @@ def flfr(lfr):
 			lfrperbc = a
 	f.close()
 	avglen = int(float(avglen) / 1e3)
-	return lfrnum, avglen
+	return int(lfrnum), avglen
+
 def parse_flgstat(flgstat):
 	f = open(flgstat)
 	for line in f:
@@ -124,7 +126,7 @@ def cmrg(histbed, meanbed):
 		line = line.strip().split()
 		depths.append(float(line[-1]))
 	f.close()
-	depth = round(sum(depths) / len(depths) * 100, 1)
+	depth = int(sum(depths) / len(depths))
 
 	return cov, depth
 
@@ -145,11 +147,16 @@ def load_gene_bed(bed_path):
         trees[chrom][row['start']:row['end']] = row['gene']  # 左闭右开区间
     return trees
 
-def parse_hapblock(hap_path):
+def parse_variants(vcf):
     import pandas as pd
-    """解析 hapblock 文件，提取相位变异"""
     blocks = []
-    current_block = []
+    f = gzip.open(vcf)
+    for line in f:
+        if line.startswith('#'): continue
+        line = line.strip().split()
+        if len(line) != 10: continue
+
+    f.close()
     
     with open(hap_path) as f:
         for line in f:
@@ -177,55 +184,8 @@ def classify_variant(gt_str):
     elif gt in {"0/1", "1/0", "0|1", "1|0"}: 
         return 'heterozygous'
     return None
-def map_variants_to_genes(variants_df, gene_trees):
-    import pandas as pd
-    """将变异映射到重叠的基因"""
-    results = []
-    
-    for _, var in variants_df.iterrows():
-        chrom = var['chr']
-        pos = var['pos']
-        
-        if chrom in gene_trees:
-            # 查找包含该位置的基因 (资料 12)
-            overlapping_genes = gene_trees[chrom].at(pos)
-            for gene_interval in overlapping_genes:
-                gene = gene_interval.data
-                var_type = classify_variant(var['gt'])
-                
-                if var_type:
-                    results.append({
-                        'gene': gene,
-                        'pos': pos,
-                        'type': var_type,
-                        'phase': '|' in var['gt']  # 是否相位已知
-                    })
-    
-    return pd.DataFrame(results)
 
-def count_homozygous_genes(mapped_df):
-    """统计含纯合编码变异的基因"""
-    return mapped_df[mapped_df['type'] == 'homozygous']['gene'].nunique()
-def count_dual_hetero_genes(mapped_df):
-    """统计每个等位基因均有杂合变异的基因"""
-    
-    # 按基因分组相位杂合变异
-    gene_alleles = defaultdict(lambda: {'allele0': False, 'allele1': False})
-    
-    for _, row in mapped_df.iterrows():
-        if row['type'] == 'heterozygous' and row['phase']:
-            gt = row['gt'].split(':')[0]
-            allele0, allele1 = gt.split('|')
-            
-            # 标记变异所属等位基因
-            if allele1 == '1': 
-                gene_alleles[row['gene']]['allele1'] = True
-            if allele0 == '1': 
-                gene_alleles[row['gene']]['allele0'] = True
-    
-    # 统计双等位基因均有变异的基因
-    return sum(1 for alleles in gene_alleles.values() 
-              if alleles['allele0'] and alleles['allele1'])
+
 
 ##
 def parse_hapblock_blocks(hap_path):
@@ -291,24 +251,32 @@ def calculate_gene_coverage(gene_trees, block_tree):
                 # 仅被一个区块覆盖
                 if len(covering_blocks) == 1:
                     covered_genes += 1
-    
     return covered_genes, total_genes
 
-def cmrg_genes():
+def cmrg_genes(phasedvcf):
+    cmrg_het, cmrg_hom = defaultdict(set), set()
+    f = open('cmrg_exon.vcf')
+    for line in f:
+        l = line.strip().split()
+        info, gene = l[9], l[13]
+        gt = info.split(':')[0]
+        if gt in ['1/1', '1|1']:
+            cmrg_hom.add(gene)
+        elif gt in ['0|1', '1|0']:
+            cmrg_het[gene].add(gt)
+
+    f.close()
+
+    cmrg_hom = len(cmrg_hom)
+    cmrg_het = len([gene for gene in cmrg_het if len(cmrg_het[gene]) == 2])
+
+    ##    
     import pandas as pd
-    gene_trees = load_gene_bed('bed')
-    hap_variants = parse_hapblock('hapblock')
 
-    mapped_variants = map_variants_to_genes(hap_variants, gene_trees)
-    if mapped_variants.empty:
-        cmrg_hom = cmrg_het = 0
-    else:
-        cmrg_hom = count_homozygous_genes(mapped_variants)
-        cmrg_het = count_dual_hetero_genes(mapped_variants)
-
-    ##
     blocks = parse_hapblock_blocks("hapblock")
     block_tree = build_block_tree(blocks)
+    gene_trees = load_gene_bed('bed')
+
     covered_genes, total_genes = calculate_gene_coverage(gene_trees, block_tree)
     cmrg_pct = f"{round((covered_genes / total_genes) * 100, 1)}%"
 
