@@ -181,7 +181,8 @@ include {
     eachstat_aligncat;
     align_cat as alignCatPf } from "${params.MOD}/bamstats"
 include {gangstr} from "${params.MOD}/gangstr"
-include {pangenie} from "${params.MOD}/pangenie"
+include {pangenie;
+    pangenie_var_plot } from "${params.MOD}/pangenie"
 include {hlala} from "${params.MOD}/hlala"
 include {
     report0 as reportBwaGatk;
@@ -201,7 +202,8 @@ include {
     html;
     FQC } from "${params.MOD}/report"
 
-include { vep } from "${params.MOD}/annot"
+include { vep;
+    vep_data } from "${params.MOD}/annot"
 
 def ch_libpf = "pf"
 def ch_libstlfr = "stlfr"
@@ -276,7 +278,7 @@ workflow CWGS {
             // sample stlfr fq
             qc_stlfr_stats(ch_splitfq).basecnt.set {ch_stlfrbasecount}
             qc_stlfr_stats.out.rlen.set {ch_stLFRreadLen}
-            ch_stlfrbasecount.join(ch_stLFRreadLen).join(ch_splitfq).view()
+            // ch_stlfrbasecount.join(ch_stLFRreadLen).join(ch_splitfq).view()
             sampleStlfrFq(ch_stlfrbasecount.join(ch_stLFRreadLen).join(ch_splitfq)).set {ch_stlfrsampledfq}
         }
         if ( !params.stLFR_only) {
@@ -352,6 +354,7 @@ workflow CWGS {
             
             sortbam(lariat(ch_lariatfq)).set {ch_lariatbam0} 
             markdupStlfrLariat(ch_libstlfr, ch_lariat, ch_lariatbam0).set {ch_lariatbam}
+            stLFRQC(ch_lariatbam).report.set {ch_lfr}
 
             if (params.sampleBam) { sampleBamStlfrLariat(ch_libstlfr, ch_lariat, ch_lariatbam).set {ch_lariatbam} } 
             // sameChrBCratio(barcodeStat(ch_lariatbam)).set {ch_rds}
@@ -399,7 +402,9 @@ workflow CWGS {
                 if (!params.ref.startsWith('/')) {
                     phaseCatLariatDv(ch_lariat, ch_dv, vcfs.join(pvcfs).join(lfs).join(hbs).join(stats)).report.set {ch_phasereport}//report
                     phaseCatLariatDv.out.phasedvcf.set {ch_phasedvcf}
-                    if (!params.stLFR_only) { vep(ch_phasedvcf) }
+                    if (!params.stLFR_only) { 
+                        vep_data(vep(ch_phasedvcf).html)
+                    }
                     
                 } else {
                     phaseCatRef(ch_lariat, ch_dv, txt, vcfs.join(pvcfs).join(lfs).join(hbs)).report.set {ch_phasereport}
@@ -567,19 +572,13 @@ workflow CWGS {
             coverage(ch_merge, ch_mergebam).set {ch_cmrgMergebamhistbed}
             coverageMean(ch_merge, ch_mergebam).set {ch_cmrgMergebammeanbed}
 
-            // coverage(ch_merge, ch_mergebam).join(coverageMean(ch_merge, ch_mergebam)).set { ch_MergeGeneCov }
-            // if (!params.stLFR_only) {
-            //     coverageAvg(ch_PfGeneCov.join(ch_MergeGeneCov)).set {ch_avgCov}
-            // } 
             if (!params.stLFR_only) {
-                pangenie(ch_pfsampledfq)
+                pangenie_var_plot(pangenie(ch_pfsampledfq))
                 gangstr(ch_mergebam)
                 hlala(ch_mergebam)
             }
         }
 
-        // align_cat(ch_libstlfr, ch_flagstat.join(ch_stat).join(ch_depthreport).join(ch_insertsize)).set {ch_aligncatstlfr} //info
-        stLFRQC(stlfrbam).report.set {ch_lfr}
         ch_vcf = ch_phasedvcf
         ch_reports = Channel.empty() 
         if (!params.stLFR_only) {
@@ -626,7 +625,8 @@ workflow CWGS {
                     report(ch_reports)
 
                     // html
-                    // html(ch_reports)
+                    ch_reports.mix(vep_data.out, pangenie_var_plot.out).collect().set {ch_flg}
+                    html(ch_flg)
                 } else {
                     ch_phase = ch_phasereport
                     hb = phaseCatRef.out.hb
