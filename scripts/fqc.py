@@ -1,4 +1,4 @@
-import math
+import math, sys
 
 def fspec(num):
     if num >= 1_000_000:
@@ -9,10 +9,11 @@ def fspec(num):
         value_k = num / 1_000
         return f">{int(value_k)}k"
 
-f = open('report.csv')
+f = open(sys.argv[1])
 for line in f:
-    l = line.strip().split(',')
+    l = line.strip().split("\t")
     pref, nums = l[0], l[1:]
+    nums = [i.replace(',','') for i in nums]
     if pref == 'Sample':
         spec = 'summary'
     elif pref == 'cWGS bam avg depth': 
@@ -21,20 +22,28 @@ for line in f:
         spec = f">{int(min(nums))}X"
         nums = [str(num) for num in nums]
 
-    elif pref.startswith('Total') or pref == 'Average fragment length' or pref.startswith('Phased contig N50'):
-        nums = [float(num) for num in nums]
+    elif pref.startswith('Total'):
+        nums = [int(num) for num in nums]
         spec = fspec(min(nums))
-        if pref.startswith('Phased contig N50'):
-            spec += 'b'
-            spec.replace('millionb','Mb')
 
-        nums = [str("{0:.1E}".format(num)) for num in nums]
+        nums = [f"{num:,}" for num in nums]
+
+    elif 'Average fragment length' in pref:
+        nums = [int(num) for num in nums]
+        spec = f">{min(nums)}"
+        nums = [f"{num:,}" for num in nums]
+
+    elif pref.startswith('Phased contig N50'):
+        nums = [float(num) for num in nums]
+        spec = f">{min(nums)}"
+
+        nums = [f"{num:,}" for num in nums]
 
     elif 'mapping rate' in pref or 'genome covered' in pref:
         _nums = [float(num.replace('%','')) for num in nums]
         spec = f">{int(min(_nums))}%"
 
-    print(f"{pref},{spec}," + ",".join(nums))
+    print(f"{pref}\t{spec}\t" + "\t".join(nums))
     # elif i == 14: # phase block
     #     _nums = [int(num) for num in nums]
     #     a = max(_nums)
@@ -45,7 +54,8 @@ f.close()
 
 
 avg_depth = sum(depths) / len(depths)
-nums = [str(round(d/avg_depth, 2)) for d in depths] if avg_depth else ['0' for d in depths]
-a, b = round(min(depths),1), round(max(depths),1)
+nums = [round(d/avg_depth, 2) for d in depths] if avg_depth else [0 for d in depths]
+a, b = round(min(nums),1), round(max(nums),1)
 spec = f"between {a} and {b}"
-print(f"sample variation from average,{spec}," + ','.join(nums))
+nums = [str(i) for i in nums]
+print(f"sample variation from average\t{spec}\t" + '\t'.join(nums))
