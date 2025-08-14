@@ -86,11 +86,14 @@ def parse_flgstat(flgstat):
 	return pemaprate
 
 def fphase(phase):
-	f = open(phase)
-	allhetsnp, phasedhetsnp, allhetindel, phasedhetindel, fbn50, fbnum = f.readline().rstrip().split()
-	f.close()
-	fbn50 = int(float(fbn50) / 1e6)
-	return fbn50
+    f = open(phase)
+    allhetsnp, phasedhetsnp, allhetindel, phasedhetindel, fbn50, fbnum = f.readline().rstrip().split()
+    f.close()
+    fbn50 = float(fbn50)
+    if fbn50 >= 1:
+        return int(float(fbn50) / 1e6)
+    else:
+        return round(fbn50 / 1e6, 3)
 
 def fblock(hapblock):
 	bases = 0
