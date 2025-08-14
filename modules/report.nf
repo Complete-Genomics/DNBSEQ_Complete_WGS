@@ -252,7 +252,7 @@ process report {
         line = \$1  # 提取公共的第一列
         # 遍历后续列，每隔两列提取一个（即每个文件的第二列）
         for (i= 2; i <= NF; i += 2) {
-            line = line "," \$i
+            line = line "\t" \$i
         }
         print line
     }' > report.csv
@@ -274,7 +274,7 @@ process FQC {
     
     script:
     """
-    python ${params.SCRIPT}/fqc.py > report_fqc.csv
+    python ${params.SCRIPT}/fqc.py $reports > report_fqc.csv
     """
 }
 process html {
