@@ -89,7 +89,7 @@ def main():
 			Total Indels (<50 bp) called\t{indels}
 			Total heterozygous Indels (<50 bp) called\t{hetindels}
 			Total long fragments\t{lfrcnt}
-			Average fragment length\t{lfravglen}
+			Average fragment length (kb)\t{lfravglen}
 			cWGS mapping rate(unfiltered data)\t{stlfrpemaprate}
 			Percent of genome covered by >10X long reads\t{stlfr_genome_cov10}
 			Total heterozygous SNPs phased\t{hetsnpsphased}
