@@ -44,7 +44,7 @@ Or for MegaBolt or ZBolt nodes (MGI's Bioinformatics analysis accelerator, inclu
 ./CWGS -createdb --megabolt
 ```
 This command will download around 32G data from internet and build index locally, which will occupy another 30G storage. Use ![db_tree.txt](docs/db_tree.txt) to validate the completion of database creation.    
-4. On your environment, install Nextflow (with conda).  
+4. Install Nextflow (with conda) in your environment.  
 5. Test demo data:
 
 ```
