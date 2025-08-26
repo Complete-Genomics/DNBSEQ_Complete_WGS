@@ -265,11 +265,11 @@ workflow CWGS {
 
         // pffq qc
         qc_pf.out.bssq.set {ch_pfbssq}
-        fqcheckPf (ch_libpf, ch_qcpffq).set {ch_pffqcheck} 
+        // fqcheckPf (ch_libpf, ch_qcpffq).set {ch_pffqcheck} 
         // .groupTuple(sort: sort_filenames('/'))
         // .set {ch_pffqcheck}
 
-        fqdistPf (ch_libpf, ch_pffqcheck) //report 23 25
+        // fqdistPf (ch_libpf, ch_pffqcheck) //report 23 25
         fqstats_pf(ch_pfbssq) //report 21
     }
     
@@ -679,11 +679,11 @@ workflow CWGS_alignOnly {
 
         // pffq qc
         qc_pf.out.bssq.set {ch_pfbssq}
-        fqcheckPf (ch_libpf, ch_qcpffq).set {ch_pffqcheck} 
+        // fqcheckPf (ch_libpf, ch_qcpffq).set {ch_pffqcheck} 
         // .groupTuple(sort: sort_filenames('/'))
         // .set {ch_pffqcheck}
 
-        fqdistPf (ch_libpf, ch_pffqcheck) //report 23 25
+        // fqdistPf (ch_libpf, ch_pffqcheck) //report 23 25
         fqstats_pf(ch_pfbssq) //report 21
     }
     
