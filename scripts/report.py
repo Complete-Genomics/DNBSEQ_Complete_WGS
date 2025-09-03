@@ -32,7 +32,7 @@ def main():
 			Het/hom\t{hh}
 			Total cWGS fragments\t{lfrcnt:,}
 			Average cWGS length (kb)\t{lfravglen:,}
-			Phased contig N50 (Mb)\t{n50:,}
+			Phased contig N50\t{n50:,}
 			Total bases in phase block\t{phaseblockbases:,}
 			Average percent coverage of CMRG genes\t{cmrg_cov_merge}
 			Average depth of coverage of CMRG genes\t{cmrg_depth_merge}
@@ -67,7 +67,7 @@ def main():
 			Het/hom\t{hh}
 			Total cWGS fragments\t{lfrcnt}
 			Average cWGS length (kb)\t{lfravglen}
-			Phased contig N50 (Mb)\t{n50}
+			Phased contig N50\t{n50}
 			Total bases in phase block\t{phaseblockbases}
 			"""
 	elif flg.startswith('stlfronly'): # FQC report
