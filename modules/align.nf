@@ -640,15 +640,20 @@ process sampleBam {
     def cov = lib == "stlfr" ? "${params.stLFR_sampling_cov}" : "${params.PF_sampling_cov}"
 
     cmd = """
-    bamcov=`${params.BIN}samtools depth -@ ${task.cpus} $bam | awk '{sum += \$3}END{print sum/${params.ref_len}}'`
-    echo \$bamcov > tmp
-    ratio=`echo "scale=5; $cov/\$bamcov" | bc`
-    if [[ \$ratio > 1 ]];then
+    if [ $cov -eq 0 ];then 
         cp $bam ${id}.${lib}.${aligner}.sampled.bam
         cp ${bam}.bai ${id}.${lib}.${aligner}.sampled.bam.bai
-    else
-        ${params.BIN}gatk DownsampleSam -I $bam -O ${id}.${lib}.${aligner}.sampled.bam -P \$ratio
-        ${params.BIN}samtools index -@ ${task.cpus} ${id}.${lib}.${aligner}.sampled.bam
+    else 
+        bamcov=`${params.BIN}samtools depth -@ ${task.cpus} $bam | awk '{sum += \$3}END{print sum/NR}'`
+        echo \$bamcov > tmp
+        ratio=`echo "scale=5; $cov/\$bamcov" | bc`
+        if [[ \$ratio > 1 ]];then
+            cp $bam ${id}.${lib}.${aligner}.sampled.bam
+            cp ${bam}.bai ${id}.${lib}.${aligner}.sampled.bam.bai
+        else
+            ${params.BIN}gatk DownsampleSam -I $bam -O ${id}.${lib}.${aligner}.sampled.bam -P \$ratio
+            ${params.BIN}samtools index -@ ${task.cpus} ${id}.${lib}.${aligner}.sampled.bam
+        fi
     fi
     """
     if (!params.keepFiles) {

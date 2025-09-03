@@ -141,7 +141,6 @@ include {
     phase_cat as phaseCatLariatDv;
     phase_cat as phaseCatLariatGatk;
     phaseCatRef;
-    eachstat_phase;
     hapKaryotype;
     hapKaryotype_bak;
     ideogram;
@@ -192,12 +191,6 @@ include {
     reportref;
     report_stlfronly;
     report_stlfronly_ref;
-    report01 as reportBwaGatk1;
-    report01 as reportBwaDv1;
-    report01 as reportLariatGatk1;
-    report01 as reportLariatDv1;
-    report_frombam_ref;
-    report_frombam_PFonly;
     report;
     html;
     FQC } from "${params.MOD}/report"
@@ -265,11 +258,11 @@ workflow CWGS {
 
         // pffq qc
         qc_pf.out.bssq.set {ch_pfbssq}
-        fqcheckPf (ch_libpf, ch_qcpffq).set {ch_pffqcheck} 
+        // fqcheckPf (ch_libpf, ch_qcpffq).set {ch_pffqcheck} 
         // .groupTuple(sort: sort_filenames('/'))
         // .set {ch_pffqcheck}
 
-        fqdistPf (ch_libpf, ch_pffqcheck) //report 23 25
+        // fqdistPf (ch_libpf, ch_pffqcheck) //report 23 25
         fqstats_pf(ch_pfbssq) //report 21
     }
     
@@ -399,7 +392,7 @@ workflow CWGS {
                 lfs = phaseLariatDv.out.lf.groupTuple()  
                 hbs = phaseLariatDv.out.hapblock.groupTuple()  
                 stats = phaseLariatDv.out.stat.groupTuple()  
-                if (!params.ref.startsWith('/')) {
+                if (params.ref == 'hg38' || params.ref.contains('GRCh38')) {
                     phaseCatLariatDv(ch_lariat, ch_dv, vcfs.join(pvcfs).join(lfs).join(hbs).join(stats)).report.set {ch_phasereport}//report
                     phaseCatLariatDv.out.phasedvcf.set {ch_phasedvcf}
                     if (!params.stLFR_only) { 
@@ -567,8 +560,8 @@ workflow CWGS {
         samtools_stats(ch_libstlfr, stlfrbam).set {ch_stat}
         insertsize(ch_libstlfr, stlfrbam).insertsize.set {ch_insertsize} 
 
-            
-        if (!params.ref.startsWith('/')) {
+        //cmrg 
+        if (params.ref == 'hg38' || params.ref.contains('GRCh38')) {
             coverage(ch_merge, ch_mergebam).set {ch_cmrgMergebamhistbed}
             coverageMean(ch_merge, ch_mergebam).set {ch_cmrgMergebammeanbed}
 
@@ -612,7 +605,7 @@ workflow CWGS {
             } 
             if (params.align_tool.contains("lariat") && params.var_tool.contains("dv")) {
                 phaseall = ch_phaseallLariatDv
-                if (!params.ref.startsWith('/')) {
+                if (params.ref == 'hg38' || params.ref.contains('GRCh38')) {
                     hapcutstat = phaseCatLariatDv.out.hapcutstat
                     ch_phase = ch_phasereport
                     hb = phaseCatLariatDv.out.hb
@@ -629,7 +622,6 @@ workflow CWGS {
                     html(ch_flg)
                 } else {
                     ch_phase = ch_phasereport
-                    hb = phaseCatRef.out.hb
 
                     reportref(ch_lariat, ch_dv, ch_vcf.join(ch_lfr).join(ch_depthreport).join(ch_phase)).collect().mix(ch_reports).set {ch_reports}
                     report(ch_reports)
@@ -679,11 +671,11 @@ workflow CWGS_alignOnly {
 
         // pffq qc
         qc_pf.out.bssq.set {ch_pfbssq}
-        fqcheckPf (ch_libpf, ch_qcpffq).set {ch_pffqcheck} 
+        // fqcheckPf (ch_libpf, ch_qcpffq).set {ch_pffqcheck} 
         // .groupTuple(sort: sort_filenames('/'))
         // .set {ch_pffqcheck}
 
-        fqdistPf (ch_libpf, ch_pffqcheck) //report 23 25
+        // fqdistPf (ch_libpf, ch_pffqcheck) //report 23 25
         fqstats_pf(ch_pfbssq) //report 21
     }
     
@@ -843,8 +835,10 @@ workflow CWGS_frombam {
         if (!params.ref.startsWith('/')) {
             phaseCatLariatDv(ch_lariat, ch_dv, vcfs.join(pvcfs).join(lfs).join(hbs).join(stats)).report.set {ch_phasereport}//report
             vep(phaseCatLariatDv.out.phasedvcf)
+            phaseCatLariatDv.out.phasedvcf.set {ch_phasedvcf}
         } else {
             phaseCatRef(ch_lariat, ch_dv, txt, vcfs.join(pvcfs).join(lfs).join(hbs)).report.set {ch_phasereport}
+            phaseCatRef.out.phasedvcf.set {ch_phasedvcf}
         }
 
         pvcfs.join(lfs).join(hbs).map { items ->
@@ -901,13 +895,10 @@ workflow CWGS_frombam {
 
 
     //stlfr bam stats
-    bamdepth(ch_libstlfr, stlfrbam).set {ch_stlfrbamdepth}
-    samtools_flagstat(ch_libstlfr, stlfrbam).set {ch_flagstat}
-    samtools_stats(ch_libstlfr, stlfrbam).set {ch_stat}
-    insertsize(ch_libstlfr, stlfrbam).insertsize.set {ch_insertsize} 
-    
-    coverage(ch_merge, ch_mergebam).set {ch_cmrgMergebamhistbed}
-    coverageMean(ch_merge, ch_mergebam).set {ch_cmrgMergebammeanbed}
+    // bamdepth(ch_libstlfr, stlfrbam).set {ch_stlfrbamdepth}
+    // samtools_flagstat(ch_libstlfr, stlfrbam).set {ch_flagstat}
+    // samtools_stats(ch_libstlfr, stlfrbam).set {ch_stat}
+    // insertsize(ch_libstlfr, stlfrbam).insertsize.set {ch_insertsize} 
 
     
     samtools_depth(ch_libstlfr, stlfrbam).set {ch_depthreport}
@@ -926,15 +917,25 @@ workflow CWGS_frombam {
         
     } 
     if (params.align_tool.contains("lariat") && params.var_tool.contains("dv")) {
-        ch_vcf = ch_mergevcf
+        ch_vcf = ch_phasedvcf
         ch_phase = ch_phasereport
         
 
         if (!params.fromMergedBam) {
-            reportLariatDv(ch_lariat, ch_dv, ch_vcf.join(ch_lfr).join(ch_cmrgMergebamhistbed).join(ch_cmrgMergebammeanbed).join(ch_depthreport).join(ch_phase)).set {ch_report}
-            ch_report.collect().mix(ch_reports).set {ch_reports}
-            report(ch_reports)
-            
+            if (params.ref == 'hg38' || params.ref.contains('GRCh38')) {
+                coverage(ch_merge, ch_mergebam).set {ch_cmrgMergebamhistbed}
+                coverageMean(ch_merge, ch_mergebam).set {ch_cmrgMergebammeanbed}
+
+                reportLariatDv(ch_lariat, ch_dv, ch_vcf.join(ch_lfr).join(ch_cmrgMergebamhistbed).join(ch_cmrgMergebammeanbed).join(ch_depthreport).join(ch_phase)).set {ch_report}
+
+                ch_report.collect().mix(ch_reports).set {ch_reports}
+                report(ch_reports)
+            } else {
+                reportref(ch_lariat, ch_dv, ch_vcf.join(ch_lfr).join(ch_depthreport).join(ch_phase)).set {ch_report}
+
+                ch_report.collect().mix(ch_reports).set {ch_reports}
+                report(ch_reports)
+            }
         }
     } 
 }
