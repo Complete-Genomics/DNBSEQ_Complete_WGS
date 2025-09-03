@@ -77,33 +77,7 @@ process phase {
     stub:
     "touch ${id}.${aligner}.${varcaller}.${chr}.VCF.gz ${id}.${aligner}.${varcaller}.${chr}.lf ${id}.${aligner}.${varcaller}.${chr}.hapblock ${id}.${aligner}.${varcaller}.${chr}.hapcut_stat.txt"
 }
-process eachstat_phase {
-    cpus params.CPU0
-    memory params.MEM0 + "g"
-    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
-    
 
-    input:
-    // val(aligner)
-    // val(varcaller)
-    tuple val(id), path(hapcutstat), path(vcfs)
-
-    output:
-    tuple val(id), path("*.haplotype.xls")
-
-    // tag "$id, $aligner, $varcaller"
-    tag "$id"
-    publishDir "${params.outdir}/report/$id/", mode: 'link'
-
-    // cache false
-
-    script:
-    // def prefix = "${id}.${aligner}.${varcaller}"
-    """    
-    # summarize phasing data from id.hapcut_stat.txt
-    ${params.BIN}python ${params.SCRIPT}/stat/eachstat_phase.py $id $hapcutstat > ${id}.haplotype.xls
-    """
-}
 process ideogram {
     cpus params.CPU0
     memory params.MEM0 + "g"
