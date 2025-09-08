@@ -247,8 +247,7 @@ process phase_cat {
     // cache false
     script:
     def prefix = "${id}.${aligner}.${varcaller}"
-    def fai = "${params.DB}/${params.ref}/reference/${params.ref}.fa.fai"
-    def fa = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
+    def fai = params.ref.startsWith('/') ? "${params.ref}.fai" : "${params.DB}/${params.ref}/reference/${params.ref}.fa.fai"
     def chr1 = (params.ref == "hs37d5") ? "" : "chr"
     def py = "${params.SCRIPT}/calculate_haplotype_statistics_CWX.py -h1 \$hapblocks -v1 \$pvcfs -v2 \$pvs --indels >> ${prefix}.hapcut_stat.txt"
     """
@@ -264,7 +263,7 @@ process phase_cat {
             lfs="\$lfs ${prefix}.${chr1}\${i}.lf"
             hapblocks="\$hapblocks ${prefix}.${chr1}\${i}.hapblock"
             stat2s="\$stat2s ${prefix}.${chr1}\${i}.hapcut_stat.txt"
-            pvs="\$pvs ${params.DB}/${params.ref}/phasedvcf/${params.ref}.${params.std}.${chr1}\${i}.vcf.gz"
+            pvs="\$pvs ${params.DB}/hg38/phasedvcf/hg38.${params.std}.${chr1}\${i}.vcf.gz"
             vcfs="\$vcfs ${prefix}.${chr1}\${i}.vcf.gz"
             pvcfs="\$pvcfs ${prefix}.${chr1}\${i}.hapblock.phased.VCF.gz"
         done

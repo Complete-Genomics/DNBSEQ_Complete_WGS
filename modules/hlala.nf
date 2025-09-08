@@ -9,6 +9,8 @@ process hlala {
     output:
     path "hlala_out"
 
+    containerOptions "-B ${params.SCRIPT}/HLA-LA.pl:/usr/local/app/miniconda3/bin/HLA-LA.pl:ro"
+    
     tag "$id"
     publishDir "${params.outdir}/report/$id/"
 
