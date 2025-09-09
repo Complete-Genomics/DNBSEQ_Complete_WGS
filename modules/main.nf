@@ -294,13 +294,15 @@ workflow CWGS {
                 markdupPf(ch_libpf, ch_bwa, ch_pfsortbam).set {ch_pfbam}
                 
             } 
+            if (params.sampleBam) { sampleBamPf(ch_libpf, ch_bwa, ch_pfbam).set {ch_pfbam} }
         } else { // pf vg
             kff(ch_pfsampledfq).set {ch_kff}
             vg(ch_kff.join(ch_pfsampledfq)).set {ch_pfbam}
             markdupPf(ch_libpf, ch_vg, ch_pfbam).set {ch_pfbam}
+            if (params.sampleBam) { sampleBamPf(ch_libpf, ch_vg, ch_pfbam).set {ch_pfbam} }
         }
         if (params.var_tool.contains("gatk") && params.run_bqsr) { bqsrPf(ch_libpf, ch_bwa, ch_pfbam).set {ch_pfbam} }
-        if (params.sampleBam) { sampleBamPf(ch_libpf, ch_bwa, ch_pfbam).set {ch_pfbam} }
+        
         mapq(ch_pfbam).set {ch_pfbam}
 
         //pf bam call variant
