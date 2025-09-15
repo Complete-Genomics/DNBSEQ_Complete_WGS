@@ -398,7 +398,7 @@ workflow CWGS {
                     phaseCatLariatDv(ch_lariat, ch_dv, vcfs.join(pvcfs).join(lfs).join(hbs).join(stats)).report.set {ch_phasereport}//report
                     phaseCatLariatDv.out.phasedvcf.set {ch_phasedvcf}
                     if (!params.stLFR_only) { 
-                        vep_data(vep(ch_phasedvcf).html)
+                        vep_data(vep(ch_phasedvcf))
                     }
                     
                 } else {
@@ -620,7 +620,7 @@ workflow CWGS {
                     report(ch_reports)
 
                     // html
-                    ch_reports.mix(vep_data.out, pangenie_var_plot.out).collect().set {ch_flg}
+                    ch_reports.mix(vep_data.out, pangenie_var_plot.out, hlala.out).collect().set {ch_flg}
                     html(ch_flg)
                 } else {
                     ch_phase = ch_phasereport
