@@ -24,7 +24,7 @@ def image_to_base64(image_path):
         return ''
 
 def generate_html(outdir, sample):
-    csv                 = glob.glob(os.path.join(outdir, '*.report'))[0]
+    csv                 = glob.glob(os.path.join(outdir, sample + '.lariat.dv.report'))[0]
     hlala_path          = os.path.join(outdir, 'hlala_out', sample, 'hla', 'R1_bestguess_G.txt')
 
     # table
@@ -208,4 +208,7 @@ if __name__ == '__main__':
     samples = [ entry.name for entry in os.scandir(outdir) if entry.is_dir() ]
     for sample in samples:
         outdir1 = os.path.join(outdir, sample)
-        generate_html(outdir1, sample)
+        try:
+            generate_html(outdir1, sample)
+        except:
+            pass
