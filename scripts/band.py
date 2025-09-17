@@ -1,10 +1,11 @@
 import sys, re
 
 hapblock = sys.argv[1]
+MIN_SPAN = 5000  # 最小SPAN阈值
 
 def hapcut2_to_ideogram(input_file, output_file):
     # 初始化变量
-    current_block = {"chr": None, "positions": [], "value": 1}
+    current_block = {"chr": None, "positions": [], "value": 1, "span": 0}
     block_counter = 0  # 用于交替颜色
     
     with open(input_file, 'r') as f_in, open(output_file, 'w') as f_out:
@@ -17,17 +18,22 @@ def hapcut2_to_ideogram(input_file, output_file):
             # 检测BLOCK起始行
             if line.startswith("BLOCK:"):
                 # 如果上一个区块未处理则先处理（理论上不会出现）
-                if current_block["positions"]:
+                if current_block["positions"] and current_block["span"] >= MIN_SPAN:
                     _write_block(current_block, f_out)
+                
+                # 解析SPAN值
+                span_match = re.search(r'SPAN:\s*(\d+)', line)
+                span = int(span_match.group(1)) if span_match else 0
+                
                 # 初始化新block
-                current_block = {"chr": None, "positions": [], "value": block_counter % 2 + 1}
+                current_block = {"chr": None, "positions": [], "value": block_counter % 2 + 1, "span": span}
                 block_counter += 1  # 颜色交替
                 
             # 检测区块结束分隔符
             elif line.startswith("********"):
-                if current_block["positions"]:
+                if current_block["positions"] and current_block["span"] >= MIN_SPAN:
                     _write_block(current_block, f_out)
-                current_block = {"chr": None, "positions": [], "value": None}
+                current_block = {"chr": None, "positions": [], "value": None, "span": 0}
                 
             # 处理数据行
             elif line and not line.startswith("#"):  # 忽略注释行
@@ -42,6 +48,10 @@ def hapcut2_to_ideogram(input_file, output_file):
                         current_block["positions"].append(pos)
                     else:
                         print(f"Warning: Chromosome mismatch in block {block_counter}")
+        
+        # 处理最后一个区块
+        if current_block["positions"] and current_block["span"] >= MIN_SPAN:
+            _write_block(current_block, f_out)
 
 def _write_block(block, f_out):
     if block["positions"]:
@@ -51,3 +61,4 @@ def _write_block(block, f_out):
 
 # 调用示例
 hapcut2_to_ideogram(hapblock, "contigs.tsv")
+# print(f"Filtered blocks with SPAN >= {MIN_SPAN} bp")
