@@ -644,7 +644,7 @@ process sampleBam {
         cp $bam ${id}.${lib}.${aligner}.sampled.bam
         cp ${bam}.bai ${id}.${lib}.${aligner}.sampled.bam.bai
     else 
-        bamcov=`${params.BIN}samtools depth -@ ${task.cpus} $bam | awk '{sum += \$3}END{print sum/NR}'`
+        bamcov=`samtools stats $bam | awk -v ref=${params.ref_len} '\$2=="bases" && \$3=="mapped" && \$4=="(cigar):" {print \$5/ref}'`
         echo \$bamcov > tmp
         ratio=`echo "scale=5; $cov/\$bamcov" | bc`
         if [[ \$ratio > 1 ]];then

@@ -48,7 +48,8 @@ process phase {
     python3 ${params.SCRIPT_HapCUT2}LinkFragments.py \\
         --bam $bam --VCF tmp.vcf --fragments ${prefix}.unlinked_frag --out ${prefix}.lf -d 100000
 
-    ${params.BIN_HAPCUT2}HAPCUT2 --nf 1 --fragments ${prefix}.lf --vcf tmp.vcf --output ${prefix}.hapblock
+    ( ${params.BIN_HAPCUT2}HAPCUT2 --nf 1 --fragments ${prefix}.lf --vcf tmp.vcf --output ${prefix}.hapblock ) || \
+    ( ${params.BIN_HAPCUT2}HAPCUT2 --nf 1 --fragments ${prefix}.lf --vcf tmp.vcf --output ${prefix}.hapblock --skip_prune 1 )
 
     ${params.BIN}bgzip ${prefix}.hapblock.phased.VCF
     rm tmp.vcf
