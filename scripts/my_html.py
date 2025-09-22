@@ -39,7 +39,7 @@ def generate_html(outdir, sample):
 
     # png
     cumuplot = image_to_base64(os.path.join(outdir, 'cumulative_coverage_plot.png'))
-    ideogram = image_to_base64(os.path.join(outdir, 'chromosome.png'))
+    ideogram = image_to_base64(os.path.join(outdir, 'chromosome_sv.png'))
 
     pangenie_png            = image_to_base64(os.path.join(outdir, 'pangenie_var_plot.png'))
 
@@ -149,7 +149,7 @@ def generate_html(outdir, sample):
         </div>
 
         <div class="section">
-            <h2>Phase ideogram</h2>
+            <h2>Phase ideogram and >10k SV</h2>
             <img src="data:image/png;base64,{ideogram}" alt="ideogram">
         </div>
 

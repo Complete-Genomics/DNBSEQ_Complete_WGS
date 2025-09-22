@@ -92,7 +92,6 @@ process ideogram {
     tuple val(id), path("*png"), emit: png
     path("*svg")
 
-    // tag "$id, $aligner, $varcaller"
     tag "$id"
     publishDir "${params.outdir}/report/$id/", mode: 'link'
 

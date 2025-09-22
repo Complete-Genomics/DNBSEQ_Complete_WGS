@@ -8,7 +8,7 @@ process vep {
     tuple val(id), path(phasedvcf)
 
     output:
-    tuple val(id), path("${id}.vep.vcf.gz*")
+    tuple val(id), path("${id}.vep.vcf.gz*"), emit: vcf
     tuple val(id), path("${id}.vep.vcf_summary.html"), emit: html
 
     tag "$id"
