@@ -17,7 +17,7 @@ REGIONS = [
 vcf_gz_path = sys.argv[1]
 region_data = [[] for _ in range(7)]  # 7个空列表存储各区域长度值
 
-with open(vcf_gz_path, 'rt') as f:
+with gzip.open(vcf_gz_path, 'rt') as f:
     for line in f:
         if line.startswith('#'): 
             continue

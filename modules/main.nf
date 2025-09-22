@@ -181,6 +181,7 @@ include {
     align_cat as alignCatPf } from "${params.MOD}/bamstats"
 include {gangstr} from "${params.MOD}/gangstr"
 include {pangenie;
+    pangenie_plot;
     pangenie_var_plot } from "${params.MOD}/pangenie"
 include {hlala} from "${params.MOD}/hlala"
 include {
@@ -398,7 +399,7 @@ workflow CWGS {
                     phaseCatLariatDv(ch_lariat, ch_dv, vcfs.join(pvcfs).join(lfs).join(hbs).join(stats)).report.set {ch_phasereport}//report
                     phaseCatLariatDv.out.phasedvcf.set {ch_phasedvcf}
                     if (!params.stLFR_only) { 
-                        vep_data(vep(ch_phasedvcf))
+                        vep_data(vep(ch_phasedvcf).html)
                     }
                     
                 } else {
@@ -568,7 +569,9 @@ workflow CWGS {
             coverageMean(ch_merge, ch_mergebam).set {ch_cmrgMergebammeanbed}
 
             if (!params.stLFR_only) {
-                pangenie_var_plot(pangenie(ch_pfsampledfq))
+                pangenie(ch_pfsampledfq).set {ch_pangenie}
+                pangenie_plot(ch_pangenie.join(phaseCatLariatDv.out.hb))
+                pangenie_var_plot(ch_pangenie)
                 gangstr(ch_mergebam)
                 hlala(ch_mergebam)
             }
@@ -620,7 +623,7 @@ workflow CWGS {
                     report(ch_reports)
 
                     // html
-                    ch_reports.mix(vep_data.out, pangenie_var_plot.out, hlala.out).collect().set {ch_flg}
+                    ch_reports.mix(vep_data.out, pangenie_var_plot.out, pangenie_plot.out, hlala.out).collect().set {ch_flg}
                     html(ch_flg)
                 } else {
                     ch_phase = ch_phasereport
