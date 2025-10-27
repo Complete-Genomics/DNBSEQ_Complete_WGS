@@ -14,9 +14,9 @@ process bamdepth {
 
     script:
     def bam = bam.first()
-    "bamcov=`${params.BIN}samtools depth -@ ${task.cpus} $bam | awk '{sum += \$3}END{print sum/NR}'`"
-    stub:
-    "bamcov=30"
+    def non = params.ref.startsWith('/') ? params.ref + ".nonN.region" : "${params.DB}/${params.ref}/reference/${params.ref}.nonN.region"
+
+    "bamcov=`${params.BIN}samtools depth -@ ${task.cpus} -a -b $non $bam | awk '{sum += \$3}END{print sum/${params.ref_len}}'`"
 }
 
 process barcodeStat {    

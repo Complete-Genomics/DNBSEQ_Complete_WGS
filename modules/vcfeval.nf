@@ -26,9 +26,9 @@ process vcfeval {
     script:
     def vcf = vcf.first()
     def prefix = "${vcf.getBaseName(2)}.${lib}"
-    def benchmark = "${params.DB}/${params.ref}/${params.ref}.${params.std}.vcf.gz"
-    def bed = "${params.DB}/${params.ref}/${params.ref}.${params.std}.bed"
-    def sdf = "${params.DB}/${params.ref}/${params.ref}.SDF"
+    def benchmark = "${params.DB}/hg38/hg38.${params.std}.vcf.gz"
+    def bed = "${params.DB}/hg38/hg38.${params.std}.bed"
+    def sdf = "${params.DB}/hg38/hg38.SDF"
     """
     ${params.BIN}bcftools view -O z --type snps $vcf > ${id}.snp.vcf.gz
     ${params.BIN}tabix -p vcf -f ${id}.snp.vcf.gz
