@@ -96,6 +96,22 @@ def main():
 			Total heterozygous Indels phased\t{hetindelsphased}
 			Phased contig N50 (Mb)\t{n50} 
 			"""
+	elif flg == 'pfonly':
+		id, flgstat, pfbamdepth = files
+		bamdepth = round(float(pfbamdepth), 1)
+
+		snps, indels, hetsnps, hetindels, hetsnpsphased, hetindelsphased = varcnt('varstat')
+		pemaprate = parse_flgstat(flgstat)
+		
+		str = f"""
+			Sample\t{id}
+			bam avg depth\t{bamdepth}
+			mapping rate(unfiltered data)\t{pemaprate}
+			Total SNPs called\t{snps}
+			Total heterozygous SNPs called\t{hetsnps}
+			Total Indels (<50 bp) called\t{indels}
+			Total heterozygous Indels (<50 bp) called\t{hetindels}
+			"""
 	elif flg == 'frombam':
 		id, aligner, varcaller, varstats, het, aligncatstlfr,aligncatpf, phase, fgenecov, vcfeval, vcfevalpf, stlfrbamdepth, pfbamdepth = files
 

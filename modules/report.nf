@@ -146,6 +146,37 @@ process report_stlfronly_ref {
     stub:
     "touch ${id}.${aligner}.${varcaller}.report"
 }
+process report_pfonly {
+    cpus params.CPU0
+    memory params.MEM0 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+
+    input:
+    tuple val(id), path(vcf), path(flgstat), val(pfbamdepth)
+
+    output:
+    path "${id}.*report"
+
+    tag "$id"
+    // publishDir "${params.outdir}/$id/"
+    // cache false
+
+    script:
+    vcf = vcf.first()
+    """
+    snp=`bcftools view -v snps $vcf |grep -v \\# |wc -l`
+    indel=`bcftools view -v indels $vcf |grep -v \\# |wc -l`
+    hetsnp=`bcftools view -v snps -i 'GT="0/1" || GT="1|0" || GT="0|1"' $vcf |grep -v \\# |wc -l`
+    hetindel=`bcftools view -v indels -i 'GT="0/1" || GT="1|0" || GT="0|1"' $vcf |grep -v \\# |wc -l`
+    phasedhetsnp=`bcftools view -v snps -i 'GT="1|0" || GT="0|1"' $vcf |grep -v \\# |wc -l`
+    phasedhetindel=`bcftools view -v indels -i 'GT="1|0" || GT="0|1"' $vcf |grep -v \\# |wc -l`
+
+    echo -e "\$snp\\t\$indel\\t\$hetsnp\\t\$hetindel\\t\$phasedhetsnp\\t\$phasedhetindel" > varstat
+
+
+    ${params.BIN}python3 ${params.SCRIPT}/report.py pfonly $id $flgstat $pfbamdepth > ${id}.report
+    """
+}
 process report01 { // from bam
     cpus params.CPU0
     memory params.MEM0 + "g"
