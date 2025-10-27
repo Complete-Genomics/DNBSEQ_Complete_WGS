@@ -192,6 +192,7 @@ include {
     reportref;
     report_stlfronly;
     report_stlfronly_ref;
+    report_pfonly;
     report;
     html;
     FQC } from "${params.MOD}/report"
@@ -309,7 +310,7 @@ workflow CWGS {
         //pf bam call variant
         dvBwaPf(ch_bwa, ch_pfbam).set {ch_pfdvvcf} 
         
-        if (!params.ref.startsWith('/')) {
+        if (params.ref == 'hg38' || params.ref.contains('GRCh38')) {
             vcfevalPf(ch_libpf, ch_pfdvvcf).set {ch_vcfevalPf}
             coveragePf(ch_libpf, ch_pfbam).join(coverageMeanPf(ch_libpf, ch_pfbam)).set { ch_PfGeneCov }
         }
@@ -382,7 +383,7 @@ workflow CWGS {
                 if (params.use_megabolt) {dvMegabolt(ch_lariat, ch_mergeLariatBam).set {ch_mergevcf}}
                 else {deepvariant(ch_lariat, ch_mergeLariatBam).set {ch_mergevcf}}
                 
-                if (!params.ref.startsWith('/')) {
+                if (params.ref == 'hg38' || params.ref.contains('GRCh38')) {
                     vcfevalLariatDv(ch_merge, ch_mergevcf).set {ch_vcfevalLariatDv}
                     varStatsLariatDv(ch_mergevcf) 
                 }
@@ -641,6 +642,9 @@ workflow CWGS {
             ch_report.collect().mix(ch_reports).set {ch_reports}
             FQC(report(ch_reports))
         }
+    } else {
+        report_pfonly(ch_pfdvvcf.join(ch_flagstat2).join(ch_pfbamdepth)).collect().set {ch_reports}
+        report(ch_reports)
     }
 }
 
@@ -823,7 +827,7 @@ workflow CWGS_frombam {
         if (params.use_megabolt && params.dv_version == 'v0.6') {dvMegabolt(ch_lariat, ch_mergeLariatBam).set {ch_mergevcf}}
         else {deepvariant(ch_lariat, ch_mergeLariatBam).set {ch_mergevcf}}
         
-        if (!params.ref.startsWith('/')) {
+        if (params.ref == 'hg38' || params.ref.contains('GRCh38')) {
             vcfevalLariatDv(ch_merge, ch_mergevcf).set {ch_vcfevalLariatDv}//report 52 
             varStatsLariatDv(ch_mergevcf) //report 51
         }
