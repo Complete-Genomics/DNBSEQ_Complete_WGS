@@ -43,7 +43,7 @@ Or for MegaBolt or ZBolt nodes (MGI's Bioinformatics analysis accelerator, inclu
 ```
 ./CWGS -createdb --megabolt
 ```
-This command will download around 32G data from internet and build index locally, which will occupy another 30G storage. Use ![db_tree.txt](docs/db_tree.txt) to validate the completion of database creation.      
+This command will download around 32G data from internet and build index locally, which will occupy another 30G storage. Use [db_tree.txt](docs/db_tree.txt) to validate the completion of database creation.      
 4. Test demo data:
 
 ```
@@ -240,7 +240,7 @@ A more detailed flow chart.
 **Results**  
 All output in the ./CWGS_run folder.   
 1. The report.csv (in ./CWGS_run/out or ./result) is a summary report, with all intermediate metrics, results of mapping, variant calling, phasing etc.     
-![report.csv](CWGS_run/out/report.csv)  
+[report.csv](CWGS_run/out/report.csv)  
 2. FQ, BAM, VCF output   
 The FQs are in ./CWGS_run/out/<sample_name>/fq, QC by SOAPnuke.  
 (demo_split_*.fq.gz are the FQ after barcode deconvolution)   
