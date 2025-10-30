@@ -63,7 +63,8 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
 ```
 ./CWGS samplelist.txt -bolt --queue mgi.q --project none --boltq fpga.q
 ```
-
+5. For updates and advanced features, see the **dev** branch.  
+   
 # Run the pipeline  
 **Note that the order of parameters matters: single dash parameters (-opt) should be placed before all double dash parameters (--opt)**     
      
@@ -221,7 +222,8 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
         ```
         CWGS sample.list -local -bolt > run.log 2>&1 &
         ```
-
+5. Parameters:  
+   Set parameters with command line or with [nextflow.config](modules/nextflow.config). For example, MEM, CPU, deepvariant model dv_machine = "t7" or "g400". 
 
 A more detailed flow chart.  
 ![Workflow](images/cwgs_flowchart.svg)
