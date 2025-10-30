@@ -230,7 +230,7 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
         ```
         CWGS sample.list -exce local --use_megabolt true > run.log 2>&1 &
         ```
-5. Parameters
+5. Parameters:  
    Set parameters with command line or with [nextflow.config](modules/nextflow.config). For example, MEM, CPU, deepvariant model dv_machine = "t7" or "g400".   
 
 A more detailed flow chart.  
