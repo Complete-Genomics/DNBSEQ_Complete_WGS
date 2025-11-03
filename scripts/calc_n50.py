@@ -294,7 +294,8 @@ def count_SNPs(vcf_file,indels=False):
 # given a VCF file from a single chromosome return the name of that chromosome
 # will almost always be from a single chromosome but don't assume that
 def get_ref_name(vcf_file):
-
+    return vcf_file.split('.lariat.dv.')[1].split('.vcf.gz')[0]
+    
     with gzip.open(vcf_file,'rt') as infile:
         for line in infile:
             if line[0] == '#':
