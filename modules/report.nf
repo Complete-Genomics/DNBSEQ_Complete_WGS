@@ -4,14 +4,12 @@ process report0 {
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
     input:
-    val(aligner)
-    val(varcaller)
     tuple val(id), path(vcf), path(lfr), path(histbed), path(meanbed), path(depthreport), path(phase)
 
     output:
     path "${id}.*report"
 
-    tag "$id, $aligner, $varcaller"
+    tag "$id"
     publishDir "${params.outdir}/report/$id/"
     // cache false
 
@@ -38,7 +36,7 @@ process report0 {
     # chr1    1046551 .       A       G       47.2    PASS    .       GT:GQ:DP:AD:VAF:MID:PL:PS       1/1:39:20:0,20:1:small_model:47,39,0:.  chr1    1046397 1046735       AGRN
 
 
-    ${params.BIN}python3 ${params.SCRIPT}/report.py 0 $id $vcf $lfr $histbed $meanbed $depthreport $phase > ${id}.${aligner}.${varcaller}.report
+    ${params.BIN}python3 ${params.SCRIPT}/report.py 0 $id $vcf $lfr $histbed $meanbed $depthreport $phase > ${id}.${params.align_tool}.${params.var_tool}.report
     """
 }
 process reportref {
@@ -47,14 +45,12 @@ process reportref {
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
     input:
-    val(aligner)
-    val(varcaller)
     tuple val(id), path(vcf), path(lfr), path(depthreport), path(phase)
 
     output:
     path "${id}.*report"
 
-    tag "$id, $aligner, $varcaller"
+    tag "$id"
     // publishDir "${params.outdir}/$id/"
     // cache false
 
@@ -312,7 +308,9 @@ process html {
     cpus params.CPU0
     memory params.MEM0 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
-    
+
+    when: params.ref == 'hg38' || params.ref.contains('GRCh38')
+
     input:
     val signal
 
