@@ -210,5 +210,6 @@ if __name__ == '__main__':
         outdir1 = os.path.join(outdir, sample)
         try:
             generate_html(outdir1, sample)
-        except:
-            pass
+        except Exception as e:
+            print(sample, e)
+            continue
