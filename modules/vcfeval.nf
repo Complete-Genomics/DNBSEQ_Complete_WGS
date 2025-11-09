@@ -4,6 +4,8 @@ process vcfeval {
     memory params.MEM1 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
+    when: params.ref == 'hg38' || params.ref.contains('GRCh38')
+
     input:
     val(lib)
     tuple val(id), path(vcf) //demo.pf.bwa.gatk.vcf.gz

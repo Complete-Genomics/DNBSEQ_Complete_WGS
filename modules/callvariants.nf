@@ -1,4 +1,47 @@
+workflow WF_callvariants {
+  take:
+  ch_bam
+  
+  main:
+  def ch_lariat = params.align_tool
+  
+  if (params.var_tool.contains("dv")) {
+    if (params.use_megabolt) {dvMegabolt(ch_lariat, ch_bam).set {ch_mergevcf}}
+    else {deepvariant(ch_lariat, ch_bam).set {ch_mergevcf}}
+    
+  } else if (params.var_tool.contains("gatk")) {
+    if (params.use_megabolt) {
+        if (params.run_vqsr) {
+            vqsrMegabolt(ch_lariat, hcMegabolt(ch_lariat, ch_bam)).set {ch_mergevcf}
+        } else {
+            hcMegabolt(ch_lariat, ch_bam).set {ch_mergevcf}
+        }
+    } else {
+        if (params.split_by_intervals) {
+            gatk_interval().splitText().map { it.trim() }.collect().set {intervals}
+            hcSplit(ch_lariat, ch_bam, intervals).set {ch_mergevcfSplit}
+            gatherVcfsHc(ch_lariat, ch_mergevcfSplit.groupTuple()).set {ch_mergevcf}
+            if (params.run_vqsr) {
+                vqsrSnp(ch_lariat, ch_mergevcf).set {ch_vqsrsnp}
+                vqsrIndel(ch_lariat, ch_mergevcf).set {ch_vqsrindel}
+                gatherVcfsVqsr(ch_lariat, ch_vqsrsnp.join(ch_vqsrindel)).set{ch_mergevcf}
+            }
+            
+        } else {
+            hc(ch_lariat, ch_bam).set {ch_mergevcf}
+            if (params.run_vqsr) {
+                vqsrSnp(ch_lariat, hc(ch_lariat, ch_bam)).set {ch_vqsrsnp}
+                vqsrIndel(ch_lariat, hc(ch_lariat, ch_bam)).set {ch_vqsrindel}
+                gatherVcfsVqsr(ch_lariat, ch_vqsrsnp.join(ch_vqsrindel)).set{ch_mergevcf}
+            } 
+        }
+    }
+  }
 
+
+  emit:
+  ch_mergevcf
+}
 //megabolt
 process hcMegabolt {
     label 'megabolt'
