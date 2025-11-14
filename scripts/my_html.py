@@ -7,14 +7,20 @@ import pdfkit
 title = 'CompleteWGS report'
 
 def parse_report(csv_file):
-    data = [line.strip().split('\t') for line in open(csv_file)]
-    df = pd.DataFrame(data[1:], columns=data[0])
-    return df.to_html(index=False, classes='data-table', border=1)
+    try:
+        data = [line.strip().split('\t') for line in open(csv_file)]
+        df = pd.DataFrame(data[1:], columns=data[0])
+        return df.to_html(index=False, classes='data-table', border=1)
+    except:
+        return f'<div class="noDataTitle">data do not exist: {csv_file}</div>' 
 
 def parse_hlala(csv_file):
-    data = [line.strip().split('\t')[:3] for line in open(csv_file)]
-    df = pd.DataFrame(data[1:], columns=data[0])
-    return df.to_html(index=False, classes='data-table', border=1)
+    try:
+        data = [line.strip().split('\t')[:3] for line in open(csv_file)]
+        df = pd.DataFrame(data[1:], columns=data[0])
+        return df.to_html(index=False, classes='data-table', border=1)
+    except:
+        return f'<div class="noDataTitle">data do not exist: {csv_file}</div>' 
 
 def image_to_base64(image_path):
     try:
