@@ -9,21 +9,6 @@ include {
     sampleStlfrFq       } from "${params.MOD}/fq"
 include { mapq          } from "${params.MOD}/bam"
 
-workflow WF_align {
-    take:
-    reads_ch
-
-    main:
-    stlfr_ch = reads_ch.filter { sample, type, files -> type == "stlfr" }
-    pf_ch = reads_ch.filter { sample, type, files -> type == "pf" }
-
-    stlfr_bam = WF_align_stlfr(stlfr_ch)
-    pf_bam = WF_align_pf(pf_ch)
-    pf_bam.view()
-    
-    emit:
-    bam = stlfr_bam.mix(pf_bam)
-}
 
 workflow WF_align_stlfr {
     take:
@@ -33,9 +18,18 @@ workflow WF_align_stlfr {
     // ch_stlfrfq.map { meta, path ->
     //     return [meta.id, path]
     // }.set {ch_stlfrfq}
+    needSplit(ch_stlfrfq).branch {id, reads, flag ->
+        split: flag == '1'
+            [id, reads, true]
+        no_split: flag == '0'
+            [id, reads, false]
+    }.set {ch_dosplit}
 
-    barcode_split(ch_stlfrfq).reads.set {ch_splitfq}
-    splitLog = barcode_split.out.log
+    barcode_split(ch_dosplit.split)
+    splitRate(ch_dosplit.no_split)
+
+    ch_splitfq  = barcode_split.out.reads   .mix(splitRate.out.reads)
+    splitLog    = barcode_split.out.log     .mix(splitRate.out.log)
 
     if (params.sampleFq) {
         qc_stlfr_stats(ch_splitfq).basecnt.set {ch_stlfrbasecount}
@@ -82,7 +76,7 @@ workflow WF_align_pf {
     take:
     ch_pffq
 
-    main:
+    main:                                            
     // ch_pffq.map { meta, path ->
     //     return [meta.id, path]
     // }.set {ch_pffq}
@@ -117,13 +111,39 @@ workflow WF_align_pf {
     emit:
     ch_pfbam
 }
+process needSplit {
+    cpus params.CPU0
+    memory params.MEM0 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+        
+    input:
+    tuple val(id), path(reads)
+
+    output:
+    tuple val(id), path(reads), env(dosplit)
+
+    tag "${id}"
+
+    script:
+    def r1 = "${reads[0]}"
+    """
+    fl=`zcat $r1 | head -1 || true`
+    if echo "\$fl" | grep -q '#'; then
+        dosplit=0
+    else
+        dosplit=1
+    fi
+    """
+}
 process barcode_split {
     cpus params.CPU1
     memory params.MEM2 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
         
     input:
-    tuple val(id), path(reads)
+    tuple val(id), path(reads), val(dosplit)
+
+    when: dosplit
 
     output:
     tuple val(id), path("${id}_split_1.fq.gz"), path("${id}_split_2.fq.gz"), emit: reads
@@ -137,42 +157,58 @@ process barcode_split {
     def r1 = "${reads[0]}"
     def r2 = "${reads[1]}"
     """
-    fl=`zcat $r1 | head -n 1 || true`
-    echo \$fl
-    if echo \$fl | grep -q \\#; then 
-        echo skip split barcode
-        mv $r1 ${id}_split_1.fq.gz
-        mv $r2 ${id}_split_2.fq.gz
+    tmp=`zcat $r1 | head -n 2 | tail -n 1 |wc -c ||true`
+    rlen=`expr \$tmp - 1`
+    echo \$rlen
+    mv $r1 read_1.fq.gz
+    mv $r2 read_2.fq.gz
 
-        ${params.BIN}python ${params.SCRIPT}/splitRate.py ${id}_split_1.fq.gz > split_stat_read1.log
-    else
-        echo split barcode
-        tmp=`zcat $r1 | head -n 2 | tail -n 1 |wc -c ||true`
-        rlen=`expr \$tmp - 1`
-        echo \$rlen
-        mv $r1 read_1.fq.gz
-        mv $r2 read_2.fq.gz
+    s1=\$((\$rlen*2+1))
+    s2=\$((\$rlen*2+17))
+    s3=\$((\$rlen*2+33))
 
-        s1=\$((\$rlen*2+1))
-        s2=\$((\$rlen*2+17))
-        s3=\$((\$rlen*2+33))
+    bcpos="-I \$s1 10 1 false -I \$s2 10 1 false -I \$s3 10 1 false"
+    ${params.BIN}MGI.Lite.GenFastQ -F read_1.fq.gz read_2.fq.gz \\
+                        -B ${bcList}    \\
+                        \$bcpos       \\
+                        --stLFR                     \\
+                        -O split_out  \\
+                        --logPath ./ 
 
-        bcpos="-I \$s1 10 1 false -I \$s2 10 1 false -I \$s3 10 1 false"
-        ${params.BIN}MGI.Lite.GenFastQ -F read_1.fq.gz read_2.fq.gz \\
-                            -B ${bcList}    \\
-                            \$bcpos       \\
-                            --stLFR                     \\
-                            -O split_out  \\
-                            --logPath ./ 
+    out1=`find split_out -name "*_1.fq.gz"`
+    out2=`find split_out -name "*_2.fq.gz"`
+    log=`find split_out -name "split_stat_read.log"`
 
-        out1=`find split_out -name "*_1.fq.gz"`
-        out2=`find split_out -name "*_2.fq.gz"`
-        log=`find split_out -name "split_stat_read.log"`
+    mv \$out1 ${id}_split_1.fq.gz
+    mv \$out2 ${id}_split_2.fq.gz
+    mv \$log split_stat_read1.log
+    """
+}
+process splitRate {
+    cpus params.CPU0
+    memory params.MEM0 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+        
+    input:
+    tuple val(id), path(reads), val(dosplit)
 
-        mv \$out1 ${id}_split_1.fq.gz
-        mv \$out2 ${id}_split_2.fq.gz
-        mv \$log split_stat_read1.log
-    fi
+    when: !dosplit
+
+    output:
+    tuple val(id), path("${id}_split_1.fq.gz"), path("${id}_split_2.fq.gz"), emit: reads
+    tuple val(id), path("split_stat_read1.log"), emit: log
+
+    tag "${id}"
+    publishDir "${params.outdir}/$id/fq/", mode: 'link'
+
+    script:
+    def r1 = reads[0]
+    def r2 = reads[1]
+    """
+    mv $r1 ${id}_split_1.fq.gz 2>/dev/null || true
+    mv $r2 ${id}_split_2.fq.gz 2>/dev/null || true
+
+    ${params.BIN}python ${params.SCRIPT}/splitRate.py ${id}_split_1.fq.gz > split_stat_read1.log
     """
 }
 process bwa {    
@@ -198,8 +234,8 @@ process bwa {
     } else {
         ref = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
     }
-    def r1 = "${reads[0]}"
-    def r2 = "${reads[1]}"
+    def r1 = reads[0]
+    def r2 = reads[1]
     """
     ${params.BIN}bwa mem -t ${task.cpus} -R '@RG\\tID:${id}\\tSM:sample\\tPL:COMPLETE' $ref $r1 $r2 | \
     ${params.BIN}samtools view -bhS -@ ${task.cpus} -t ${ref}.fai -T $ref - | \
