@@ -34,7 +34,7 @@ process intersect {
     stlfrbam = stlfrbam.first() //demo.stlfr.bwa.bam
     pfbam = pfbam.first()
     """
-    ${params.BIN}samtools depth -@ ${task.cpus} $stlfrbam $pfbam | awk -v cov="${params.PF_lt_stLFR_depth}" '\$3 >= cov && \$4 < cov {print \$1"\\t"\$2"\\t"\$2}' | \\
+    ${params.BIN}samtools depth -@ ${task.cpus} $stlfrbam $pfbam | awk -v cov="${params.PF_lt_stLFR_depth}" '\$3 >= cov && \$4 < cov {print \$1"\\t"\$2"\\t"\$2}' | sort -k1,1 -k2,2n | \\
     ${params.BIN}bedtools merge > ${id}.${aligner}.cov${params.PF_lt_stLFR_depth}.intersect.bed
 
     """
@@ -45,7 +45,7 @@ process mergeBam {
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
     input:
-    tuple val(id), path(pfbam), path(stlfrbam), path(bed) 
+    tuple val(id), path(stlfrbam), path(pfbam), path(bed) 
 
     output:
     tuple val(id), path("*.merge.bam*") 
@@ -78,7 +78,7 @@ process combinebam {
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
     input:
-    tuple val(id), path(pfbam), path(stlfrbam)
+    tuple val(id), path(stlfrbam), path(pfbam)
 
     output:
     tuple val(id), path("${id}.lariat.merge.bam*") 
