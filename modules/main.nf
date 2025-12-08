@@ -626,6 +626,7 @@ workflow CWGS {
                     // html
                     ch_reports.mix(vep_data.out, pangenie_var_plot.out, pangenie_plot.out, hlala.out).collect().set {ch_flg}
                     html(ch_flg)
+                    
                 } else {
                     ch_phase = ch_phasereport
 
@@ -935,10 +936,19 @@ workflow CWGS_frombam {
                 coverage(ch_merge, ch_mergebam).set {ch_cmrgMergebamhistbed}
                 coverageMean(ch_merge, ch_mergebam).set {ch_cmrgMergebammeanbed}
 
+                vep_data(vep(ch_phasedvcf).html)
+
+                gangstr(ch_mergebam)
+                hlala(ch_mergebam)
+
                 reportLariatDv(ch_lariat, ch_dv, ch_vcf.join(ch_lfr).join(ch_cmrgMergebamhistbed).join(ch_cmrgMergebammeanbed).join(ch_depthreport).join(ch_phase)).set {ch_report}
 
                 ch_report.collect().mix(ch_reports).set {ch_reports}
                 report(ch_reports)
+                
+                ch_reports.mix(vep_data.out, hlala.out).collect().set {ch_flg}
+                html(ch_flg)
+
             } else {
                 reportref(ch_lariat, ch_dv, ch_vcf.join(ch_lfr).join(ch_depthreport).join(ch_phase)).set {ch_report}
 
