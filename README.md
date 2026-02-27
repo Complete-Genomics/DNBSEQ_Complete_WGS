@@ -62,7 +62,15 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
 ```
 ./CWGS samplelist.txt -bolt --queue mgi.q --project none --boltq fpga.q
 ```
-(5. Install Nextflow (with conda) in your environment to use containers version>1.0.6, with -sifs ${sif_dir} option.)  
+5. ***UPDATE***  
+To use SV function and pipeline version>1.0.6:  
+Get new .sif container from Dockerhub (https://hub.docker.com/repository/docker/stlfr/complete_wgs), for example:   
+```
+name=pangenie
+apptainer pull oras://docker.io/stlfr/complete_wgs:${name}
+```
+Install Nextflow (with conda) in your environment, with -sifs ${sif_dir} option.
+
    
 # Run the pipeline  
 **Note that the order of parameters matters: single dash parameters (-opt) should be placed before all double dash parameters (--opt)**     
