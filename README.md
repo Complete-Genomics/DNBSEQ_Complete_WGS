@@ -69,7 +69,7 @@ Get new .sif container from Dockerhub (https://hub.docker.com/repository/docker/
 name=pangenie
 apptainer pull oras://docker.io/stlfr/complete_wgs:${name}
 ```
-Install Nextflow (with conda) in your environment, with -sifs ${sif_dir} option.
+Install Nextflow (with conda etc.) in your environment, with -sifs ${sif_dir} option.
 
    
 # Run the pipeline  
