@@ -651,7 +651,8 @@ process sampleBam {
             cp $bam ${id}.${lib}.${aligner}.sampled.bam
             cp ${bam}.bai ${id}.${lib}.${aligner}.sampled.bam.bai
         else
-            ${params.BIN}gatk DownsampleSam -I $bam -O ${id}.${lib}.${aligner}.sampled.bam -P \$ratio
+            seed=42
+            ${params.BIN}samtools view -@ ${task.cpus} -s \$seed\$ratio -b $bam > ${id}.${lib}.${aligner}.sampled.bam
             ${params.BIN}samtools index -@ ${task.cpus} ${id}.${lib}.${aligner}.sampled.bam
         fi
     fi
