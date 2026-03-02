@@ -152,7 +152,7 @@ process vg {
     """
     awk '{print \$1}' $fai |sed 's/^/GRCh38#0#/' > list
 
-    $vg giraffe -Z $gbz --progress --read-group "ID:$id LB:lib1 SM:HG002 PL:CG PU:unit1" --sample $id -o BAM \\
+    $vg giraffe -Z $gbz --progress --index-basename `pwd`/${id} --read-group "ID:$id LB:lib1 SM:$id PL:CG PU:unit1" --sample $id -o BAM \\
         --ref-paths list -P -L 3000 -f $r1 -f $r2 --kff-name $kff --haplotype-name $hapl -t ${task.cpus} | \\
     samtools sort -@ ${task.cpus} -T `pwd`/sort.tmp. -o ${id}.sort0.bam - 
 
