@@ -64,12 +64,19 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
 ```
 5. ***UPDATE***  
 To use SV function and pipeline version>1.0.6:  
-Get new .sif container from Dockerhub (https://hub.docker.com/repository/docker/stlfr/complete_wgs), for example:   
+Get all 6 new .sif container from Dockerhub (https://hub.docker.com/repository/docker/stlfr/complete_wgs), for example:   
 ```
 name=pangenie
 apptainer pull oras://docker.io/stlfr/complete_wgs:${name}
 ```
-Install Nextflow (with conda etc.) in your environment, with -sifs ${sif_dir} option.
+remove 'complete_wgs_' from the .sif name and put them in a folder ${sif_dir}.  
+Install Nextflow (with conda etc.) in your environment to excute the pipeline.  
+```
+CWGS=DNBSEQ_Complete_WGS/CWGS
+modules=DNBSEQ_Complete_WGS/modules
+scripts=DNBSEQ_Complete_WGS/scripts
+$CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exec local -module ${modules} -script ${scripts} -debug --use_megabolt false --skipBarcodeSplit false --pfmapq 3 --pfAligner vg --ref ${ref} --ref_len ${ref_len}
+```
 
    
 # Run the pipeline  
