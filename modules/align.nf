@@ -366,7 +366,7 @@ process vg {
     """
     awk '{print \$1}' $fai |sed 's/^/GRCh38#0#/' > list
 
-    $vg giraffe -Z $gbz --progress --read-group "ID:$id LB:lib1 SM:HG002 PL:CG PU:unit1" --sample $id -o BAM \\
+    $vg giraffe -Z $gbz --progress --index-basename `pwd`/${id} --read-group "ID:$id LB:lib1 SM:$id PL:CG PU:unit1" --sample $id -o BAM \\
         --ref-paths list -P -L 3000 -f $r1 -f $r2 --kff-name $kff --haplotype-name $hapl -t ${task.cpus} | \\
     samtools sort -@ ${task.cpus} -T `pwd`/sort.tmp. -o ${id}.sort0.bam - 
 
@@ -860,9 +860,18 @@ process sampleBam {
     if [[ \$ratio > 1 ]];then
         cp $bam ${id}.${lib}.${aligner}.sampled.bam
         cp ${bam}.bai ${id}.${lib}.${aligner}.sampled.bam.bai
-    else
-        ${params.BIN}gatk DownsampleSam -I $bam -O ${id}.${lib}.${aligner}.sampled.bam -P \$ratio
-        ${params.BIN}samtools index -@ ${task.cpus} ${id}.${lib}.${aligner}.sampled.bam
+    else 
+        bamcov=`samtools stats $bam | awk -v ref=${params.ref_len} '\$2=="bases" && \$3=="mapped" && \$4=="(cigar):" {print \$5/ref}'`
+        echo \$bamcov > tmp
+        ratio=`echo "scale=5; $cov/\$bamcov" | bc`
+        if [[ \$ratio > 1 ]];then
+            cp $bam ${id}.${lib}.${aligner}.sampled.bam
+            cp ${bam}.bai ${id}.${lib}.${aligner}.sampled.bam.bai
+        else
+            seed=42
+            ${params.BIN}samtools view -@ ${task.cpus} -s \$seed\$ratio -b $bam > ${id}.${lib}.${aligner}.sampled.bam
+            ${params.BIN}samtools index -@ ${task.cpus} ${id}.${lib}.${aligner}.sampled.bam
+        fi
     fi
     """
     if (!params.keepFiles) {

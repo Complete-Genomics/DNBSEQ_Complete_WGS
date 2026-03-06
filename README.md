@@ -1,6 +1,6 @@
 
 # Complete WGS (cWGS)  
-This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' DNBSEQ Complete WGS (cWGS) (a DNA cobarcoding technology) library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the cWGS library. Below is a flow chart which summarizes the pipeline processes. *Note, SV detection has not yet been enabled on the current version of the pipeline.
+This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' DNBSEQ Complete WGS (cWGS) (a DNA cobarcoding technology) library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the cWGS library. Below is a flow chart which summarizes the pipeline processes. *Note, SV detection with Pangenie is a beta version of the pipeline.
 
 ![flowchart](https://github.com/user-attachments/assets/59430c7d-8f5b-4117-9c52-404fb71d1e5d)
 
@@ -62,7 +62,22 @@ Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
 ```
 ./CWGS samplelist.txt -bolt --queue mgi.q --project none --boltq fpga.q
 ```
-(5. Install Nextflow (with conda) in your environment to use containers version>1.0.6, with -sifs ${sif_dir} option.)  
+5. ***UPDATE***  
+To use SV function and pipeline version>1.0.6:  
+Get all 6 new .sif container from Dockerhub (https://hub.docker.com/repository/docker/stlfr/complete_wgs), for example:   
+```
+name=pangenie
+apptainer pull oras://docker.io/stlfr/complete_wgs:${name}
+```
+remove 'complete_wgs_' from the .sif name and put them in a folder ${sif_dir}.  
+Install Nextflow (with conda etc.) in your environment to excute the pipeline.  
+```
+CWGS=DNBSEQ_Complete_WGS/CWGS
+modules=DNBSEQ_Complete_WGS/modules
+scripts=DNBSEQ_Complete_WGS/scripts
+$CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exec local -module ${modules} -script ${scripts} -debug --use_megabolt false --skipBarcodeSplit false --pfmapq 3 --pfAligner vg --ref ${ref} --ref_len ${ref_len}
+```
+
    
 # Run the pipeline  
 **Note that the order of parameters matters: single dash parameters (-opt) should be placed before all double dash parameters (--opt)**     
