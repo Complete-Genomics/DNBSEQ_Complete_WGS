@@ -47,7 +47,6 @@ process hcMegabolt {
     label 'megabolt'
     cpus params.cpu3
     memory params.MEM2 + "g"
-    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.boltq)
     
     input:
     val(aligner)
@@ -80,7 +79,7 @@ process hcMegabolt {
       --knownSites \$dbsnp \\
       --knownSites \$mills \\
       --knownSites \$kgsnp \\
-      --outputdir . 
+      --outputdir .
 
     mv output/output.hc*.vcf.gz ${outprefix}.vcf.gz
     mv output/output.hc*.vcf.gz.tbi ${outprefix}.vcf.gz.tbi
@@ -92,7 +91,6 @@ process vqsrMegabolt {
     label 'megabolt'
     cpus params.cpu3
     memory params.MEM2 + "g"
-    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.boltq)
     
     input:
     val(aligner)
@@ -125,7 +123,7 @@ process vqsrMegabolt {
       --resource-1000G \$kgsnp \\
       --resource-dbsnp \$dbsnp \\
       --resource-mills \$mills \\
-      --outputdir . 
+      --outputdir .
 
     mv output/output.vqsr.vcf.gz ${outprefix}.vcf.gz
     mv output/output.vqsr.vcf.gz.tbi ${outprefix}.vcf.gz.tbi
@@ -137,7 +135,6 @@ process vqsrMegabolt {
 process hc {
     cpus params.cpu3
     memory params.MEM2 + "g"
-    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(aligner)
@@ -189,7 +186,6 @@ process hc {
 process vqsrSnp {
     cpus params.cpu3
     memory params.MEM2 + "g"
-    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(aligner)
@@ -283,7 +279,6 @@ process vqsrSnp {
 process vqsrIndel {
     cpus params.cpu3
     memory params.MEM2 + "g"
-    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(aligner)
@@ -372,7 +367,6 @@ process vqsrIndel {
 process gatk_interval {
   cpus params.CPU0
   memory params.MEM0 + "g"
-  clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
   output:
   file("txt")
@@ -415,7 +409,6 @@ process gatk_interval {
 process hcSplit {
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(aligner)
@@ -468,7 +461,6 @@ process hcSplit {
 process gatherVcfsHc {
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(aligner)
@@ -503,7 +495,6 @@ process gatherVcfsHc {
 process gatherVcfsVqsr {
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(aligner)
@@ -529,7 +520,6 @@ process dvMegabolt {
     label 'megabolt'
     cpus params.cpu3
     memory params.MEM1 + "g"
-    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.boltq)
     
     input:
     val(aligner)
@@ -558,39 +548,41 @@ process dvMegabolt {
 process deepvariant {
     cpus params.cpu3
     memory params.MEM3 + "g"
-    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
-    
+    container "${params.dv_sif_image}"
+    containerOptions "--env PATH=/opt/deepvariant/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin:/usr/bin"
+
     input:
     val(aligner)
     tuple val(id), path(bam) //demo.stlfr.lariat.merge.bam
 
     output:
-    tuple val(id), path("${id}.*.dv*.vcf.gz*") //demo.lariat.dv.vcf.gz
+    tuple val(id), path("${id}.*.dv.vcf.gz*") //demo.lariat.dv.vcf.gz
 
     tag "$id"
     publishDir "${params.outdir}/$id/align/", mode: 'link'
+    beforeScript "export PATH=/opt/deepvariant/bin:\$PATH"
  
     script:
     def bam = bam.first()
     def ref = params.ref.startsWith('/') ? params.ref : "${params.DB}/${params.ref}/reference/${params.ref}.fa"
-    def machine="${params.dv_machine}" // g400
-    def ver = (params.dv_version == 'v1.9') ? "dv19" : "dv16"
-    def model="${params.DB}/DV_model/dv1.6-mgi-${machine}.ckpt"
+    def pangenome = params.dv_pangenome
+    def ver = "dv"
     def outvcf = bam.toString().contains("pf") ? "${id}.pf.bwa.${ver}.vcf.gz" : "${id}.${aligner}.${ver}.vcf.gz"
-    def dv = (params.dv_version == 'v1.9') ? "/opt/deepvariant/bin/run_deepvariant" : "/opt/dv_1.6/bin/run_deepvariant"
+    //def outgvcf = bam.toString().contains("pf") ? "${id}.pf.bwa.${ver}.g.vcf.gz" : "${id}.${aligner}.${ver}.g.vcf.gz"
     """
-    $dv --model_type=WGS \\
-      --ref=$ref \\
-      --reads=$bam \\
-      --output_vcf=$outvcf \\
-      --logging_dir=log \\
-      --customized_model=${model} \\
-      --runtime_report=True \\
-      --intermediate_results_dir="intermediate_results_dir" \\
-      --num_shards=${task.cpus}\\
-      --make_examples_extra_args="vsc_min_count_indels=1" 
-
+    ${params.dv_binary_path} \\
+      --model_type WGS \\
+      --ref $ref \\
+      --reads $bam \\
+      --pangenome $pangenome \\
+      --output_vcf $outvcf \\
+      --num_shards ${task.cpus} \\
+      --intermediate_results_dir intermediate_results_dir \\
+      --make_examples_extra_args '${params.dv_make_examples_extra_args}' \\
+      --postprocess_variants_extra_args '${params.dv_postprocess_variants_extra_args}'
     """
     stub:
-    "touch ${id}.${aligner}.${ver}.vcf.gz"
+    def ver = "dv"
+    def outvcf = bam.toString().contains("pf") ? "${id}.pf.bwa.${ver}.vcf.gz" : "${id}.${aligner}.${ver}.vcf.gz"
+    "touch $outvcf"
 }
