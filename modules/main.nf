@@ -55,6 +55,7 @@ include {
     align_cat as alignCatPf } from "${params.MOD}/bamstats"
 
 include { vep;
+    vep as vep_frombam;
     vep_data } from "${params.MOD}/annot"
 include {gangstr} from "${params.MOD}/gangstr"
 include {pangenie;
@@ -126,7 +127,7 @@ workflow CWGS {
     hlala(ch_mergebam)
 
     // annot
-    vep_data(vep(ch_phasedvcf).html)
+    vep_data(vep_frombam(ch_phasedvcf).html)
 
     // WF_report()
     if (params.ref == 'hg38' || params.ref.contains('GRCh38')) {
@@ -289,7 +290,7 @@ workflow CWGS {
                     phaseCatLariatDv(ch_lariat, ch_dv, vcfs.join(pvcfs).join(lfs).join(hbs).join(stats)).report.set {ch_phasereport}//report
                     phaseCatLariatDv.out.phasedvcf.set {ch_phasedvcf}
                     if (!params.stLFR_only) { 
-                        vep_data(vep(ch_phasedvcf).html)
+                        vep_data(vep_frombam(ch_phasedvcf).html)
                     }
                     
                 } else {
@@ -708,7 +709,7 @@ workflow CWGS_frombam {
         stats = phaseLariatDv.out.stat.groupTuple()  
         if (!params.ref.startsWith('/')) {
             phaseCatLariatDv(ch_lariat, ch_dv, vcfs.join(pvcfs).join(lfs).join(hbs).join(stats)).report.set {ch_phasereport}//report
-            vep(phaseCatLariatDv.out.phasedvcf)
+            vep_frombam(phaseCatLariatDv.out.phasedvcf)
             phaseCatLariatDv.out.phasedvcf.set {ch_phasedvcf}
         } else {
             phaseCatRef(ch_lariat, ch_dv, txt, vcfs.join(pvcfs).join(lfs).join(hbs)).report.set {ch_phasereport}
@@ -800,7 +801,7 @@ workflow CWGS_frombam {
                 coverage(ch_merge, ch_mergebam).set {ch_cmrgMergebamhistbed}
                 coverageMean(ch_merge, ch_mergebam).set {ch_cmrgMergebammeanbed}
 
-                vep_data(vep(ch_phasedvcf).html)
+                vep_data(vep_frombam(ch_phasedvcf).html)
 
                 gangstr(ch_mergebam)
                 hlala(ch_mergebam)
