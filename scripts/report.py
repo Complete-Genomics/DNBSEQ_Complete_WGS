@@ -1,141 +1,227 @@
-import sys,os,re, subprocess
+import sys,os,re,gzip, csv
+from funcs import *
 
-#python3 ${params.SCRIPT}/report0.py $id $vcf $splitLog $lfr $aligncatstlfr $aligncatpf $phase $genecov > ${id}.report
-"""
-[biancai@cngb-xcompute-0-17 G400_ECR6_stLFR-1]$ head 01.filter/G400_ECR6_stLFR-1/split_stat_read1.log
-Barcode_types = 1536*1536*1536=3623878656
-Barcode_types_with_mismatch = 62976*62976*62976=249761340850176(1)
-Real_Barcode_types = 33574842
-Reads_pair_num = 818923261
-Reads_pair_num(after split) = 753672975(92.032186%)
-0       65250286        0_0_0
-8282618 1       1000_1000_1064
-11119045        1       1000_1000_1096
+def main():
+	flg, *files = sys.argv[1:]
+		
+	if flg == '0': 
+		id, vcf, lfr, histbed, meanbed, depthreport, phasereport = files
 
-"""
-id, aligner, varcaller, varstats, het, splitLog, lfr, aligncatstlfr,aligncatpf, phase, fgenecov, vcfeval, vcfevalpf, stlfrbamdepth, pfbamdepth = sys.argv[1:]
-L = [id, aligner, varcaller, stlfrbamdepth, pfbamdepth]
-##snp indel count
-f = open(varstats)
-for line in f:
-	if not line.startswith("SN"): continue
-	if "number of SNPs" in line: 
-		snp = line.rstrip().split()[-1]
-	elif "number of indels" in line:
-		indel = line.rstrip().split()[-1]
-		break
-f.close()
+		snps, indels, hetsnps, hetindels, hetsnpsphased, hetindelsphased = varcnt('varstat') 
 
-f = open(het)
-hetsnp, hetindel = f.readline().rstrip().split()
-f.close()
-# process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-# stdout, stderr = process.communicate()
-# counts = stdout.decode().strip().replace("\n","\t")
-# hetsnp, hetindel = counts.split()
+		## lfr
+		lfrcnt, lfravglen = flfr(lfr) 
 
-for i in [snp, hetsnp, indel, hetindel]: L.append(i)
+		n50 = fphase(phasereport)
+		phaseblockbases = fblock('hapblock')
+		_, _, merge_genome_cov20 = fdepth(depthreport)
+		cmrg_cov_merge, cmrg_depth_merge = cmrg(histbed, meanbed)
 
-#vcfeval
-L.append("")
-f = open(vcfeval)
-f.readline()
-for i in f.readline().rstrip().split()[1:]:
-	L.append(i)
-
-L.append("")
-for i in f.readline().rstrip().split()[1:]:
-	L.append(i)
-f.close()
-
-L.append("")
-f = open(vcfevalpf)
-f.readline()
-for i in f.readline().rstrip().split()[1:]:
-	L.append(i)
-	
-L.append("")
-for i in f.readline().rstrip().split()[1:]:
-	L.append(i)
-f.close()
-
-##barcode split rate (pe reads num/pe reads num after split)
-f = open(splitLog)
-try:
-	for _ in range(4): f.readline()
-	bcsplitrate = re.split('\(|\%\)', f.readline().split()[-1])[1]
-	bcsplitrate = round(float(bcsplitrate), 2)
-except:
-	bcsplitrate = f.readline().strip()
-L.append(bcsplitrate)
-f.close()
+		tt, hh = vcfstats(vcf)
+		cmrg_pct, cmrg_het, cmrg_hom = cmrg_genes(vcf)
+		str = f"""
+			Sample\t{id}
+			Percent of genome coverage >20X (merged bam)\t{merge_genome_cov20}
+			Total SNPs called\t{snps:,}
+			Total heterozygous SNPs called\t{hetsnps:,}
+			Total heterozygous SNPs phased\t{hetsnpsphased:,}
+			Total Indels (<50 bp) called\t{indels:,}
+			Total heterozygous Indels (<50 bp) called\t{hetindels:,}
+			Total phased heterozygous indels\t{hetindelsphased:,}
+			Ti/Tv\t{tt}
+			Het/hom\t{hh}
+			Total cWGS fragments\t{lfrcnt:,}
+			Average cWGS length (kb)\t{lfravglen:,}
+			Phased contig N50\t{n50:,}
+			Total bases in phase block\t{phaseblockbases:,}
+			Average percent coverage of CMRG genes\t{cmrg_cov_merge}
+			Average depth of coverage of CMRG genes\t{cmrg_depth_merge}
+			Percent of genes covered by single phased contig\t{cmrg_pct}
+			Number of genes with a homozygous coding variant\t{cmrg_hom}
+			Number of genes with at least one coding heterozygous variant on each allele\t{cmrg_het}
+			"""
 
 
+	elif flg == 'ref':
+		id, vcf, lfr, depthreport, phasereport = files
 
-##lfr num and avg len
-"""
-good-lfr        2124431
-Average-lfr-length      184375
-Average-lfr-readpair    7
-(valid_lfr/valid_barcode)       1.35092
+		snps, indels, hetsnps, hetindels, hetsnpsphased, hetindelsphased = varcnt('varstat')
 
-"""
-f = open(lfr)
-for line in f:
-	a = line.rstrip().split()[1]
-	if "good" in line:
-		lfrnum = a
-	elif "length" in line:
-		avglen = a
-	elif "readpair" in line:
-		avgfragreadcount = a
-	else:
-		lfrperbc = a
-f.close()
-L.append(lfrnum)
-L.append(avglen)
+		lfrcnt, lfravglen = flfr(lfr) 
 
-## map stats #sample, map rate, PE map rate, meanis, duprate, cov1pct cov10pct
-# stLFR
-# 96.27%
-# 92.57%
-# 300
-# 0.13
-# 0.971404 0.962186
+		n50 = fphase(phasereport)
+		phaseblockbases = fblock('hapblock')
+		_, _, merge_genome_cov20 = fdepth(depthreport)
+		tt, hh = vcfstats(vcf)
 
-f = open(aligncatstlfr)
-for _ in range(2): f.readline()
-pemapratestlfr = f.readline().rstrip()
-for _ in range(2): f.readline()
-cov10long = f.readline().rstrip().split()[-1]
-f.close()
+		str = f"""
+			Sample\t{id}
+			Percent of genome coverage >20X (merged bam){merge_genome_cov20}
+			Total SNPs called\t{snps}
+			Total heterozygous SNPs called\t{hetsnps}
+			Total heterozygous SNPs phased\t{hetsnpsphased}
+			Total Indels (<50 bp) called\t{indels}
+			Total heterozygous Indels (<50 bp) called\t{hetindels}
+			Total phased heterozygous indels\t{hetindelsphased}
+			Ti/Tv\t{tt}
+			Het/hom\t{hh}
+			Total cWGS fragments\t{lfrcnt}
+			Average cWGS length (kb)\t{lfravglen}
+			Phased contig N50\t{n50}
+			Total bases in phase block\t{phaseblockbases}
+			"""
+	elif flg.startswith('stlfronly'): # FQC report
+		id, vcf, lfr, flgstat, phasereport, stlfrbamdepth, stlfrbamdepthreport = files
+		stlfrbamdepth = round(float(stlfrbamdepth), 1)
 
-f = open(aligncatpf)
-for _ in range(2): f.readline()
-pemapratepf = f.readline().rstrip()
-for _ in range(2): f.readline()
-cov10short = f.readline().rstrip().split()[-1]
-f.close()
+		snps, indels, hetsnps, hetindels, hetsnpsphased, hetindelsphased = varcnt('varstat')
+		lfrcnt, lfravglen = flfr(lfr)
+		stlfrpemaprate = parse_flgstat(flgstat)
+		_, stlfr_genome_cov10, _ = fdepth(stlfrbamdepthreport)
+		
+		n50 = fphase(phasereport) 
 
-L.append(pemapratestlfr)
-L.append(pemapratepf)
-L.append(cov10long)
-L.append(cov10short)
+		str = f"""
+			Sample\t{id}
+			cWGS bam avg depth\t{stlfrbamdepth}
+			Total SNPs called\t{snps}
+			Total heterozygous SNPs called\t{hetsnps}
+			Total Indels (<50 bp) called\t{indels}
+			Total heterozygous Indels (<50 bp) called\t{hetindels}
+			Total long fragments\t{lfrcnt}
+			Average fragment length (kb)\t{lfravglen}
+			cWGS mapping rate(unfiltered data)\t{stlfrpemaprate}
+			Percent of genome covered by >10X long reads\t{stlfr_genome_cov10}
+			Total heterozygous SNPs phased\t{hetsnpsphased}
+			Total heterozygous Indels phased\t{hetindelsphased}
+			Phased contig N50 (Mb)\t{n50} 
+			"""
+	elif flg == 'pfonly':
+		id, flgstat, pfbamdepth = files
+		bamdepth = round(float(pfbamdepth), 1)
 
-##phase
-f = open(phase)
-allhetsnp, phasedhetsnp, allhetindel, phasedhetindel, fbn50, fbnum = f.readline().rstrip().split()
-f.close()
+		snps, indels, hetsnps, hetindels, hetsnpsphased, hetindelsphased = varcnt('varstat')
+		pemaprate = parse_flgstat(flgstat)
+		
+		str = f"""
+			Sample\t{id}
+			bam avg depth\t{bamdepth}
+			mapping rate(unfiltered data)\t{pemaprate}
+			Total SNPs called\t{snps}
+			Total heterozygous SNPs called\t{hetsnps}
+			Total Indels (<50 bp) called\t{indels}
+			Total heterozygous Indels (<50 bp) called\t{hetindels}
+			"""
+	elif flg == 'frombam':
+		id, aligner, varcaller, varstats, het, aligncatstlfr,aligncatpf, phase, fgenecov, vcfeval, vcfevalpf, stlfrbamdepth, pfbamdepth = files
 
-##genecov
-f = open(fgenecov)
-pfcov, mergecov, pfdepth, mergedepth = f.readline().rstrip().split()
-f.close()
+		snps, indels = varcnt(varstats)
+		hetsnps, hetindels = hetvarcnt(het)
+		stlfrpemaprate, stlfr_genome_cov10 = bam(aligncatstlfr)
+		pfpemaprate, pf_genome_cov10 = bam(aligncatpf)
+		hetsnps, hetsnpsphased, hetindels, hetindelsphased, n50, phaseblock = fphase(phase)
 
-for i in [phasedhetsnp, phasedhetindel, fbnum, fbn50, pfcov, mergecov, pfdepth, mergedepth]:
-	L.append(i)
+		tp, fp, fn, prec, reca, f1, indel_tp, indel_fp, indel_fn, indel_prec, indel_reca, indel_f1 = fvcfeval(vcfeval)
+		pf_tp, pf_fp, pf_fn, pf_prec, pf_reca, pf_f1, pf_indel_tp, pf_indel_fp, pf_indel_fn, pf_indel_prec, pf_indel_reca, pf_indel_f1 = fvcfeval(vcfevalpf)
 
-for i in L:
-	print(i)
+		cmrg_cov_pf, cmrg_cov_merge, cmrg_depth_pf, cmrg_depth_merge = cmrg(fgenecov)
 
-# for i in [id, snp, hetsnp, indel, hetindel, bcsplitrate, lfrnum, avglen, pemapratestlfr, pemapratepf, cov10long, cov10short, phasedhetsnp, phasedhetindel, fbnum, fbn50, genecov, cmrggenecov]:
+		str = f"""
+			Sample\t{id}
+			stLFR aligner\t{aligner}
+			var caller\t{varcaller}
+			stLFR bam avg depth\t{stlfrbamdepth}
+			PCR-free bam avg depth\t{pfbamdepth}
+			snps\t{snps}
+			het snps\t{hetsnps}
+			indels\t{indels}
+			het indels\t{hetindels}
+			##snps eval\t#
+			TP\t{tp}
+			FP\t{fp}
+			FN\t{fn}
+			precision\t{prec}
+			recall\t{reca}
+			f1\t{f1}
+			##indels eval\t#
+			TP\t{indel_tp}
+			FP\t{indel_fp}
+			FN\t{indel_fn}
+			precision\t{indel_prec}
+			recall\t{indel_reca}
+			f1\t{indel_f1}
+			##PCR-free snps eval\t#
+			TP\t{pf_tp}
+			FP\t{pf_fp}
+			FN\t{pf_fn}
+			precision\t{pf_prec}
+			recall\t{pf_reca}
+			f1\t{pf_f1}
+			##PCR-free indels eval\t#
+			TP\t{pf_indel_tp}
+			FP\t{pf_indel_fp}
+			FN\t{pf_indel_fn}
+			precision\t{pf_indel_prec}
+			recall\t{pf_indel_reca}
+			f1\t{pf_indel_f1}
+			stLFR PE map rate\t{stlfrpemaprate}
+			PCR-free PE map rate\t{pfpemaprate}
+			stLFR %genome cov > 10x\t{stlfr_genome_cov10}
+			PCR-free %genome cov > 10x\t{pf_genome_cov10}
+			het snps phased\t{hetsnpsphased}
+			het indels phased\t{hetindelsphased}
+			phase block count\t{phaseblock}
+			phase block N50\t{n50}
+			CMRG avg coverage (PCR-free)\t{cmrg_cov_pf}
+			CMRG avg coverage (merged)\t{cmrg_cov_merge}
+			CMRG avg depth (PCR-free)\t{cmrg_depth_pf}
+			CMRG avg depth (merged)\t{cmrg_depth_merge}
+			"""
+	elif flg == 'frombam_ref': # no vcfeval, 
+		id, aligner, varcaller, varstats, het, aligncatstlfr,aligncatpf, phase, stlfrbamdepth, pfbamdepth = files
+		snps, indels = varcnt(varstats)
+		hetsnps, hetindels = hetvarcnt(het)
+		stlfrpemaprate, stlfr_genome_cov10 = bam(aligncatstlfr)
+		pfpemaprate, pf_genome_cov10 = bam(aligncatpf)
+		hetsnps, hetsnpsphased, hetindels, hetindelsphased, n50, phaseblock = fphase(phase)
+
+		str = f"""
+			Sample\t{id}
+			stLFR aligner\t{aligner}
+			var caller\t{varcaller}
+			stLFR bam avg depth\t{stlfrbamdepth}
+			PCR-free bam avg depth\t{pfbamdepth}
+			snps\t{snps}
+			het snps\t{hetsnps}
+			indels\t{indels}
+			het indels\t{hetindels}
+			stLFR PE map rate\t{stlfrpemaprate}
+			PCR-free PE map rate\t{pfpemaprate}
+			stLFR %genome cov > 10x\t{stlfr_genome_cov10}
+			PCR-free %genome cov > 10x\t{pf_genome_cov10}
+			het snps phased\t{hetsnpsphased}
+			het indels phased\t{hetindelsphased}
+			phase block count\t{phaseblock}
+			phase block N50\t{n50}
+			"""
+	elif flg == 'frombam_ref_PFonly':
+		id, varstats, het, aligncatpf, pfbamdepth = files
+		snps, indels = varcnt(varstats)
+		hetsnps, hetindels = hetvarcnt(het)
+		pfpemaprate, pf_genome_cov10 = bam(aligncatpf)
+
+		str = f"""
+			Sample\t{id}
+			PCR-free bam avg depth\t{pfbamdepth}
+			snps\t{snps}
+			het snps\t{hetsnps}
+			indels\t{indels}
+			het indels\t{hetindels}
+			PCR-free PE map rate\t{pfpemaprate}
+			PCR-free %genome cov > 10x\t{pf_genome_cov10}
+			"""
+	str = '\n'.join(line.strip() for line in str.strip().split('\n'))
+	print(str)
+
+if __name__ == "__main__":
+    main()

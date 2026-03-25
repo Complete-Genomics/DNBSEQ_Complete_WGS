@@ -1,7 +1,7 @@
 process bamdepth {   
     cpus params.cpu2
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(lib)
@@ -14,15 +14,15 @@ process bamdepth {
 
     script:
     def bam = bam.first()
-    "bamcov=`${params.BIN}samtools depth -@ ${task.cpus} $bam | awk '{sum += \$3}END{print sum/${params.ref_len}}'`"
-    stub:
-    "bamcov=30"
+    def non = params.ref.startsWith('/') ? params.ref + ".nonN.region" : "${params.DB}/${params.ref}/reference/${params.ref}.nonN.region"
+
+    "bamcov=`${params.BIN}samtools depth -@ ${task.cpus} -a -b $non $bam | awk '{sum += \$3}END{print sum/${params.ref_len}}'`"
 }
 
 process barcodeStat {    
     cpus params.cpu2
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
     tag "$id"
 
@@ -41,7 +41,7 @@ process barcodeStat {
 process sameChrBCratio {    
     cpus params.CPU0
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
     tag "$id"
 
@@ -63,7 +63,7 @@ process sameChrBCratio {
 process insertsize {
     cpus params.CPU0
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(lib)
@@ -98,7 +98,7 @@ process insertsize {
 process gcbias {
     cpus params.CPU0
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(lib)
@@ -139,7 +139,7 @@ process gcbias {
 process samtools_flagstat {
     cpus params.cpu2
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(lib)
@@ -162,7 +162,7 @@ process samtools_flagstat {
 process samtools_stats {   
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(lib)
@@ -187,7 +187,7 @@ process samtools_stats {
 process bam2depth {
     cpus params.CPU0
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(lib)
@@ -210,7 +210,7 @@ process bam2depth {
 process parseBam2depth { 
     cpus params.CPU0
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(lib)
@@ -234,7 +234,7 @@ process parseBam2depth {
 process samtools_depth {
     cpus params.cpu2
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(lib)
@@ -248,20 +248,17 @@ process samtools_depth {
 
     script:
     def bam = bam.first()
-    def non = params.ref.startsWith('/') ? params.ref.replaceAll(/\.fa$/, "") + ".nonN.region" : "${params.DB}/${params.ref}/reference/${params.ref}.nonN.region"
+    def non = params.ref.startsWith('/') ? params.ref + ".nonN.region" : "${params.DB}/${params.ref}/reference/${params.ref}.nonN.region"
     """
     ${params.BIN}samtools depth -@ ${task.cpus} -a -b $non $bam | \\
-    awk '\$3 >= 10 { sum10 += 1 } \$3 >= 1 { sum1 += 1 } END { print sum1/${params.ref_len}, sum10/${params.ref_len} }' > ${id}.${lib}.bamdepth.report
-    #python3 ${params.SCRIPT}/calcdepth.py ${id}.${lib}.bam.depth ${params.ref_len}> ${id}.${lib}.bamdepth.report
+    awk '\$3 >= 20 { sum20 += 1 } \$3 >= 10 { sum10 += 1 } \$3 >= 1 { sum1 += 1 } END { print sum1/${params.ref_len}, sum10/${params.ref_len}, sum20/${params.ref_len} }' > ${id}.${lib}.bamdepth.report
     """
-    stub:
-    "touch ${id}.${lib}.bamdepth.report"
 }
 
 process samtools_depth0 {
     cpus params.cpu2
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(lib)
@@ -284,7 +281,7 @@ process samtools_depth0 {
 process splitDepth {
     cpus params.cpu2
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     tuple val(id), path(depth) //${id}.${lib}.bam.depth
@@ -303,7 +300,7 @@ process splitDepth {
 process parseDepth {
     cpus params.CPU0
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     tuple val(id), path(depthpart) //demo2.pf.bam.bamdepth.part.bv.part
@@ -325,7 +322,7 @@ process parseDepth {
 process genomeDepth {
     cpus params.CPU0
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     tuple val(id), path(reports) //demo2.pf.bam.bamdepth.part.bv.report
@@ -353,7 +350,7 @@ process genomeDepth {
 process eachstat_cov {
     cpus params.CPU0
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     tuple val(id), path(bam) //demo2.pf.bam.bamdepth.part.bv.report
@@ -375,7 +372,7 @@ process eachstat_cov {
 process eachstat_depth {
     cpus params.CPU0
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     tuple val(id), path(bam) //demo2.pf.bam.bamdepth.part.bv.report
@@ -400,7 +397,7 @@ process eachstat_depth {
 process eachstat_aligncat {
     cpus params.CPU0
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     tuple val(id), path(flgstat), path(stats), path(info1), path(info2), path(insertsize) //demo2.pf.bam.bamdepth.part.bv.report
@@ -420,7 +417,7 @@ process eachstat_aligncat {
 process align_cat {
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(lib)
@@ -460,52 +457,4 @@ process align_cat {
     """
     stub:
     "touch ${flagstat.getBaseName()}.align_cat"
-}
-
-process align_cat3 {
-    
-    cpus params.CPU0
-    memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
-    
-    input:
-    val(lib)
-    tuple val(id), path(flagstat), path(stats)
-
-    output:
-    tuple val(id), path("*.align_cat")
-
-    tag "$id, $lib"
-    // cache false
-    publishDir "${params.outdir}/$id/align/stats/"
-
-    script:
-    def non = "${params.DB}/reference/${params.ref}/${params.ref}.nonN.region"
-    prefix = "${flagstat.getBaseName()}"
-    """
-    python3 ${params.SCRIPT}/aligncat.py $flagstat $stats fdepth finsertsize Combined > ${prefix}.align_cat
-    """
-}
-
-process align_catAll {
-    
-    cpus params.CPU0
-    memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
-    
-    input:
-    tuple val(id), path(align_cat), path(align_cat2), path(align_cat3)
-
-    output:
-    path("${id}.align_catall")
-
-    tag "$id"
-    // publishDir "${params.outdir}/report/", saveAs: {"${id}.41.align.stats.xls"}
-
-    script:
-    """
-    echo -e "Library\\nMapping rate\\nPE mapping rate\\nMean insertsize\\nDuplicate rate\\nAverage depth\\n% genome coverage (euchromatic) ≥ 1x\\n% genome coverage (euchromatic) ≥ 10x\\n% genome coverage (euchromatic) ≥ 20x\\n% genome coverage (euchromatic) ≥ 30x\\n" > tmp
-
-    paste tmp $align_cat $align_cat2 $align_cat3 > ${id}.align_catall 
-    """
 }

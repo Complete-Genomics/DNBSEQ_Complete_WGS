@@ -1,10 +1,52 @@
+workflow WF_callvariants {
+  take:
+  ch_bam
+  
+  main:
+  def ch_lariat = params.align_tool
+  
+  if (params.var_tool.contains("dv")) {
+    if (params.use_megabolt) {dvMegabolt(ch_lariat, ch_bam).set {ch_mergevcf}}
+    else {deepvariant(ch_lariat, ch_bam).set {ch_mergevcf}}
+    
+  } else if (params.var_tool.contains("gatk")) {
+    if (params.use_megabolt) {
+        if (params.run_vqsr) {
+            vqsrMegabolt(ch_lariat, hcMegabolt(ch_lariat, ch_bam)).set {ch_mergevcf}
+        } else {
+            hcMegabolt(ch_lariat, ch_bam).set {ch_mergevcf}
+        }
+    } else {
+        if (params.split_by_intervals) {
+            gatk_interval().splitText().map { it.trim() }.collect().set {intervals}
+            hcSplit(ch_lariat, ch_bam, intervals).set {ch_mergevcfSplit}
+            gatherVcfsHc(ch_lariat, ch_mergevcfSplit.groupTuple()).set {ch_mergevcf}
+            if (params.run_vqsr) {
+                vqsrSnp(ch_lariat, ch_mergevcf).set {ch_vqsrsnp}
+                vqsrIndel(ch_lariat, ch_mergevcf).set {ch_vqsrindel}
+                gatherVcfsVqsr(ch_lariat, ch_vqsrsnp.join(ch_vqsrindel)).set{ch_mergevcf}
+            }
+            
+        } else {
+            hc(ch_lariat, ch_bam).set {ch_mergevcf}
+            if (params.run_vqsr) {
+                vqsrSnp(ch_lariat, hc(ch_lariat, ch_bam)).set {ch_vqsrsnp}
+                vqsrIndel(ch_lariat, hc(ch_lariat, ch_bam)).set {ch_vqsrindel}
+                gatherVcfsVqsr(ch_lariat, ch_vqsrsnp.join(ch_vqsrindel)).set{ch_mergevcf}
+            } 
+        }
+    }
+  }
 
+
+  emit:
+  ch_mergevcf
+}
 //megabolt
 process hcMegabolt {
     label 'megabolt'
     cpus params.cpu3
     memory params.MEM2 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.boltq} ${params.extraCluOpt}"
     
     input:
     val(aligner)
@@ -37,7 +79,7 @@ process hcMegabolt {
       --knownSites \$dbsnp \\
       --knownSites \$mills \\
       --knownSites \$kgsnp \\
-      --outputdir . 
+      --outputdir .
 
     mv output/output.hc*.vcf.gz ${outprefix}.vcf.gz
     mv output/output.hc*.vcf.gz.tbi ${outprefix}.vcf.gz.tbi
@@ -49,7 +91,6 @@ process vqsrMegabolt {
     label 'megabolt'
     cpus params.cpu3
     memory params.MEM2 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.boltq} ${params.extraCluOpt}"
     
     input:
     val(aligner)
@@ -82,7 +123,7 @@ process vqsrMegabolt {
       --resource-1000G \$kgsnp \\
       --resource-dbsnp \$dbsnp \\
       --resource-mills \$mills \\
-      --outputdir . 
+      --outputdir .
 
     mv output/output.vqsr.vcf.gz ${outprefix}.vcf.gz
     mv output/output.vqsr.vcf.gz.tbi ${outprefix}.vcf.gz.tbi
@@ -94,7 +135,6 @@ process vqsrMegabolt {
 process hc {
     cpus params.cpu3
     memory params.MEM2 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
     
     input:
     val(aligner)
@@ -146,7 +186,6 @@ process hc {
 process vqsrSnp {
     cpus params.cpu3
     memory params.MEM2 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
     
     input:
     val(aligner)
@@ -240,7 +279,6 @@ process vqsrSnp {
 process vqsrIndel {
     cpus params.cpu3
     memory params.MEM2 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
     
     input:
     val(aligner)
@@ -327,12 +365,8 @@ process vqsrIndel {
 }
 //run hc split
 process gatk_interval {
-  executor = 'local'
-	container false
-
   cpus params.CPU0
   memory params.MEM0 + "g"
-  clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
 
   output:
   file("txt")
@@ -375,7 +409,6 @@ process gatk_interval {
 process hcSplit {
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
     
     input:
     val(aligner)
@@ -428,7 +461,6 @@ process hcSplit {
 process gatherVcfsHc {
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
     
     input:
     val(aligner)
@@ -463,7 +495,6 @@ process gatherVcfsHc {
 process gatherVcfsVqsr {
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
     
     input:
     val(aligner)
@@ -489,7 +520,6 @@ process dvMegabolt {
   label 'megabolt'
     cpus params.cpu3
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.boltq} ${params.extraCluOpt}"
     
     input:
     val(aligner)
@@ -503,31 +533,24 @@ process dvMegabolt {
  
     script:
     def bam = bam.first()
-    def ref = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
+    def ref = params.ref.startsWith('/') ? params.ref : "${params.DB}/${params.ref}/reference/${params.ref}.fa"
     """
-    dbsnp=`ls ${params.DB}/${params.ref}/gatk/*dbsnp*.vcf.gz`
-    kgsnp=`ls ${params.DB}/${params.ref}/gatk/1000G*snps*.vcf.gz`
-    mills=`ls ${params.DB}/${params.ref}/gatk/Mills*indel*.vcf.gz`
-    
     ${params.MEGABOLT_EXPORT}
 
     ${params.MEGABOLT_RUNIT}  -l\$(basename \$(dirname \$PWD))_\$(basename \$PWD).${task.process}.${task.index} ${params.MEGABOLT} \\
       --type haplotypecaller --haplotypecaller-input $bam --deepvariant 1 --fast-model 0 --ref $ref \\
-      --vcf \$dbsnp \\
-      --knownSites \$kgsnp --knownSites \$mills \\
       --outputdir .
 
     mv output/output.dv.vcf.gz ${id}.${aligner}.dv.vcf.gz
     mv output/output.dv.vcf.gz.tbi ${id}.${aligner}.dv.vcf.gz.tbi
     """
-    stub:
-    "touch ${id}.${aligner}.dv.vcf.gz"
 }
-process deepvariantv16 {
+process deepvariant {
     cpus params.cpu3
     memory params.MEM3 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
-    
+    container "${params.dv_sif_image}"
+    containerOptions "--env PATH=/opt/deepvariant/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin:/usr/bin"
+
     input:
     val(aligner)
     tuple val(id), path(bam) //demo.stlfr.lariat.merge.bam
@@ -537,26 +560,29 @@ process deepvariantv16 {
 
     tag "$id"
     publishDir "${params.outdir}/$id/align/", mode: 'link'
+    beforeScript "export PATH=/opt/deepvariant/bin:\$PATH"
  
     script:
     def bam = bam.first()
     def ref = params.ref.startsWith('/') ? params.ref : "${params.DB}/${params.ref}/reference/${params.ref}.fa"
-    def machine="${params.dv_machine}" // g400
-    def model="${params.DB}/DV_model/dv1.6-mgi-${machine}.ckpt"
-    def outvcf = bam.toString().contains("pf") ? "${id}.pf.bwa.dv.vcf.gz" : "${id}.${aligner}.dv.vcf.gz"
+    def pangenome = params.dv_pangenome
+    def ver = "dv"
+    def outvcf = bam.toString().contains("pf") ? "${id}.pf.bwa.${ver}.vcf.gz" : "${id}.${aligner}.${ver}.vcf.gz"
+    //def outgvcf = bam.toString().contains("pf") ? "${id}.pf.bwa.${ver}.g.vcf.gz" : "${id}.${aligner}.${ver}.g.vcf.gz"
     """
-    /opt/deepvariant/bin/run_deepvariant --model_type=WGS \\
-      --ref=$ref \\
-      --reads=$bam \\
-      --output_vcf=$outvcf \\
-      --logging_dir=log \\
-      --customized_model=${model} \\
-      --runtime_report=True \\
-      --intermediate_results_dir="intermediate_results_dir" \\
-      --num_shards=${task.cpus}\\
-      --make_examples_extra_args="vsc_min_count_indels=1" 
-
+    ${params.dv_binary_path} \\
+      --model_type WGS \\
+      --ref $ref \\
+      --reads $bam \\
+      --pangenome $pangenome \\
+      --output_vcf $outvcf \\
+      --num_shards ${task.cpus} \\
+      --intermediate_results_dir intermediate_results_dir \\
+      --make_examples_extra_args '${params.dv_make_examples_extra_args}' \\
+      --postprocess_variants_extra_args '${params.dv_postprocess_variants_extra_args}'
     """
     stub:
-    "touch ${id}.${aligner}.dv.vcf.gz"
+    def ver = "dv"
+    def outvcf = bam.toString().contains("pf") ? "${id}.pf.bwa.${ver}.vcf.gz" : "${id}.${aligner}.${ver}.vcf.gz"
+    "touch $outvcf"
 }

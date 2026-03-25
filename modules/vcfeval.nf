@@ -2,7 +2,9 @@ process vcfeval {
     
     cpus params.CPU1
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+    
+    when: params.ref == 'hg38' || params.ref.contains('GRCh38')
     
     input:
     val(lib)
@@ -26,9 +28,9 @@ process vcfeval {
     script:
     def vcf = vcf.first()
     def prefix = "${vcf.getBaseName(2)}.${lib}"
-    def benchmark = "${params.DB}/${params.ref}/${params.ref}.${params.std}.vcf.gz"
-    def bed = "${params.DB}/${params.ref}/${params.ref}.${params.std}.bed"
-    def sdf = "${params.DB}/${params.ref}/${params.ref}.SDF"
+    def benchmark = "${params.DB}/hg38/hg38.${params.std}.vcf.gz"
+    def bed = "${params.DB}/hg38/hg38.${params.std}.bed"
+    def sdf = "${params.DB}/hg38/hg38.SDF"
     """
     ${params.BIN}bcftools view -O z --type snps $vcf > ${id}.snp.vcf.gz
     ${params.BIN}tabix -p vcf -f ${id}.snp.vcf.gz
@@ -85,7 +87,7 @@ process vcfeval {
 process eachstat_vcf {
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     tuple val(id), path(vcf) //demo.pf.bwa.gatk.vcf.gz
@@ -116,7 +118,7 @@ process eachstat_vcf {
 process variant_fix {
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     tuple val(id), path(vcf), path(sv), path(cnv) //demo.pf.bwa.gatk.vcf.gz

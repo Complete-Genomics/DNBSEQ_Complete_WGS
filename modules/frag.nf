@@ -2,7 +2,7 @@ process frag1 {
     
     cpus params.CPU0
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     tuple val(id), val(chr), path(bam)
@@ -25,7 +25,7 @@ process frag1 {
 process frag2 {
     cpus params.CPU0
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     tuple val(id), path(frag1s)
@@ -50,4 +50,24 @@ process frag2 {
     
     """
 
+}
+
+
+process fragstats {
+    cpus params.CPU0
+    memory params.MEM1 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+    
+    input:
+    tuple val(id), path(splitLog), path(lfr_report)
+
+    output:
+    tuple val(id), path("${id}.fragstats.xls")
+
+    tag "$id"
+    publishDir "${params.outdir}/report/$id/", mode: 'link'
+
+    """
+    python ${params.SCRIPT}/fragstats.py $id $splitLog $lfr_report > ${id}.fragstats.xls
+    """
 }

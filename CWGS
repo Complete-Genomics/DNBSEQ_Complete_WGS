@@ -1,0 +1,352 @@
+#!/usr/bin/env python3
+# -*- encoding: utf-8 -*-
+
+import os, sys, argparse
+
+N = 'CWGS'
+
+def print_main_help():
+    msg = f"""
+    ================
+    {N} pipeline
+    ================
+    Modules:
+    createdb    -> create database
+    run         -> run analysis
+
+    Module specific help info:
+    ./{N} createdb -h
+    ./{N} run -h
+    """
+    print(msg)
+    
+def merge_paths(paths):
+    abs_paths = [os.path.abspath(path) for path in paths]
+    abs_paths.sort(key=lambda p: p.count(os.sep))
+    merged_paths = []
+
+    for path in abs_paths:
+        if not any(os.path.commonpath([path, merged_path]) == merged_path for merged_path in merged_paths):
+            merged_paths.append(path)
+    return merged_paths
+
+def add_path(path,path_all):
+    path = path.rstrip('/')
+    if os.path.isfile(path):
+        path_dir = os.path.dirname(path)
+        if path_dir not in path_all:
+            path_all.add(path_dir)
+    else:
+        if path not in path_all:
+            path_all.add(path)
+
+def find_symlinks(path,path_all):
+    add_path(path,path_all)
+    real_path = os.path.realpath(path)
+    add_path(real_path,path_all)
+    components = path.split(os.sep)
+    for i in range(1, (len(components)+1)):
+        sub_path = os.sep.join(components[:i])
+        if os.path.islink(sub_path):
+            resolved = os.readlink(sub_path)
+            if not os.path.isabs(resolved):
+                sub_path_up = os.path.dirname(sub_path)
+                resolved = os.path.join(sub_path_up,resolved)
+            add_path(resolved,path_all)
+            find_symlinks(resolved,path_all)
+
+def get_path(samplelist):
+    """Get path list for binding to the singularity container"""
+    paths = set()
+    find_symlinks(os.getcwd(), paths)
+    with open(samplelist) as sl:
+        sl.readline()
+        for line in sl:
+            line = line.rstrip().split()
+            if not line: continue
+            sample, *fqs = line 
+            for fq in fqs:
+                if not fq.startswith("/"):
+                    fq = os.path.join(os.getcwd(), fq)
+                fq_dir_list = fq.split('/')[:-1]
+                fq_dir = '/'.join(fq_dir_list)
+                find_symlinks(fq_dir, paths)
+    find_symlinks(samplelist, paths)
+    return list(paths)
+                
+def main():
+    MEGA_PATH = "--env PATH=\'$PATH${MEGABOLT_SCHEDULER_ROOT:+:$MEGABOLT_SCHEDULER_ROOT/bin}\' --env LD_LIBRARY_PATH=\'$LD_LIBRARY_PATH${MEGABOLT_SCHEDULER_ROOT:+:$MEGABOLT_SCHEDULER_ROOT/lib}\'"
+    MEGA_ENV = "env ${MEGABOLTROOT:+SINGULARITYENV_MEGABOLTROOT=\"$MEGABOLTROOT\"} ${MEGABOLT_SCHEDULER_ROOT:+SINGULARITYENV_MEGABOLT_SCHEDULER_ROOT=\"$MEGABOLT_SCHEDULER_ROOT\"} ${MEGABOLT_CONFIG:+SINGULARITYENV_MEGABOLT_CONFIG=\"$MEGABOLT_CONFIG\"}"
+    SGE_DIR = os.path.realpath(os.getenv('SGE_ROOT')) if os.getenv('SGE_ROOT') else ''
+    SGE_ARCH = os.environ.get('SGE_ARCH', '')
+
+    os.environ['NXF_OFFLINE'] = 'true'
+    envPaths = ''
+    # path_env = os.environ.get('PATH', '')
+
+    # for path in path_env.split(':'):
+    #     envPaths += f":/_ROOT_{path}"
+
+    script_path = os.path.dirname(os.path.realpath(__file__))
+    app_dir = os.path.join('/usr/local/app', N)
+    
+    database_default    = os.path.join(app_dir, 'database')
+    script_default      = os.path.join(app_dir, 'scripts')
+    modules_default     = os.path.join(app_dir, 'modules')
+    runit_default       = os.path.join(app_dir, 'runit')
+    container_default   = os.path.join(script_path, N + '.sif')
+    sifs_default        = os.path.join(script_path, 'sifs')
+
+    parent_parser = argparse.ArgumentParser(add_help=False)
+    parent_parser.add_argument('-sif',      default=container_default, help=f'singularity container path[{container_default}]')
+    parent_parser.add_argument('-sifs',      default=None, help=f'singularity containers dir')
+    parent_parser.add_argument('-exec',         default='sge',              help='nf executor; support local, sge, or slurm [sge]')
+    parent_parser.add_argument('-sge',          default=SGE_DIR,            help=f'SGE_DIR [{SGE_DIR}]')
+    parent_parser.add_argument('-B',             help='singularity extra bind path')
+    parent_parser.add_argument('-runit',        default=runit_default,      help='runit path')
+    parent_parser.add_argument('-lusage',       default=2,                  help='runit log level 0:nolog; 1:final; 2:-O; 3:-OD; 4:-ODA [2]')
+    parent_parser.add_argument('-lsec',         default=15,                 help='runit log interval in seconds [15]')
+    parent_parser.add_argument('-cpulimit',         help='limit cpu usage [None]')
+    parent_parser.add_argument('-bolt',         action='store_true',        help='use megabolt')
+    parent_parser.add_argument('-host_mb',      action='store_true',        help='use host megabolt rather than local')
+    parent_parser.add_argument('-preview',      action='store_true',        help='dry run')
+
+    parser = argparse.ArgumentParser(
+        parents=[parent_parser],
+        description=N,
+        formatter_class=argparse.RawTextHelpFormatter
+    )
+
+    subparsers = parser.add_subparsers(help='sub-command help', dest='subparser_name')
+
+    db_parser = subparsers.add_parser('createdb',             description='create database', parents=[parent_parser])
+    run_parser= subparsers.add_parser('run',  description='run ' + N, formatter_class=argparse.RawTextHelpFormatter, parents=[parent_parser])
+
+    db_parser.add_argument('--dl_only',     action='store_true',        help='download only')
+    db_parser.add_argument('--make_only',   action='store_true',        help='make db only')
+
+    run_parser.add_argument('samplelist',   help="""Sample info txt file, one line for one lane, each line with 4 columns split by tab:\nsample_name: Sample name\nlane: Lane name\nfastqs: Reads file path; if PE, separate by comma\nread len (single read len x2 if PE)""")
+
+    run_parser.add_argument('-run',          default=N + '_run',         help=f'nextflow running dir [{N}_run]')
+    run_parser.add_argument('-out', '-o',    default='result',           help='Output directory [result]')
+
+    run_parser.add_argument('-ansi',         action='store_true',        help='nextflow use ansi-log')
+    run_parser.add_argument('-debug',        action='store_true',        help='debug mode')
+
+    run_parser.add_argument('-db',           default=database_default,   help='database path')
+    run_parser.add_argument('-script',       default=script_default,     help='script path')
+    run_parser.add_argument('-module',       default=modules_default,    help='The directory of the nextflow modules')
+
+    run_parser.add_argument('-partition',    default='debug',            help='set sbatch job partition [debug]')
+    run_parser.add_argument('-nodelist',     default=None,            help='sbatch --nodelist [None]')
+    run_parser.add_argument('-queue',        default='mgi.q',            help='set qsub job queue [mgi.q]')
+    run_parser.add_argument('-boltq',        default='fpga4.q',          help='set qsub job fpga analysis queue [fpga4.q]')
+    run_parser.add_argument('-project',      default='W21P0024',         help='set qsub job project, or set \'none\' [W21P0024]')
+
+
+    if (len(sys.argv) == 1) or (sys.argv[1] == '-h') or (sys.argv[1] == '-help') or (sys.argv[1] == '--help'):
+        print_main_help()
+        sys.exit(0)
+
+    args, unknowns  = parser.parse_known_args()
+
+    sifs            = os.path.realpath(args.sifs) if args.sifs else None
+    container       = os.path.join(sifs, 'CWGS.sif') if sifs else os.path.realpath(args.sif)
+    SGE_dir         = os.path.realpath(args.sge)
+    executor        = args.exec
+    runit           = os.path.realpath(args.runit) if args.runit != runit_default else args.runit
+    modules         = os.path.realpath(args.module) if args.module != modules_default else args.module
+    conf2           = os.path.join(modules, 'sifs.config')
+
+    
+    if not os.path.exists(container):
+        print(f"ERROR: {container} doesnt exist!")
+        sys.exit(1)
+
+    if sifs and not os.path.exists(conf2): 
+        print(f"ERROR: cant find {conf2}! use the latest modules")
+        sys.exit(1)
+
+    ## set environ
+    if executor == 'slurm':
+        envPaths += '--env SLURM_CONF=/etc/slurm/slurm.conf'
+
+    cpulimit = ''
+    if executor == 'local':
+        SGE_ENV = ''
+        L_ENV = MEGA_ENV
+        L_PATH = MEGA_PATH
+        cpulimit = f"/usr/local/miniconda3/envs/six/bin/cpulimit -l {args.cpulimit}00 -z" if args.cpulimit else ''
+    else:
+        _SGE_BIN = f"{SGE_dir}/bin/{SGE_ARCH}" 
+        if not os.path.isdir(SGE_dir):
+            print(f"{SGE_dir} does NOT exist! Please specify another one with '-sge' or use '-exec local' to run locally.")
+            sys.exit(1)
+        SGE_ENV = f"--env 'PATH={_SGE_BIN}:$PATH' --env SGE_ROOT=$SGE_ROOT --env SGE_QMASTER_PORT=$SGE_QMASTER_PORT --env SGE_EXECD_PORT=$SGE_EXECD_PORT"
+
+        L_ENV = ''
+        L_PATH = ''
+    MEGABOLT_CONTAINER = "withLabel: megabolt { container = null }" if args.host_mb else ""
+    MEGABOLT_RUNIT = runit
+    if args.host_mb and runit != runit_default:
+        MEGABOLT_RUNIT = os.path.join(script_path, 'runit') if os.path.isfile(script_path + '/runit') else ''
+
+    ## runit setting
+    MEGABOLT_RUNIT_OPT = ""
+    if args.lusage >= 1:
+        RUNIT_CMD = runit
+    if args.lusage >= 2:
+        RUNIT_CMD += ' -O' + str(args.lsec)
+        MEGABOLT_RUNIT_OPT += ' -O' + str(args.lsec)
+    if args.lusage >= 3:
+        RUNIT_CMD += ' -D'
+        MEGABOLT_RUNIT_OPT += ' -D'
+    if args.lusage >= 4:
+        RUNIT_CMD += ' -A'
+        MEGABOLT_RUNIT_OPT += ' -A'
+
+    MEGABOLT_RUNIT_CMD = f"{MEGABOLT_RUNIT} -s {MEGABOLT_RUNIT_OPT}" if MEGABOLT_RUNIT else ''
+
+    if args.subparser_name == 'createdb':
+        binds = set([os.getcwd()])
+        binds.add(os.path.dirname(os.path.realpath(container)))
+        binds = ','.join(binds)
+        
+        param = ""
+        if args.dl_only:
+            param = "--dl_only"
+        elif args.make_only:
+            param = "--make_only"
+
+        cmd = f"""
+        singularity  exec --no-home -C -e --pwd `pwd -P` -B {binds} {container} \\
+            createdb CWGS_db --url_list /usr/local/app/CWGS/urls.txt --db /usr/local/app/CWGS/CWGS_db.tar.xz {param}
+        """
+        print(cmd)
+        os.system(cmd)
+
+    if args.subparser_name == 'run':
+        samplelist  = os.path.realpath(args.samplelist)
+        output      = os.path.realpath(args.out)
+        database    = os.path.realpath(args.db)
+        script      = os.path.realpath(args.script) if args.script != script_default else args.script
+
+        ## find paths to bind
+        if not os.path.isdir(output):
+            os.mkdir(output)
+
+        container_dir   = '' if container == container_default else os.path.dirname(container)
+        runit_dir       = '' if runit == runit_default else os.path.dirname(runit)
+        script_dir      = '' if script == script_default else os.path.dirname(script)
+        modules_dir     = '' if modules == modules_default else os.path.dirname(modules)
+
+        path_list = get_path(samplelist)
+        path_list += ['/mnt', database, container_dir, runit_dir, script_dir, output, os.getcwd()]
+        if args.B:
+            for a in args.B.split(','):
+                path_list.append(a)
+        path_list = merge_paths(path_list)
+        bind_str = ','.join(path_list)
+        bind_str += ",/etc/slurm,/etc/passwd,/usr/lib/x86_64-linux-gnu/slurm-wlm,/run/munge" if executor == "slurm" else ""
+
+        script_bind_para    = f'-B {script}:{app_dir}/scripts' if script_dir else ''
+        modules_bind_para   = f'-B {modules}:{app_dir}/modules' if modules_dir else ''
+
+        ## mkdirs; chdir 
+        wd = os.path.abspath(args.run)
+        if not os.path.isdir(wd):
+            os.mkdir(wd)
+        os.chdir(wd)
+
+        usage_dir = os.path.join(wd, 'usage')
+        if not os.path.isdir(usage_dir): 
+            os.mkdir(usage_dir)
+
+        tmp_dir = os.path.join(wd, 'tmp')
+        if not os.path.isdir(tmp_dir):
+            os.mkdir(tmp_dir)
+
+        if not os.path.isdir("NXF_HOME"):
+            os.mkdir('NXF_HOME')
+
+
+        ## nf options
+        nf_opts = ' '.join(unknowns)
+        if not args.ansi:
+            nf_opts += ' -ansi-log false'
+    
+        if args.bolt:
+            nf_opts += " --use_megabolt true"
+
+        scratch = f"scratch = '{tmp_dir}'\n    stageOutMode = 'move'"
+        if args.debug:
+            scratch = ""
+            nf_opts += ' --keepFiles true'
+            
+        if args.preview:
+            nf_opts += ' -preview'
+
+        nf_opts += f' -c {conf2} --sifs {sifs}' if sifs else ''
+
+        ENV = f"--env NXF_OFFLINE=true,MBP_USAGE_LOGDIR={usage_dir} {SGE_ENV} {L_PATH} {envPaths}" 
+        # ENV += envPaths if executor == 'slurm' else ''
+
+        ## nf executor setting
+        project = args.project
+        project_para = f"-P {project} -q" if project != 'none' else " -q "
+        queue = args.queue
+        boltq = args.boltq
+        partition = args.partition
+        nodelist = "--nodelist " + args.nodelist if args.nodelist else "" 
+        
+        clusterOptions = f'-clear -cwd -l vf=MEMORY,num_proc=CPUS  -binding linear:CPUS {project_para} QUEUE' if executor == 'sge' else f'--mem=MEMORY --ntasks=CPUS --cpus-per-task=1 --partition={partition} {nodelist}'
+        
+        ## make config 
+        nextflow_config =f"""
+        params{{
+            clusterOptions = \'{clusterOptions}\'
+            MEGABOLT_RUNIT = "chmod a+rx .; {MEGABOLT_RUNIT_CMD}" 
+            MOD = "{modules}"
+            SCRIPT = "{script}"
+            DB = "{database}"
+            queue = "{queue}"
+            boltq = "{boltq}"
+        }}
+        process{{
+            {scratch}
+            container = \'{container}\'
+            sifs = \'{sifs}\'
+            executor = \'{executor}\'
+            {MEGABOLT_CONTAINER}
+            beforeScript = 'echo "===vvv---HOST_INFO---vvv==="; uname -a; lscpu|grep -P "MHz:|Model name:|^CPU.s.:"; uptime; free -h; echo "===^^^---HOST_INFO---^^^==="; export MBP_USAGE_LOGDIR={usage_dir}; export PATH=$BIN_PATH:$PATH'
+            // shell = '{RUNIT_CMD} -s -l`echo \\$(basename \\$(dirname \\$PWD))_\\$(basename \\$PWD)` /bin/bash -euo pipefail'
+        }}
+
+        singularity{{
+            enabled = true
+
+            autoMounts = false
+
+            runOptions = "{envPaths} --env APPEND_PATH=/usr/local/miniconda3/bin,MBP_USAGE_LOGDIR={usage_dir},TMPDIR=/tmp --no-home -C --pwd `pwd -P` -B `pwd -P` -B /proc:/.__host_proc,/mnt -B {bind_str} -B {database}:{database_default} {script_bind_para} {modules_bind_para} -B {wd}:/tmp "
+        }}
+        """
+
+        with open('nextflow.config','w') as nf:
+            nf.write(nextflow_config)
+
+        ## run nextflow
+        cmd = f"""
+        nextflow run {modules}/main.nf \\
+            --input {samplelist} \\
+            --outdir {output}   \\
+            -with-report report.html \\
+            -with-trace trace.txt \\
+            -with-timeline timeline.html \\
+            -resume \\
+            {nf_opts}
+        """
+        print(cmd)
+        os.system(cmd)
+
+if __name__ == '__main__' :
+    main()
