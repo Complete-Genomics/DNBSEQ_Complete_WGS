@@ -38,8 +38,9 @@ for line in f:
     else:
         end = a[4]
 f.close()
-# for i,j in block.items():
-#     print(i,j)
+#for i,j in block.items():
+#    print(i,j)
+
 g = open("karyotype." + id + ".band.txt", 'w')
 g.write("chr\tstart\tend\tname\tgieStain\n")
 f = open("karyotype." + id + ".genome.txt")

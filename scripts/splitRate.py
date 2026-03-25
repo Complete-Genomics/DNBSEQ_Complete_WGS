@@ -18,8 +18,11 @@ for line in f:
         split_reads += 1
 f.close()
 
+bctypes = len(D)
 #print(round(split_reads/all_reads, 2))
-for _ in range(4): print(".")
+for _ in range(2): print(".")
+print(f"Real_Barcode_types = {bctypes}")
+print('.')
 ratio = float(split_reads)/float(all_reads) * 100
 line = f"Reads_pair_num(after split) = {split_reads}({ratio}%)"
 print(line)

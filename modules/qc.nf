@@ -1,11 +1,11 @@
 process qc {
     cpus params.cpu2
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
         
     input:
     val(lib)
-    tuple val(id), path(r1), path(r2) //
+    tuple val(id), path(reads) //
 
     output:
     tuple val(id), path("*qc_1.fq.gz"), path("*qc_2.fq.gz"), emit: reads
@@ -14,6 +14,8 @@ process qc {
     publishDir "${params.outdir}/$id/fq/", mode: 'link'
     
     script:
+    def r1 = "${reads[0]}"
+    def r2 = "${reads[1]}"
     """
     ${params.BIN}SOAPnuke filter \\
       -l 10 -q 0.1 -n 0.01 -T ${task.cpus} \\
@@ -34,7 +36,7 @@ process qc_stlfr_stats {
     
     cpus params.cpu2
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     tuple val(id), path(r1), path(r2) //
@@ -63,12 +65,9 @@ process qc_stlfr_stats {
     "basecount=1;rlen=100"
 }
 process readNum {
-    executor = 'local'
-    container false
-
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     tuple val(id), path(bssq) //

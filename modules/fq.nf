@@ -1,10 +1,7 @@
 process fq {
-	executor = 'local'
-	container false
-	
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
 	input:
 	tuple val(id), path(stlfr1), path(stlfr2), path(pf1), path(pf2)
@@ -25,12 +22,9 @@ process fq {
 	"""
 }
 process fq1 {
-	executor = 'local'
-	container false
-	
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
 	input:
 	tuple val(id), path(stlfr1), path(stlfr2), val(pf1), val(pf2)
@@ -47,10 +41,46 @@ process fq1 {
 	mv $stlfr2 ${id}_stlfr_2.fq.gz
 	"""
 }
-process lineNum {
-    executor = 'local'
-    container false
 
+process fq_stlfronly {
+    cpus params.CPU0
+    memory params.MEM0 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+    
+	input:
+	tuple val(id), path(stlfr1), path(stlfr2)
+	
+	output:
+	tuple val(id), path("${id}_stlfr_1.fq.gz"),  path("${id}_stlfr_2.fq.gz")
+
+	tag "$id"
+
+	script:
+	"""
+	mv $stlfr1 ${id}_stlfr_1.fq.gz
+	mv $stlfr2 ${id}_stlfr_2.fq.gz
+	"""
+}
+process fq_pfonly {
+    cpus params.CPU0
+    memory params.MEM0 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+    
+	input:
+	tuple val(id), path(pf1), path(pf2)
+	
+	output:
+	tuple val(id), path("${id}_pcrfree_1.fq.gz"),  path("${id}_pcrfree_2.fq.gz")
+
+	tag "$id"
+
+	script:
+	"""
+	mv $pf1 ${id}_pcrfree_1.fq.gz
+	mv $pf2 ${id}_pcrfree_2.fq.gz
+	"""
+}
+process lineNum {
     input:
     tuple val(id), path(bssq) //
 
@@ -68,7 +98,7 @@ process lineNum {
 process splitfq {
 	cpus params.lariatSplitFqNum / 2 
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
 	input:
 	tuple val(id), path(r1), path(r2)
@@ -88,12 +118,9 @@ process splitfq {
 }
 
 process readLen {
-    executor = 'local'
-    container false
-
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     tuple val(id), path(bssq) //
@@ -123,12 +150,9 @@ process readLen {
 // Q30 number      230573011123 (94.63%)   227912264206 (94.70%)   198793819193 (81.52%)   196903734036 (81.74%)
 
 process basecount {
-    executor = 'local'
-    container false
-
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     tuple val(id), path(bssq) //
@@ -146,54 +170,66 @@ process basecount {
 process samplePfFq {
     cpus params.CPU0
     memory params.MEM2 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
-    tuple val(id), val(basecount), val(rlen), path(read) //${id}_qc_1.fq.gz
+    tuple val(id), val(basecount), val(rlen), path(r1), path(r2) //${id}_qc_1.fq.gz
 
     output:
-    tuple val(id), path("*sampled*fq.gz")
+    tuple val(id), path("${id}.pf.sampled_1.fq.gz"), path("${id}.pf.sampled_2.fq.gz")
 
     script:
     def cov = "${params.PF_fq_cov}"
+    def out1 = "${id}.pf.sampled_1.fq.gz"
+    def out2 = "${id}.pf.sampled_2.fq.gz"
     """
     targetreadnum=`echo "scale=0; ${params.ref_len}*$cov/($rlen*2)" | bc -l`
     targetreadbase=`echo "scale=0; " \$targetreadnum*$rlen | bc -l`
     echo ${params.ref_len}, $cov, ${rlen}. $basecount -\\> \$targetreadbase \$targetreadnum*$rlen > log
+
     if [ $basecount -gt \$targetreadbase ];then
         echo sample >> log
-        ${params.BIN}seqtk sample -2 -s111 $read \$targetreadnum  | ${params.BIN}seqtk trimfq -L $rlen - | ${params.BIN}gzip >  ${read.getBaseName(2)}.sampled.cov${cov}.fq.gz
+        ${params.BIN}seqtk sample -2 -s111 $r1 \$targetreadnum  | ${params.BIN}seqtk trimfq -L $rlen - | ${params.BIN}gzip >  $out1 &
+        ${params.BIN}seqtk sample -2 -s111 $r2 \$targetreadnum  | ${params.BIN}seqtk trimfq -L $rlen - | ${params.BIN}gzip >  $out2
+        wait
     else 
-        ln -s $read ${read.getBaseName(2)}.sampled.cov${cov}.fq.gz
+        ln -s $r1 $out1
+        ln -s $r2 $out2
         echo not sample >> log
     fi
     """
-    stub:
-    "touch ${read.getBaseName(2)}.sampled.cov${params.PF_fq_cov}.fq.gz"
 }
 
 process sampleStlfrFq {
     cpus params.CPU0
     memory params.MEM2 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
-    tuple val(id), val(basecount), val(rlen), path(read) //${id}_qc_1.fq.gz
+    tuple val(id), val(basecount), val(rlen), path(r1), path(r2) //${id}_qc_1.fq.gz
 
     output:
-    tuple val(id), path("*sampled*fq.gz")
+    tuple val(id), path("${id}.stlfr.sampled_1.fq.gz"), path("${id}.stlfr.sampled_2.fq.gz")
 
     script:
     def cov = "${params.stLFR_fq_cov}"
+    def out1 = "${id}.stlfr.sampled_1.fq.gz"
+    def out2 = "${id}.stlfr.sampled_2.fq.gz"
     """
     targetreadnum=`echo "scale=0; ${params.ref_len}*$cov/($rlen*2)" | bc -l`
     targetreadbase=`echo "scale=0; " \$targetreadnum*$rlen | bc -l`
+
     echo ${params.ref_len}, $cov, ${rlen}. $basecount -\\> \$targetreadbase \$targetreadnum*$rlen > log
+
     if [ $basecount -gt \$targetreadbase ];then
         echo sample >> log
-        ${params.BIN}seqtk sample -2 -s111 $read \$targetreadnum  | ${params.BIN}gzip >  ${read.getBaseName(2)}.sampled.cov${cov}.fq.gz
+        ${params.BIN}seqtk sample -2 -s111 $r1 \$targetreadnum  | ${params.BIN}gzip >  $out1 &
+        ${params.BIN}seqtk sample -2 -s111 $r2 \$targetreadnum  | ${params.BIN}gzip >  $out2
+
+        wait
     else 
-        ln -s $read ${read.getBaseName(2)}.sampled.cov${cov}.fq.gz
+        ln -s $r1 $out1
+        ln -s $r2 $out2
         echo not sample >> log
     fi
     """
@@ -204,7 +240,7 @@ process fqcheck {
   // tag {fastq}
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     val(lib)
@@ -228,7 +264,7 @@ process fqdist {
   
     cpus params.CPU0
     memory params.MEM1 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     publishDir "${params.outdir}/report/$id", mode: 'link'
   // publishDir (
@@ -262,7 +298,7 @@ process eachstat_fastq {
     
     cpus params.CPU0
     memory params.MEM0 + "g"
-    clusterOptions = "-clear -cwd -l vf=${memory},num_proc=${cpus} -binding linear:${cpus} " + (params.project.equalsIgnoreCase("none")? "" : "-P " + params.project) + " -q ${params.queue} ${params.extraCluOpt}"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
     input:
     tuple val(id), path(bssq), path(splitlog), path(bcsumAndReadcount)
