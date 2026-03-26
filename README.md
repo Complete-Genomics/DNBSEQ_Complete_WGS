@@ -4,7 +4,140 @@ This is a pipline the enables the mapping, variant calling, and phasing of input
 
 ![flowchart](https://github.com/user-attachments/assets/59430c7d-8f5b-4117-9c52-404fb71d1e5d)
 
+A more detailed flow chart.  
+```mermaid
+flowchart TD
 
+    subgraph INPUT["Input"]
+        samplesheet([samplesheet]) --> toCsv[toCsv]
+        toCsv --> parse_sample[parse_sample]
+        parse_sample --> fq[(fq)]
+    end
+
+    subgraph QC_PF["QC — PF Reads"]
+        qc_pf[qc_pf] --> readLenPf[readLenPf]
+        qc_pf --> fqcheckPf[fqcheckPf]
+        fqcheckPf --> fqdistPf[fqdistPf]
+        qc_pf --> fqstats_pf[fqstats_pf]
+    end
+
+    subgraph QC_STLFR["QC — stLFR Reads"]
+        qc_stlfr_stats[qc_stlfr_stats] --> readLen[readLen]
+        qc_stlfr_stats --> basecount[basecount]
+        qc_stlfr_stats --> fqstats_stlfr[fqstats_stlfr]
+    end
+
+    subgraph ALIGN_PF["Alignment — PF"]
+        bwaPf[bwaPf] --> markdupPf[markdupPf]
+        markdupPf --> sampleBamPf[sampleBamPf]
+    end
+
+    subgraph STATS_PF["Stats — PF BAM"]
+        sampleBamPf_s[sampleBamPf] --> coveragePf[coveragePf]
+        sampleBamPf_s --> coverageMeanPf[coverageMeanPf]
+        sampleBamPf_s --> samtoolsFlagstatPf[samtoolsFlagstatPf]
+        sampleBamPf_s --> samtoolsStatsPf[samtoolsStatsPf]
+        sampleBamPf_s --> samtoolsDepthPf[samtoolsDepthPf]
+        sampleBamPf_s --> insertsizePf[insertsizePf]
+        samtoolsFlagstatPf --> alignCatPf[alignCatPf]
+        samtoolsStatsPf --> alignCatPf
+        samtoolsDepthPf --> alignCatPf
+        insertsizePf --> alignCatPf
+    end
+
+    subgraph VC_PF["Variant Calling — PF"]
+        sampleBamPf_v[sampleBamPf] --> deepvariantv16BwaPf[deepvariantv16]
+        deepvariantv16BwaPf --> vcfevalPf[vcfevalPf]
+    end
+
+    subgraph ALIGN_STLFR["Alignment — stLFR / Lariat"]
+        barcode_split[barcode_split] --> splitfq[splitfq]
+        splitfq --> lariatBC[lariatBC]
+        lariatBC --> mergeFq[mergeFq]
+        mergeFq --> lariat[lariat]
+        lariat --> sortbam[sortbam]
+        sortbam --> markdupStlfrLariat[markdupStlfrLariat]
+        markdupStlfrLariat --> sampleBamStlfrLariat[sampleBamStlfrLariat]
+    end
+
+    subgraph STATS_STLFR["Stats — stLFR BAM"]
+        sampleBamStlfrLariat_s[sampleBamStlfrLariat] --> samtools_flagstat[samtools_flagstat]
+        sampleBamStlfrLariat_s --> samtools_stats[samtools_stats]
+        sampleBamStlfrLariat_s --> insertsize[insertsize]
+        sampleBamStlfrLariat_s --> samtools_depth[samtools_depth]
+        sampleBamStlfrLariat_s --> stLFRQC[stLFRQC]
+        samtools_flagstat --> align_cat[align_cat]
+        samtools_stats --> align_cat
+        samtools_depth --> align_cat
+        insertsize --> align_cat
+    end
+
+    subgraph PHASE["Phasing"]
+        intersectLariat[intersectLariat] --> mergeBamLariat[mergeBamLariat]
+        mergeBamLariat --> deepvariantv16[deepvariantv16]
+        mergeBamLariat --> coverage[coverage]
+        mergeBamLariat --> coverageMean[coverageMean]
+        coverage --> coverageAvg[coverageAvg]
+        coverageMean --> coverageAvg
+        deepvariantv16 --> vcfevalLariatDv[vcfevalLariatDv]
+        deepvariantv16 --> varStatsLariatDv[varStatsLariatDv]
+        deepvariantv16 --> splitVcfLariatDv[splitVcfLariatDv]
+        sampleBamStlfrLariat_p[sampleBamStlfrLariat] --> splitBam4phasing[splitBam4phasing]
+        splitBam4phasing --> phaseLariatDv[phaseLariatDv]
+        splitVcfLariatDv --> phaseLariatDv
+        phaseLariatDv --> phaseCatLariatDv[phaseCatLariatDv]
+        phaseCatLariatDv --> hapKaryotype[hapKaryotype]
+        phaseCatLariatDv --> hapcutstat[hapcutstat]
+        phaseCatLariatDv --> phaseall[phaseall]
+    end
+
+    subgraph REPORT["Report"]
+        reportLariatDv[reportLariatDv] --> report([report])
+    end
+
+    %% Cross-subgraph edges
+    fq --> qc_pf
+    fq --> qc_stlfr_stats
+    fq --> barcode_split
+    qc_pf --> bwaPf
+
+    sampleBamPf --> sampleBamPf_s
+    sampleBamPf --> sampleBamPf_v
+    sampleBamPf --> intersectLariat
+    sampleBamPf --> mergeBamLariat
+
+    sampleBamStlfrLariat --> sampleBamStlfrLariat_s
+    sampleBamStlfrLariat --> sampleBamStlfrLariat_p
+    sampleBamStlfrLariat --> intersectLariat
+    sampleBamStlfrLariat --> mergeBamLariat
+
+    alignCatPf --> reportLariatDv
+    vcfevalPf --> reportLariatDv
+    align_cat --> reportLariatDv
+    vcfevalLariatDv --> reportLariatDv
+    varStatsLariatDv --> reportLariatDv
+    coverageAvg --> reportLariatDv
+    phaseCatLariatDv --> reportLariatDv
+    stLFRQC --> reportLariatDv
+
+    %% Styling
+    classDef input    fill:#dae8fc,stroke:#6c8ebf
+    classDef qc       fill:#d5e8d4,stroke:#82b366
+    classDef align    fill:#fff2cc,stroke:#d6b656
+    classDef vc       fill:#f8cecc,stroke:#b85450
+    classDef phase    fill:#e1d5e7,stroke:#9673a6
+    classDef stats    fill:#f0f0f0,stroke:#666666
+    classDef report   fill:#ffe6cc,stroke:#d79b00
+
+    class samplesheet,fq,parse_sample,toCsv input
+    class qc_pf,readLenPf,fqcheckPf,fqdistPf,fqstats_pf,qc_stlfr_stats,readLen,basecount,fqstats_stlfr qc
+    class bwaPf,markdupPf,sampleBamPf,barcode_split,splitfq,lariatBC,mergeFq,lariat,sortbam,markdupStlfrLariat,sampleBamStlfrLariat align
+    class deepvariantv16BwaPf,vcfevalPf,deepvariantv16,vcfevalLariatDv,varStatsLariatDv vc
+    class splitVcfLariatDv,splitBam4phasing,phaseLariatDv,phaseCatLariatDv,hapKaryotype,hapcutstat,phaseall,intersectLariat,mergeBamLariat phase
+    class coveragePf,coverageMeanPf,samtoolsFlagstatPf,samtoolsStatsPf,samtoolsDepthPf,insertsizePf,alignCatPf,samtools_flagstat,samtools_stats,insertsize,samtools_depth,stLFRQC,align_cat,coverage,coverageMean,coverageAvg stats
+    class reportLariatDv,report report
+
+```
 
 # Requirements  
 **Hardware requirements**  
@@ -248,141 +381,6 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
 5. Parameters:  
    Set parameters with command line or with [nextflow.config](modules/nextflow.config). For example, MEM, CPU, deepvariant model dv_machine = "t7" or "g400".   
 
-A more detailed flow chart.  
-```mermaid
-flowchart TD
-
-    subgraph INPUT["Input"]
-        samplesheet([samplesheet]) --> toCsv[toCsv]
-        toCsv --> parse_sample[parse_sample]
-        parse_sample --> fq[(fq)]
-    end
-
-    subgraph QC_PF["QC — PF Reads"]
-        qc_pf[qc_pf] --> readLenPf[readLenPf]
-        qc_pf --> fqcheckPf[fqcheckPf]
-        fqcheckPf --> fqdistPf[fqdistPf]
-        qc_pf --> fqstats_pf[fqstats_pf]
-    end
-
-    subgraph QC_STLFR["QC — stLFR Reads"]
-        qc_stlfr_stats[qc_stlfr_stats] --> readLen[readLen]
-        qc_stlfr_stats --> basecount[basecount]
-        qc_stlfr_stats --> fqstats_stlfr[fqstats_stlfr]
-    end
-
-    subgraph ALIGN_PF["Alignment — PF"]
-        bwaPf[bwaPf] --> markdupPf[markdupPf]
-        markdupPf --> sampleBamPf[sampleBamPf]
-    end
-
-    subgraph STATS_PF["Stats — PF BAM"]
-        sampleBamPf_s[sampleBamPf] --> coveragePf[coveragePf]
-        sampleBamPf_s --> coverageMeanPf[coverageMeanPf]
-        sampleBamPf_s --> samtoolsFlagstatPf[samtoolsFlagstatPf]
-        sampleBamPf_s --> samtoolsStatsPf[samtoolsStatsPf]
-        sampleBamPf_s --> samtoolsDepthPf[samtoolsDepthPf]
-        sampleBamPf_s --> insertsizePf[insertsizePf]
-        samtoolsFlagstatPf --> alignCatPf[alignCatPf]
-        samtoolsStatsPf --> alignCatPf
-        samtoolsDepthPf --> alignCatPf
-        insertsizePf --> alignCatPf
-    end
-
-    subgraph VC_PF["Variant Calling — PF"]
-        sampleBamPf_v[sampleBamPf] --> deepvariantv16BwaPf[deepvariantv16]
-        deepvariantv16BwaPf --> vcfevalPf[vcfevalPf]
-    end
-
-    subgraph ALIGN_STLFR["Alignment — stLFR / Lariat"]
-        barcode_split[barcode_split] --> splitfq[splitfq]
-        splitfq --> lariatBC[lariatBC]
-        lariatBC --> mergeFq[mergeFq]
-        mergeFq --> lariat[lariat]
-        lariat --> sortbam[sortbam]
-        sortbam --> markdupStlfrLariat[markdupStlfrLariat]
-        markdupStlfrLariat --> sampleBamStlfrLariat[sampleBamStlfrLariat]
-    end
-
-    subgraph STATS_STLFR["Stats — stLFR BAM"]
-        sampleBamStlfrLariat_s[sampleBamStlfrLariat] --> samtools_flagstat[samtools_flagstat]
-        sampleBamStlfrLariat_s --> samtools_stats[samtools_stats]
-        sampleBamStlfrLariat_s --> insertsize[insertsize]
-        sampleBamStlfrLariat_s --> samtools_depth[samtools_depth]
-        sampleBamStlfrLariat_s --> stLFRQC[stLFRQC]
-        samtools_flagstat --> align_cat[align_cat]
-        samtools_stats --> align_cat
-        samtools_depth --> align_cat
-        insertsize --> align_cat
-    end
-
-    subgraph PHASE["Phasing"]
-        intersectLariat[intersectLariat] --> mergeBamLariat[mergeBamLariat]
-        mergeBamLariat --> deepvariantv16[deepvariantv16]
-        mergeBamLariat --> coverage[coverage]
-        mergeBamLariat --> coverageMean[coverageMean]
-        coverage --> coverageAvg[coverageAvg]
-        coverageMean --> coverageAvg
-        deepvariantv16 --> vcfevalLariatDv[vcfevalLariatDv]
-        deepvariantv16 --> varStatsLariatDv[varStatsLariatDv]
-        deepvariantv16 --> splitVcfLariatDv[splitVcfLariatDv]
-        sampleBamStlfrLariat_p[sampleBamStlfrLariat] --> splitBam4phasing[splitBam4phasing]
-        splitBam4phasing --> phaseLariatDv[phaseLariatDv]
-        splitVcfLariatDv --> phaseLariatDv
-        phaseLariatDv --> phaseCatLariatDv[phaseCatLariatDv]
-        phaseCatLariatDv --> hapKaryotype[hapKaryotype]
-        phaseCatLariatDv --> hapcutstat[hapcutstat]
-        phaseCatLariatDv --> phaseall[phaseall]
-    end
-
-    subgraph REPORT["Report"]
-        reportLariatDv[reportLariatDv] --> report([report])
-    end
-
-    %% Cross-subgraph edges
-    fq --> qc_pf
-    fq --> qc_stlfr_stats
-    fq --> barcode_split
-    qc_pf --> bwaPf
-
-    sampleBamPf --> sampleBamPf_s
-    sampleBamPf --> sampleBamPf_v
-    sampleBamPf --> intersectLariat
-    sampleBamPf --> mergeBamLariat
-
-    sampleBamStlfrLariat --> sampleBamStlfrLariat_s
-    sampleBamStlfrLariat --> sampleBamStlfrLariat_p
-    sampleBamStlfrLariat --> intersectLariat
-    sampleBamStlfrLariat --> mergeBamLariat
-
-    alignCatPf --> reportLariatDv
-    vcfevalPf --> reportLariatDv
-    align_cat --> reportLariatDv
-    vcfevalLariatDv --> reportLariatDv
-    varStatsLariatDv --> reportLariatDv
-    coverageAvg --> reportLariatDv
-    phaseCatLariatDv --> reportLariatDv
-    stLFRQC --> reportLariatDv
-
-    %% Styling
-    classDef input    fill:#dae8fc,stroke:#6c8ebf
-    classDef qc       fill:#d5e8d4,stroke:#82b366
-    classDef align    fill:#fff2cc,stroke:#d6b656
-    classDef vc       fill:#f8cecc,stroke:#b85450
-    classDef phase    fill:#e1d5e7,stroke:#9673a6
-    classDef stats    fill:#f0f0f0,stroke:#666666
-    classDef report   fill:#ffe6cc,stroke:#d79b00
-
-    class samplesheet,fq,parse_sample,toCsv input
-    class qc_pf,readLenPf,fqcheckPf,fqdistPf,fqstats_pf,qc_stlfr_stats,readLen,basecount,fqstats_stlfr qc
-    class bwaPf,markdupPf,sampleBamPf,barcode_split,splitfq,lariatBC,mergeFq,lariat,sortbam,markdupStlfrLariat,sampleBamStlfrLariat align
-    class deepvariantv16BwaPf,vcfevalPf,deepvariantv16,vcfevalLariatDv,varStatsLariatDv vc
-    class splitVcfLariatDv,splitBam4phasing,phaseLariatDv,phaseCatLariatDv,hapKaryotype,hapcutstat,phaseall,intersectLariat,mergeBamLariat phase
-    class coveragePf,coverageMeanPf,samtoolsFlagstatPf,samtoolsStatsPf,samtoolsDepthPf,insertsizePf,alignCatPf,samtools_flagstat,samtools_stats,insertsize,samtools_depth,stLFRQC,align_cat,coverage,coverageMean,coverageAvg stats
-    class reportLariatDv,report report
-
-
-```
 
 # Output of the demo example  
 **Results**  
