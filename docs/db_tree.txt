@@ -16192,7 +16192,7 @@
 |       |-- hg38.fa.fai
 |       |-- hg38.fa.pac
 |       |-- hg38.fa.sa
-|       `-- hg38.nonN.region -> /prod/hustor-04/zebra/ycai/projects/completeWGS/pipeline/v1.0.6/CWGS_db/hg38/hg38.nonN.region
+|       `-- hg38.nonN.region
 |-- hlala
 |   `-- PRG_MHC_GRCh38_withIMGT
 |       |-- PRG
