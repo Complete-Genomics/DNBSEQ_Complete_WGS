@@ -89,10 +89,24 @@ flowchart TD
         phaseCatLariatDv --> hapKaryotype[hapKaryotype]
         phaseCatLariatDv --> hapcutstat[hapcutstat]
         phaseCatLariatDv --> phaseall[phaseall]
+        phaseCatLariatDv --> ideogram[ideogram]
+        phaseCatLariatDv --> cumuplot[cumuplot]
+    end
+
+    subgraph SV_STR_HLA["SV / STR / HLA — hg38/GRCh38 only"]
+        pangenie[pangenie] --> pangenie_var_plot[pangenie_var_plot]
+        pangenie --> pangenie_plot[pangenie_plot]
+        gangstr[gangstr]
+        hlala[hlala]
+    end
+
+    subgraph ANNOT["Annotation — hg38/GRCh38 only"]
+        vep_frombam[vep_frombam] --> vep_data[vep_data]
     end
 
     subgraph REPORT["Report"]
         reportLariatDv[reportLariatDv] --> report([report])
+        report --> html([html])
     end
 
     %% Cross-subgraph edges
@@ -111,6 +125,15 @@ flowchart TD
     sampleBamStlfrLariat --> intersectLariat
     sampleBamStlfrLariat --> mergeBamLariat
 
+    %% SV/STR/HLA inputs
+    fq --> pangenie
+    mergeBamLariat --> gangstr
+    mergeBamLariat --> hlala
+    phaseCatLariatDv --> pangenie_plot
+
+    %% Annotation input
+    phaseCatLariatDv --> vep_frombam
+
     alignCatPf --> reportLariatDv
     vcfevalPf --> reportLariatDv
     align_cat --> reportLariatDv
@@ -120,6 +143,11 @@ flowchart TD
     phaseCatLariatDv --> reportLariatDv
     stLFRQC --> reportLariatDv
 
+    vep_data --> html
+    pangenie_var_plot --> html
+    pangenie_plot --> html
+    hlala --> html
+
     %% Styling
     classDef input    fill:#dae8fc,stroke:#6c8ebf
     classDef qc       fill:#d5e8d4,stroke:#82b366
@@ -128,14 +156,18 @@ flowchart TD
     classDef phase    fill:#e1d5e7,stroke:#9673a6
     classDef stats    fill:#f0f0f0,stroke:#666666
     classDef report   fill:#ffe6cc,stroke:#d79b00
+    classDef sv       fill:#fce4d6,stroke:#c0504d
+    classDef annot    fill:#e2efda,stroke:#70ad47
 
     class samplesheet,fq,parse_sample,toCsv input
     class qc_pf,readLenPf,fqcheckPf,fqdistPf,fqstats_pf,qc_stlfr_stats,readLen,basecount,fqstats_stlfr qc
     class bwaPf,markdupPf,sampleBamPf,barcode_split,splitfq,lariatBC,mergeFq,lariat,sortbam,markdupStlfrLariat,sampleBamStlfrLariat align
     class deepvariantv16BwaPf,vcfevalPf,deepvariantv16,vcfevalLariatDv,varStatsLariatDv vc
-    class splitVcfLariatDv,splitBam4phasing,phaseLariatDv,phaseCatLariatDv,hapKaryotype,hapcutstat,phaseall,intersectLariat,mergeBamLariat phase
+    class splitVcfLariatDv,splitBam4phasing,phaseLariatDv,phaseCatLariatDv,hapKaryotype,hapcutstat,phaseall,intersectLariat,mergeBamLariat,ideogram,cumuplot phase
     class coveragePf,coverageMeanPf,samtoolsFlagstatPf,samtoolsStatsPf,samtoolsDepthPf,insertsizePf,alignCatPf,samtools_flagstat,samtools_stats,insertsize,samtools_depth,stLFRQC,align_cat,coverage,coverageMean,coverageAvg stats
-    class reportLariatDv,report report
+    class reportLariatDv,report,html report
+    class pangenie,pangenie_plot,pangenie_var_plot,gangstr,hlala sv
+    class vep_frombam,vep_data annot
 
 ```
 
@@ -243,7 +275,7 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
    ```
    ./CWGS run sample.list -module <module_path> -script <script_path> -exec local -debug --use_megabolt false --pfmapq 3
    ```
-   Run customized reference with --ref </absolute/path/to/ref/fasta>; prepare all indices etc. in the same directory before run.
+   Run customized reference with --ref </absolute/path/to/ref/fasta>; prepare all indices etc. in the same directory before run. Using the GRCh38 reference from the database building is recommended, otherwise hlala/pangenie/gangstr modules may be skipped. When using pangenome alignment vg, reference GCA_000001405.15_GRCh38_no_alt_analysis_set_corrected.fasta is required.  
 
 3. Run settings
     Set CPU
