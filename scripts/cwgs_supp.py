@@ -78,6 +78,7 @@ def correct_hg38_fasta(db_path):
                 outfile.write(line)
     
     print(f"\nDone! Created {output_fa} with only chromosomes present in both .fai files.")
+    count_nonN(output_fa)
 
 
 if __name__ == "__main__":
