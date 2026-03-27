@@ -1,6 +1,6 @@
 
 # Complete WGS (cWGS)  
-This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' DNBSEQ Complete WGS (cWGS) (a DNA cobarcoding technology) library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the cWGS library. Below is a flow chart which summarizes the pipeline processes. *Note, SV detection with Pangenie is a beta version of the pipeline.
+This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' DNBSEQ Complete WGS (cWGS) (a DNA cobarcoding technology, previous name stLFR) library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the cWGS library. Below is a flow chart which summarizes the pipeline processes. *Note, SV detection with Pangenie is a beta version of the pipeline.
 
 ![flowchart](images/Flow_chart.png)
 
@@ -331,11 +331,22 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
       Utilizes -L option for GATK haplotypecaller; split by chromosome. [true]
 
     --dv_version STRING [only valid when '--var_tool' contains "dv"]
-      Specify the DeepVariant version. [v1.6]
+      Specify the DeepVariant version. [default: v1.6]
       Supports: 
         v1.6
         v0.7
       Current MegaBOLT DeepVariant version is v0.7; therefore, if you specify this option to "v1.6", MegaBOLT will not be used even if '--use_megabolt' is true.
+      To use pangenome-aware version of deepvariant, get docker image:
+      sudo docker pull google/deepvariant:pangenome_aware_deepvariant-head784362481
+      Convert to a .sif container and put to the $sif_dir folder. Run with tags:    
+      ./CWGS run sample.list \
+          --dv_sif_image ${sif_dir}/deepvariant_pangenome_aware_deepvariant-head784362481.sif \
+          --dv_binary_path run_pangenome_aware_deepvariant \
+          --dv_pangenome ${db}/hg38/panGenome/hprc-v1.1-mc-grch38.gbz \
+          --dv_make_examples_extra_args 'keep_supplementary_alignments=true,sort_by_haplotypes=true,keep_only_window_spanning_haplotypes=true,min_mapping_quality=0,keep_legacy_allele_counter_behavior=true,normalize_reads=true' \
+          --dv_postprocess_variants_extra_args 'multiallelic_mode=product' \
+  ...
+
     ```
     Markdup
     ```
@@ -363,7 +374,7 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
     --PF_lt_stLFR_depth INT
       Extract the intersection regions from the sampled cWGS (stLFR) bam with depth greater than (>) this value and PCRFree bam with depth less equal than (<=) this value. [10]
     ```
-   stlfr only, same sample.list as other runs  
+   stLFR_only/ PF_only, runs using stLFR/PCR-free data alone, no merging   
    ```
    modules=$path_to_your_scirpts/DNBSEQ_Complete_WGS/modules
    scripts=$path_to_your_scirpts/DNBSEQ_Complete_WGS/scripts
@@ -412,7 +423,13 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
         ```
 5. Parameters:  
    Set parameters with command line or with [nextflow.config](modules/nextflow.config). For example, MEM, CPU, deepvariant model dv_machine = "t7" or "g400".   
+6. Tool versions:  
+   To check tool versions  
+   ```
+   singularity exec $sif ${tool_name} —version
+   ```
 
+   
 
 # Output of the demo example  
 **Results**  
