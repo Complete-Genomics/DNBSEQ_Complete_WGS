@@ -276,6 +276,11 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
    ./CWGS run sample.list -module <module_path> -script <script_path> -exec local -debug --use_megabolt false --pfmapq 3
    ```
    Run customized reference with --ref </absolute/path/to/ref/fasta>; prepare all indices etc. in the same directory before run. Using the GRCh38 reference from the database building is recommended, otherwise hlala/pangenie/gangstr modules may be skipped. When using pangenome alignment vg, reference GCA_000001405.15_GRCh38_no_alt_analysis_set_corrected.fasta is required.  
+   To create .nonN.region file for the customized reference, run:
+   ```
+   python scripts/cwgs_supp.py --module nonN --input_fasta /absolute/path/to/customized_ref/fasta
+   ```
+   The .nonN.region file will be created in the same directory as the input fasta file.
 
 3. Run settings
     Set CPU
