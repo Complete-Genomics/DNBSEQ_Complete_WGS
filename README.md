@@ -285,7 +285,7 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
    ```
    python scripts/cwgs_supp.py --module correct_hg38_fasta --db_path /absolute/path/to/CGWS_db
    ```
-   Where CGWS_db is the db from -createdb.   
+   Where CGWS_db is the db from -createdb. Then go to {db_path}/hg38/panGenome/ and manually samtools/bwa index GCA_000001405.15_GRCh38_no_alt_analysis_set_corrected.fasta.    
 
 3. Run settings
     Set CPU
