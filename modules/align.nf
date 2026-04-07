@@ -228,11 +228,10 @@ process bwa {
     // publishDir "${params.outdir}/$id/align/", mode: 'link', enabled: !params.sampleBam
  
     script:
-    def ref
     if (params.ref.startsWith('/')) {
-        ref = params.ref
+        def ref = params.ref
     } else {
-        ref = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
+        def ref = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
     }
     def r1 = reads[0]
     def r2 = reads[1]

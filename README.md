@@ -1,10 +1,175 @@
 
 # Complete WGS (cWGS)  
-This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' DNBSEQ Complete WGS (cWGS) (a DNA cobarcoding technology) library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the cWGS library. Below is a flow chart which summarizes the pipeline processes. *Note, SV detection with Pangenie is a beta version of the pipeline.
+This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' DNBSEQ Complete WGS (cWGS) (a DNA cobarcoding technology, previous name stLFR) library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the cWGS library. Below is a flow chart which summarizes the pipeline processes. *Note, SV detection with Pangenie is a beta version of the pipeline.
 
-![flowchart](https://github.com/user-attachments/assets/59430c7d-8f5b-4117-9c52-404fb71d1e5d)
+![flowchart](images/Flow_chart.png)
 
+A more detailed flow chart.  
+```mermaid
+flowchart TD
 
+    subgraph INPUT["Input"]
+        samplesheet([samplesheet]) --> toCsv[toCsv]
+        toCsv --> parse_sample[parse_sample]
+        parse_sample --> fq[(fq)]
+    end
+
+    subgraph QC_PF["QC — PF Reads"]
+        qc_pf[qc_pf] --> readLenPf[readLenPf]
+        qc_pf --> fqcheckPf[fqcheckPf]
+        fqcheckPf --> fqdistPf[fqdistPf]
+        qc_pf --> fqstats_pf[fqstats_pf]
+    end
+
+    subgraph QC_STLFR["QC — stLFR Reads"]
+        qc_stlfr_stats[qc_stlfr_stats] --> readLen[readLen]
+        qc_stlfr_stats --> basecount[basecount]
+        qc_stlfr_stats --> fqstats_stlfr[fqstats_stlfr]
+    end
+
+    subgraph ALIGN_PF["Alignment — PF"]
+        bwaPf[bwaPf] --> markdupPf[markdupPf]
+        markdupPf --> sampleBamPf[sampleBamPf]
+    end
+
+    subgraph STATS_PF["Stats — PF BAM"]
+        sampleBamPf_s[sampleBamPf] --> coveragePf[coveragePf]
+        sampleBamPf_s --> coverageMeanPf[coverageMeanPf]
+        sampleBamPf_s --> samtoolsFlagstatPf[samtoolsFlagstatPf]
+        sampleBamPf_s --> samtoolsStatsPf[samtoolsStatsPf]
+        sampleBamPf_s --> samtoolsDepthPf[samtoolsDepthPf]
+        sampleBamPf_s --> insertsizePf[insertsizePf]
+        samtoolsFlagstatPf --> alignCatPf[alignCatPf]
+        samtoolsStatsPf --> alignCatPf
+        samtoolsDepthPf --> alignCatPf
+        insertsizePf --> alignCatPf
+    end
+
+    subgraph VC_PF["Variant Calling — PF"]
+        sampleBamPf_v[sampleBamPf] --> deepvariantv16BwaPf[deepvariantv16]
+        deepvariantv16BwaPf --> vcfevalPf[vcfevalPf]
+    end
+
+    subgraph ALIGN_STLFR["Alignment — stLFR / Lariat"]
+        barcode_split[barcode_split] --> splitfq[splitfq]
+        splitfq --> lariatBC[lariatBC]
+        lariatBC --> mergeFq[mergeFq]
+        mergeFq --> lariat[lariat]
+        lariat --> sortbam[sortbam]
+        sortbam --> markdupStlfrLariat[markdupStlfrLariat]
+        markdupStlfrLariat --> sampleBamStlfrLariat[sampleBamStlfrLariat]
+    end
+
+    subgraph STATS_STLFR["Stats — stLFR BAM"]
+        sampleBamStlfrLariat_s[sampleBamStlfrLariat] --> samtools_flagstat[samtools_flagstat]
+        sampleBamStlfrLariat_s --> samtools_stats[samtools_stats]
+        sampleBamStlfrLariat_s --> insertsize[insertsize]
+        sampleBamStlfrLariat_s --> samtools_depth[samtools_depth]
+        sampleBamStlfrLariat_s --> stLFRQC[stLFRQC]
+        samtools_flagstat --> align_cat[align_cat]
+        samtools_stats --> align_cat
+        samtools_depth --> align_cat
+        insertsize --> align_cat
+    end
+
+    subgraph PHASE["Phasing"]
+        intersectLariat[intersectLariat] --> mergeBamLariat[mergeBamLariat]
+        mergeBamLariat --> deepvariantv16[deepvariantv16]
+        mergeBamLariat --> coverage[coverage]
+        mergeBamLariat --> coverageMean[coverageMean]
+        coverage --> coverageAvg[coverageAvg]
+        coverageMean --> coverageAvg
+        deepvariantv16 --> vcfevalLariatDv[vcfevalLariatDv]
+        deepvariantv16 --> varStatsLariatDv[varStatsLariatDv]
+        deepvariantv16 --> splitVcfLariatDv[splitVcfLariatDv]
+        sampleBamStlfrLariat_p[sampleBamStlfrLariat] --> splitBam4phasing[splitBam4phasing]
+        splitBam4phasing --> phaseLariatDv[phaseLariatDv]
+        splitVcfLariatDv --> phaseLariatDv
+        phaseLariatDv --> phaseCatLariatDv[phaseCatLariatDv]
+        phaseCatLariatDv --> hapKaryotype[hapKaryotype]
+        phaseCatLariatDv --> hapcutstat[hapcutstat]
+        phaseCatLariatDv --> phaseall[phaseall]
+        phaseCatLariatDv --> ideogram[ideogram]
+        phaseCatLariatDv --> cumuplot[cumuplot]
+    end
+
+    subgraph SV_STR_HLA["SV / STR / HLA — hg38/GRCh38 only"]
+        pangenie[pangenie] --> pangenie_var_plot[pangenie_var_plot]
+        pangenie --> pangenie_plot[pangenie_plot]
+        gangstr[gangstr]
+        hlala[hlala]
+    end
+
+    subgraph ANNOT["Annotation — hg38/GRCh38 only"]
+        vep_frombam[vep_frombam] --> vep_data[vep_data]
+    end
+
+    subgraph REPORT["Report"]
+        reportLariatDv[reportLariatDv] --> report([report])
+        report --> html([html])
+    end
+
+    %% Cross-subgraph edges
+    fq --> qc_pf
+    fq --> qc_stlfr_stats
+    fq --> barcode_split
+    qc_pf --> bwaPf
+
+    sampleBamPf --> sampleBamPf_s
+    sampleBamPf --> sampleBamPf_v
+    sampleBamPf --> intersectLariat
+    sampleBamPf --> mergeBamLariat
+
+    sampleBamStlfrLariat --> sampleBamStlfrLariat_s
+    sampleBamStlfrLariat --> sampleBamStlfrLariat_p
+    sampleBamStlfrLariat --> intersectLariat
+    sampleBamStlfrLariat --> mergeBamLariat
+
+    %% SV/STR/HLA inputs
+    fq --> pangenie
+    mergeBamLariat --> gangstr
+    mergeBamLariat --> hlala
+    phaseCatLariatDv --> pangenie_plot
+
+    %% Annotation input
+    phaseCatLariatDv --> vep_frombam
+
+    alignCatPf --> reportLariatDv
+    vcfevalPf --> reportLariatDv
+    align_cat --> reportLariatDv
+    vcfevalLariatDv --> reportLariatDv
+    varStatsLariatDv --> reportLariatDv
+    coverageAvg --> reportLariatDv
+    phaseCatLariatDv --> reportLariatDv
+    stLFRQC --> reportLariatDv
+
+    vep_data --> html
+    pangenie_var_plot --> html
+    pangenie_plot --> html
+    hlala --> html
+
+    %% Styling
+    classDef input    fill:#dae8fc,stroke:#6c8ebf
+    classDef qc       fill:#d5e8d4,stroke:#82b366
+    classDef align    fill:#fff2cc,stroke:#d6b656
+    classDef vc       fill:#f8cecc,stroke:#b85450
+    classDef phase    fill:#e1d5e7,stroke:#9673a6
+    classDef stats    fill:#f0f0f0,stroke:#666666
+    classDef report   fill:#ffe6cc,stroke:#d79b00
+    classDef sv       fill:#fce4d6,stroke:#c0504d
+    classDef annot    fill:#e2efda,stroke:#70ad47
+
+    class samplesheet,fq,parse_sample,toCsv input
+    class qc_pf,readLenPf,fqcheckPf,fqdistPf,fqstats_pf,qc_stlfr_stats,readLen,basecount,fqstats_stlfr qc
+    class bwaPf,markdupPf,sampleBamPf,barcode_split,splitfq,lariatBC,mergeFq,lariat,sortbam,markdupStlfrLariat,sampleBamStlfrLariat align
+    class deepvariantv16BwaPf,vcfevalPf,deepvariantv16,vcfevalLariatDv,varStatsLariatDv vc
+    class splitVcfLariatDv,splitBam4phasing,phaseLariatDv,phaseCatLariatDv,hapKaryotype,hapcutstat,phaseall,intersectLariat,mergeBamLariat,ideogram,cumuplot phase
+    class coveragePf,coverageMeanPf,samtoolsFlagstatPf,samtoolsStatsPf,samtoolsDepthPf,insertsizePf,alignCatPf,samtools_flagstat,samtools_stats,insertsize,samtools_depth,stLFRQC,align_cat,coverage,coverageMean,coverageAvg stats
+    class reportLariatDv,report,html report
+    class pangenie,pangenie_plot,pangenie_var_plot,gangstr,hlala sv
+    class vep_frombam,vep_data annot
+
+```
 
 # Requirements  
 **Hardware requirements**  
@@ -110,7 +275,17 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
    ```
    ./CWGS run sample.list -module <module_path> -script <script_path> -exec local -debug --use_megabolt false --pfmapq 3
    ```
-   Run customized reference with --ref </absolute/path/to/ref/fasta>; prepare all indices etc. in the same directory before run.
+   Run customized reference with --ref </absolute/path/to/ref/fasta>; prepare all indices etc. in the same directory before run. Using the GRCh38 reference from the database building is recommended, otherwise hlala/pangenie/gangstr modules may be skipped.  
+   To create .nonN.region file for the customized reference, run:
+   ```
+   python scripts/cwgs_supp.py --module nonN --input_fasta /absolute/path/to/customized_ref/fasta
+   ```
+   The .nonN.region file will be created in the same directory as the input fasta file.
+   When using pangenome alignment vg, reference GCA_000001405.15_GRCh38_no_alt_analysis_set_corrected.fasta is required.  
+   ```
+   python scripts/cwgs_supp.py --module correct_hg38_fasta --db_path /absolute/path/to/CGWS_db
+   ```
+   Where CGWS_db is the db from -createdb. Then go to {db_path}/hg38/panGenome/ and manually samtools/bwa index GCA_000001405.15_GRCh38_no_alt_analysis_set_corrected.fasta.    
 
 3. Run settings
     Set CPU
@@ -166,11 +341,22 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
       Utilizes -L option for GATK haplotypecaller; split by chromosome. [true]
 
     --dv_version STRING [only valid when '--var_tool' contains "dv"]
-      Specify the DeepVariant version. [v1.6]
+      Specify the DeepVariant version. [default: v1.6]
       Supports: 
         v1.6
         v0.7
       Current MegaBOLT DeepVariant version is v0.7; therefore, if you specify this option to "v1.6", MegaBOLT will not be used even if '--use_megabolt' is true.
+      To use pangenome-aware version of deepvariant, get docker image:
+      sudo docker pull google/deepvariant:pangenome_aware_deepvariant-head784362481
+      Convert to a .sif container and put to the $sif_dir folder. Run with tags:    
+      ./CWGS run sample.list \
+          --dv_sif_image ${sif_dir}/deepvariant_pangenome_aware_deepvariant-head784362481.sif \
+          --dv_binary_path run_pangenome_aware_deepvariant \
+          --dv_pangenome ${db}/hg38/panGenome/hprc-v1.1-mc-grch38.gbz \
+          --dv_make_examples_extra_args 'keep_supplementary_alignments=true,sort_by_haplotypes=true,keep_only_window_spanning_haplotypes=true,min_mapping_quality=0,keep_legacy_allele_counter_behavior=true,normalize_reads=true' \
+          --dv_postprocess_variants_extra_args 'multiallelic_mode=product' \
+  ...
+
     ```
     Markdup
     ```
@@ -198,7 +384,7 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
     --PF_lt_stLFR_depth INT
       Extract the intersection regions from the sampled cWGS (stLFR) bam with depth greater than (>) this value and PCRFree bam with depth less equal than (<=) this value. [10]
     ```
-   stlfr only, same sample.list as other runs  
+   stLFR_only/ PF_only, runs using stLFR/PCR-free data alone, no merging   
    ```
    modules=$path_to_your_scirpts/DNBSEQ_Complete_WGS/modules
    scripts=$path_to_your_scirpts/DNBSEQ_Complete_WGS/scripts
@@ -247,9 +433,13 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
         ```
 5. Parameters:  
    Set parameters with command line or with [nextflow.config](modules/nextflow.config). For example, MEM, CPU, deepvariant model dv_machine = "t7" or "g400".   
+6. Tool versions:  
+   To check tool versions  
+   ```
+   singularity exec $sif ${tool_name} —version
+   ```
 
-A more detailed flow chart.  
-![Workflow](images/cwgs_flowchart.svg)
+   
 
 # Output of the demo example  
 **Results**  

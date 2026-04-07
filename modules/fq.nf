@@ -7,8 +7,8 @@ process fq {
 	tuple val(id), path(stlfr1), path(stlfr2), path(pf1), path(pf2)
 	
 	output:
-	tuple val(id), path("${id}_stlfr_1.fq.gz"),  path("${id}_stlfr_2.fq.gz"), emit: stlfr
-	tuple val(id), path("${id}_pcrfree_1.fq.gz"), path("${id}_pcrfree_2.fq.gz"), emit: pf
+	tuple val(id), path("${id}_stlfr_1.fq.gz"),  path("${id}_stlfr_2.fq.gz"),emit: stlfr
+	tuple val(id), path("${id}_pcrfree_1.fq.gz"), path("${id}_pcrfree_2.fq.gz"),emit: pf
 
 	tag "$id"
 	// publishDir "${params.outdir}/$id/fq/"	//, mode: 'copy'
@@ -33,6 +33,7 @@ process fq1 {
 	tuple val(id), path("${id}_stlfr_1.fq.gz"),  path("${id}_stlfr_2.fq.gz")
 
 	tag "$id"
+	publishDir "."	//, mode: 'copy'
 
 	script:
 	"""
@@ -95,7 +96,7 @@ process lineNum {
 }
 
 process splitfq {
-	cpus params.CPU0
+	cpus params.lariatSplitFqNum / 2 
     memory params.MEM1 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 

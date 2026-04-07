@@ -198,7 +198,7 @@ process report01 { // from bam
     hetindel=`${params.BIN}bcftools view -v indels -g het $vcf |grep -v \\# |wc -l`
     echo -e "\$hetsnp\\t\$hetindel" > het
 
-    ${params.BIN}python3 ${params.SCRIPT}/report.py frombam $id $aligner $varcaller ${id}.bcftoolsStats.txt het $aligncatstlfr $aligncatpf $phase $genecov $vcfeval $vcfevalPf $stlfrbamdepth $pfbamdepth > ${id}.${aligner}.${varcaller}.report
+    ${params.BIN}python3 ${params.SCRIPT}/report_frombam.py $id $aligner $varcaller ${id}.bcftoolsStats.txt het $aligncatstlfr $aligncatpf $phase $genecov $vcfeval $vcfevalPf $stlfrbamdepth $pfbamdepth > ${id}.${aligner}.${varcaller}.report
     """
     stub:
     "touch ${id}.${aligner}.${varcaller}.report"
@@ -274,6 +274,7 @@ process report {
     publishDir "${params.outdir}", mode: 'link'
     
     script:
+    // println(reports)
     """
     paste $reports | awk -F'\\t' '{
         line = \$1  # 提取公共的第一列

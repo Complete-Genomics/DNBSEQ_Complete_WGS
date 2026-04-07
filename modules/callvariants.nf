@@ -517,7 +517,7 @@ process gatherVcfsVqsr {
     "touch ${prefix}.vcf.gz"
 }
 process dvMegabolt {
-    label 'megabolt'
+  label 'megabolt'
     cpus params.cpu3
     memory params.MEM1 + "g"
     
@@ -565,21 +565,22 @@ process deepvariant {
     script:
     def bam = bam.first()
     def ref = params.ref.startsWith('/') ? params.ref : "${params.DB}/${params.ref}/reference/${params.ref}.fa"
-    def pangenome = params.dv_pangenome
     def ver = "dv"
     def outvcf = bam.toString().contains("pf") ? "${id}.pf.bwa.${ver}.vcf.gz" : "${id}.${aligner}.${ver}.vcf.gz"
-    //def outgvcf = bam.toString().contains("pf") ? "${id}.pf.bwa.${ver}.g.vcf.gz" : "${id}.${aligner}.${ver}.g.vcf.gz"
+    def pangenome_arg = params.dv_pangenome ? "--pangenome ${params.dv_pangenome} \\" : ""
+    def make_examples_arg = params.dv_make_examples_extra_args ? "--make_examples_extra_args '${params.dv_make_examples_extra_args}' \\" : ""
+    def postprocess_arg = params.dv_postprocess_variants_extra_args ? "--postprocess_variants_extra_args '${params.dv_postprocess_variants_extra_args}'" : ""
     """
     ${params.dv_binary_path} \\
       --model_type WGS \\
       --ref $ref \\
       --reads $bam \\
-      --pangenome $pangenome \\
+      ${pangenome_arg}
       --output_vcf $outvcf \\
       --num_shards ${task.cpus} \\
       --intermediate_results_dir intermediate_results_dir \\
-      --make_examples_extra_args '${params.dv_make_examples_extra_args}' \\
-      --postprocess_variants_extra_args '${params.dv_postprocess_variants_extra_args}'
+      ${make_examples_arg}
+      ${postprocess_arg}
     """
     stub:
     def ver = "dv"

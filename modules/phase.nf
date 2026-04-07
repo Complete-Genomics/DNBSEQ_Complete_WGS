@@ -158,24 +158,19 @@ process phase {
     rm tmp.vcf
     echo $chr > ${prefix}.hapcut_stat.txt
     """
-    if (!params.ref.startsWith('/')) {
-        def pv = "${params.DB}/${params.ref}/phasedvcf/${params.ref}.${params.std}.${chr}.vcf.gz"
-
+    if (params.stLFR_only) {
+        cmd += """
+        python3 ${params.SCRIPT}/calculate_haplotype_statistics.reseq.py \\
+        -h1 ${prefix}.hapblock -v1 ${prefix}.hapblock.phased.VCF.gz -f1 ${prefix}.lf -pv $pv -c $fai >> ${prefix}.hapcut_stat.txt
+        """
+    } else {
         cmd += """
         if [ -s ${prefix}.hapblock ]; then
             python3 ${params.SCRIPT}/calculate_haplotype_statistics_CWX.py \\
             -h1 ${prefix}.hapblock -v1 ${prefix}.hapblock.phased.VCF.gz -v2 $pv --indels >> ${prefix}.hapcut_stat.txt
         fi
         """
-    } else {
-        cmd += """
-        if [ -s ${prefix}.hapblock ]; then
-            python3 ${params.SCRIPT}/calc_n50.py \\
-            -h1 ${prefix}.hapblock -v1 ${prefix}.hapblock.phased.VCF.gz --indels >> ${prefix}.hapcut_stat.txt
-        fi
-        """
     }
-        
     return cmd
 }
 
@@ -396,7 +391,8 @@ process phaseCat {
     python3 ${params.SCRIPT}/phase.py ${prefix} $fai > ${prefix}.phase.report
     """
 }
-process phaseCatRef {
+
+process phaseCat_cwx {
     cpus params.CPU0
     memory params.MEM0 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
@@ -415,34 +411,34 @@ process phaseCatRef {
 
     script:
     def prefix = "${id}.${aligner}.${varcaller}"
+    def fai = "${params.DB}/${params.ref}/reference/${params.ref}.fa.fai"
+    def fa = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
+    def chr1 = (params.ref == "hs37d5") ? "" : "chr"
     """
     lfs=""
     hapblocks=""
+    stat2s=""
     pvs=""
     pvcfs=""
     vcfs=""
 
-    while IFS= read -r i; do
-        lfs="\$lfs ${prefix}.\${i}.lf"
-        hapblocks="\$hapblocks ${prefix}.\${i}.hapblock"
-        vcfs="\$vcfs ${prefix}.\${i}.vcf.gz"
-        pvcfs="\$pvcfs ${prefix}.\${i}.hapblock.phased.VCF.gz"
-    done < $txt
-
+    for i in {1..22} X;do
+        lfs="\$lfs ${prefix}.${chr1}\${i}.lf"
+        hapblocks="\$hapblocks ${prefix}.${chr1}\${i}.hapblock"
+        stat2s="\$stat2s ${prefix}.${chr1}\${i}.hapcut_stat.txt"
+        pvs="\$pvs ${params.DB}/${params.ref}/phasedvcf/${params.ref}.${params.std}.${chr1}\${i}.vcf.gz"
+        vcfs="\$vcfs ${prefix}.${chr1}\${i}.vcf"
+        pvcfs="\$vcfs ${prefix}.${chr1}\${i}.hapblock.phased.VCF"
+    done
 
     cat \$lfs > ${prefix}.lf
     cat \$hapblocks > ${prefix}.hapblock
+    cat \$stat2s > ${prefix}.hapcut_stat.txt
 
+    echo "combine all chrs" >> ${prefix}.hapcut_stat.txt
 
- 	${params.BIN}bcftools concat *phased.VCF.gz -O b -o tmp.vcf.gz 
-    zcat tmp.vcf.gz | grep '^#' > header
-    zcat tmp.vcf.gz | grep -v '^#' | sort -k1,1d -k2,2n > body
-    cat header body |bgzip -c > ${prefix}.phased.vcf.gz
-    rm tmp.vcf.gz
-    
-    ${params.BIN}tabix ${prefix}.phased.vcf.gz
+    python3 ${params.SCRIPT}/calculate_haplotype_statistics_CWX.py \\
+        -h1 \$hapblocks -v1 \$pvcfs -v2 \$pvs --indels >> ${prefix}.hapcut_stat.txt
 
-    python3 ${params.SCRIPT}/calc_n50.py -h1 \$hapblocks -v1 \$pvcfs --indels >> ${prefix}.hapcut_stat.txt
-    python3 ${params.SCRIPT}/phase.py ${prefix} 0 > ${prefix}.phase.report # allhetsnp, phasedhetsnp, allhetindel, phasedhetindel, fbn50, fbnum
     """
 }
