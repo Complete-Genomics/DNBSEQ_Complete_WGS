@@ -58,6 +58,7 @@ include { vep;
     vep as vep_frombam;
     vep_data } from "${params.MOD}/annot"
 include {gangstr} from "${params.MOD}/gangstr"
+include {frag1; frag2} from "${params.MOD}/frag"
 include {pangenie;
     pangenie_plot;
     pangenie_var_plot } from "${params.MOD}/pangenie"
@@ -245,6 +246,7 @@ workflow CWGS {
             
             //split stLFR bam for phasing
             splitBam4phasing(ch_lariat, ch_lariatbam, chrs).set {ch_eachbamlariat}
+            frag2(frag1(ch_eachbamlariat).groupTuple())
 
             //merge bam
             intersectLariat(ch_lariat, ch_lariatbam.join(ch_pfbam)).set {ch_bed}
@@ -677,6 +679,7 @@ workflow CWGS_frombam {
 
         // split stLFR bam for phasing
         splitBam4phasing(ch_lariat, ch_lariatbam, chrs).set {ch_eachbamlariat}
+        frag2(frag1(ch_eachbamlariat).groupTuple())
 
     if (params.var_tool.contains("dv")) {
         if (params.use_megabolt && params.dv_version == 'v0.6') {dvMegabolt(ch_lariat, ch_mergeLariatBam).set {ch_mergevcf}}
@@ -906,6 +909,7 @@ workflow CWGS_frombam_stLFRonly {
 
     // split stLFR bam for phasing
     splitBam4phasing(ch_lariat, ch_lariatbam, chrs).set {ch_eachbamlariat}
+    frag2(frag1(ch_eachbamlariat).groupTuple())
 
     if (params.var_tool.contains("dv")) {
         if (params.use_megabolt && params.dv_version == "v0.6" ) {dvMegabolt(ch_lariat, ch_mergeLariatBam).set {ch_mergevcf}}
