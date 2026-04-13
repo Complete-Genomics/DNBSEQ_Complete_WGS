@@ -17,11 +17,13 @@ process qc {
     def r1 = "${reads[0]}"
     def r2 = "${reads[1]}"
     """
+    mv ${r1} _input_r1.fq.gz
+    mv ${r2} _input_r2.fq.gz
     ${params.BIN}SOAPnuke filter \\
       -l 10 -q 0.1 -n 0.01 -T ${task.cpus} \\
       -f CTGTCTCTTATACACATCTTAGGAAGACAAGCACTGACGACATGA -r TCTGCTGAGTCGAGAACGTCTCTGTGAGCCAAGGAGTTGCTCTGG \\
-      -1 ${r1}  \\
-      -2 ${r2} \\
+      -1 _input_r1.fq.gz  \\
+      -2 _input_r2.fq.gz \\
       -o . \\
       -C ${id}.${lib}.qc_1.fq.gz \\
       -D ${id}.${lib}.qc_2.fq.gz
