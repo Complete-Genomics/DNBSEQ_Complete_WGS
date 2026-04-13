@@ -99,8 +99,9 @@ workflow WF_align_pf {
         } 
     } else if (params.pfAligner == 'vg') {
         if (params.ref != 'hg38' && !params.ref.contains('GRCh38')) { exit 1, 'graph aligner only support hg38 ref!'}
-        kff(ch_pffq).set {ch_kff}
-        vg(ch_kff.join(ch_pffq)).set {ch_pfbam}
+        ch_pffq.map { id, reads -> [id, reads[0], reads[1]] }.set {ch_pffq_flat}
+        kff(ch_pffq_flat).set {ch_kff}
+        vg(ch_kff.join(ch_pffq_flat)).set {ch_pfbam}
         markdup('pf', 'vg', ch_pfbam).set {ch_pfbam}
     } else {
         exit 1, 'pf aligner only supports bwa and vg!'
