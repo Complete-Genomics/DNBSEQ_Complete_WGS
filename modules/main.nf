@@ -592,12 +592,8 @@ workflow CWGS {
         } 
         report(ch_reports)
         hapKaryotype(hb)            // ${id}.haplotype.pdf
-    } else {
-        if (!params.fromMergedBam) {
-            println("!!! run CWGS from stlfr and pf bams")
-            parse_sample_frombam(ch_input).bam.set {ch_bam}
-            bam(ch_bam).stlfr.set {ch_lariatbam}
-            bam.out.pf.set {ch_pfbam}       
+    }
+}
 
 workflow CWGS_frombam {
     if (params.ref.startsWith('/')) {
