@@ -15,6 +15,8 @@ workflow parse_sample {
             def byLibType = [:]         // [stlfr:[fq:[], bam:[]], pf:[fq:[], bam:[]]]
             row.each { hdr, pathStr ->
                 if (!pathStr) return     // 空路径跳过
+                def trimmed = pathStr.trim()
+                if (!trimmed) return
                 def lib  = hdr.contains('stlfr') ? 'stlfr' :
                            hdr.contains('pf')    ? 'pf'    : null
                 if (!lib) return
@@ -23,7 +25,7 @@ workflow parse_sample {
                 if (!byLibType[lib])      byLibType[lib] = [:]
                 if (!byLibType[lib][type]) byLibType[lib][type] = []
 
-                byLibType[lib][type] << [hdr: hdr, path: file(pathStr)]
+                byLibType[lib][type] << [hdr: hdr, path: file(trimmed)]
             }
 
             // 遍历 (lib,type) 生成独立记录
@@ -37,9 +39,10 @@ workflow parse_sample {
                         out << [meta, ordered]          // 列表
                     } else {
                         def bamFile = files[0].path
-                        def baiFile = file("${bamFile}.bai")   
+                        def bamStr  = bamFile.toString()
+                        def baiFile = file("${bamStr}.bai")
 
-                        out << [meta, [bamFile, baiFile]]      
+                        out << [meta, [bamFile, baiFile]]
                     }
                 }
             }
