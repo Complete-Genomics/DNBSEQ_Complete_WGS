@@ -341,20 +341,7 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
       Utilizes -L option for GATK haplotypecaller; split by chromosome. [true]
 
     --dv_version STRING [only valid when '--var_tool' contains "dv"]
-      Specify the DeepVariant version. [default: v1.6]
-      Supports: 
-        v1.6
-        v0.7
-      Current MegaBOLT DeepVariant version is v0.7; therefore, if you specify this option to "v1.6", MegaBOLT will not be used even if '--use_megabolt' is true.
-      To use pangenome-aware version of deepvariant, get docker image:
-      sudo docker pull google/deepvariant:pangenome_aware_deepvariant-head784362481
-      Convert to a .sif container and put to the $sif_dir folder. Run with tags:    
-      ./CWGS run sample.list \
-          --dv_sif_image ${sif_dir}/deepvariant_pangenome_aware_deepvariant-head784362481.sif \
-          --dv_binary_path run_pangenome_aware_deepvariant \
-          --dv_pangenome ${db}/hg38/panGenome/hprc-v1.1-mc-grch38.gbz \
-          --dv_make_examples_extra_args 'keep_supplementary_alignments=true,sort_by_haplotypes=true,keep_only_window_spanning_haplotypes=true,min_mapping_quality=0,keep_legacy_allele_counter_behavior=true,normalize_reads=true' \
-          --dv_postprocess_variants_extra_args 'multiallelic_mode=product' \
+      Specify the DeepVariant version. [default: pangenome_aware_deepvariant-head784362481]
   ...
 
     ```
