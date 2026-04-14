@@ -1,216 +1,3 @@
-include {
-    qc as qc_pf;
-    qc_stlfr_stats                                 } from "${params.MOD}/qc"
-include {
-    readLen as readLenPf;
-    basecount as basecountPf;
-    splitfq;
-    samplePfFq;
-    sampleStlfrFq       } from "${params.MOD}/fq"
-include { mapq          } from "${params.MOD}/bam"
-
-
-workflow WF_align_stlfr {
-    take:
-    ch_stlfrfq
-
-    main:
-    // ch_stlfrfq.map { meta, path ->
-    //     return [meta.id, path]
-    // }.set {ch_stlfrfq}
-    needSplit(ch_stlfrfq).branch {id, reads, flag ->
-        split: flag == '1'
-            [id, reads, true]
-        no_split: flag == '0'
-            [id, reads, false]
-    }.set {ch_dosplit}
-
-    barcode_split(ch_dosplit.split)
-    splitRate(ch_dosplit.no_split)
-
-    ch_splitfq  = barcode_split.out.reads   .mix(splitRate.out.reads)
-    splitLog    = barcode_split.out.log     .mix(splitRate.out.log)
-
-    if (params.sampleFq) {
-        qc_stlfr_stats(ch_splitfq).basecnt.set {ch_stlfrbasecount}
-        qc_stlfr_stats.out.rlen.set {ch_stLFRreadLen}
-        sampleStlfrFq(ch_stlfrbasecount.join(ch_stLFRreadLen).join(ch_splitfq)).set {ch_splitfq} 
-    }
-    if (params.align_tool == 'lariat') {
-        if (params.lariatStLFRBC) { //use stLFR bc for lariat
-            splitfq(ch_splitfq).fq1s.transpose().set {ch_fq1s} //[id, num, fq1, fq2]
-            splitfq.out.fq2s.transpose().set {ch_fq2s}
-            ch_fq1s.join(ch_fq2s).set {ch_splitstlfrfq}
-            lariatBC(ch_splitstlfrfq).groupTuple().set {ch_splitlariatfqs}
-            mergeFq(ch_splitlariatfqs).set {ch_lariatfq}
-            // ch_splitlariatfqs.map {it -> it[1]}.collect().view()
-        } else {
-            tofake10xHash(splitLog).set {ch_hash}
-            if (params.lariatSplitFqNum != 1) { 
-                splitfq(ch_splitfq).fq1s.transpose().set {ch_fq1s} //[id, num, fq1, fq2]
-                splitfq.out.fq2s.transpose().set {ch_fq2s}
-                ch_fq1s.join(ch_fq2s).set {ch_splitstlfrfq}
-                // ch_splitstlfrfq.view()
-                tofake10x(ch_splitstlfrfq.combine(ch_hash, by:0)).reads.set {ch_splitfake10xfq}
-                fake10x2lariat(ch_splitfake10xfq).groupTuple().set {ch_splitlariatfqs}
-                mergeFq(ch_splitlariatfqs).set {ch_lariatfq}
-            } else { fake10x2lariat(tofake10x(ch_splitfq.join(ch_hash))).set {ch_lariatfq} }
-        }
-        sortbam(lariat(ch_lariatfq)).set {ch_lariatbam0} 
-        markdup('stlfr', 'lariat', ch_lariatbam0).set {ch_stlfrbam}
-    } else { // bwa
-        if (params.use_megabolt) {
-            bwaMegabolt('stlfr', ch_splitfq).set {ch_stlfrBwaBam}
-        } else {
-            bwa('stlfr', ch_splitfq).set {ch_stlfrBwaBam}
-            markdup('stlfr', 'bwa', ch_stlfrBwaBam).set {ch_stlfrbam}
-        }
-    }
-    
-    if (params.sampleBam) { sampleBamStlfrLariat('stlfr', 'lariat', ch_stlfrbam).set {ch_stlfrbam} } 
-
-    emit:
-    ch_stlfrbam
-}
-workflow WF_align_pf {
-    take:
-    ch_pffq
-
-    main:                                            
-    // ch_pffq.map { meta, path ->
-    //     return [meta.id, path]
-    // }.set {ch_pffq}
-
-    qc_pf('pf', ch_pffq).reads.set {ch_qcpffq} 
-
-    if (params.sampleFq) { 
-        qc_pf.out.bssq.set {ch_pfbssq}
-        readLenPf(ch_pfbssq).set {ch_PFreadLen} 
-        basecountPf(ch_pfbssq).set {ch_pfbasecount}
-        samplePfFq(ch_pfbasecount.join(ch_PFreadLen).join(ch_qcpffq)).set {ch_pffq}
-    }
-
-    if (params.pfAligner == 'bwa') {
-        if (params.use_megabolt) {
-            bwaMegaboltPf('pf', ch_pffq).set {ch_pfbam}
-        } else {
-            bwa('pf', ch_pffq).set {ch_pfsortbam}
-            markdup('pf', 'bwa', ch_pfsortbam).set {ch_pfbam} 
-        } 
-    } else if (params.pfAligner == 'vg') {
-        if (params.ref != 'hg38' && !params.ref.contains('GRCh38')) { exit 1, 'graph aligner only support hg38 ref!'}
-        kff(ch_pffq).set {ch_kff}
-        vg(ch_kff.join(ch_pffq)).set {ch_pfbam}
-        markdup('pf', 'vg', ch_pfbam).set {ch_pfbam}
-    } else {
-        exit 1, 'pf aligner only supports bwa and vg!'
-    }
-    if (params.sampleBam) { sampleBam('pf', 'bwa', ch_pfbam).set {ch_pfbam} }
-    mapq(ch_pfbam).set {ch_pfbam}
-
-    emit:
-    ch_pfbam
-}
-process needSplit {
-    cpus params.CPU0
-    memory params.MEM0 + "g"
-    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
-        
-    input:
-    tuple val(id), path(reads)
-
-    output:
-    tuple val(id), path(reads), env(dosplit)
-
-    tag "${id}"
-
-    script:
-    def r1 = "${reads[0]}"
-    """
-    fl=`zcat $r1 | head -1 || true`
-    if echo "\$fl" | grep -q '#'; then
-        dosplit=0
-    else
-        dosplit=1
-    fi
-    """
-}
-process barcode_split {
-    cpus params.CPU1
-    memory params.MEM2 + "g"
-    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
-        
-    input:
-    tuple val(id), path(reads), val(dosplit)
-
-    when: dosplit
-
-    output:
-    tuple val(id), path("${id}_split_1.fq.gz"), path("${id}_split_2.fq.gz"), emit: reads
-    tuple val(id), path("split_stat_read1.log"), emit: log
-
-    tag "${id}"
-    publishDir "${params.outdir}/$id/fq/", mode: 'link'
-
-    script:
-    def bcList = "${params.DB}/barcode/barcode.list"
-    def r1 = "${reads[0]}"
-    def r2 = "${reads[1]}"
-    """
-    tmp=`zcat $r1 | head -n 2 | tail -n 1 |wc -c ||true`
-    rlen=`expr \$tmp - 1`
-    echo \$rlen
-    mv $r1 read_1.fq.gz
-    mv $r2 read_2.fq.gz
-
-    s1=\$((\$rlen*2+1))
-    s2=\$((\$rlen*2+17))
-    s3=\$((\$rlen*2+33))
-
-    bcpos="-I \$s1 10 1 false -I \$s2 10 1 false -I \$s3 10 1 false"
-    ${params.BIN}MGI.Lite.GenFastQ -F read_1.fq.gz read_2.fq.gz \\
-                        -B ${bcList}    \\
-                        \$bcpos       \\
-                        --stLFR                     \\
-                        -O split_out  \\
-                        --logPath ./ 
-
-    out1=`find split_out -name "*_1.fq.gz"`
-    out2=`find split_out -name "*_2.fq.gz"`
-    log=`find split_out -name "split_stat_read.log"`
-
-    mv \$out1 ${id}_split_1.fq.gz
-    mv \$out2 ${id}_split_2.fq.gz
-    mv \$log split_stat_read1.log
-    """
-}
-process splitRate {
-    cpus params.CPU0
-    memory params.MEM0 + "g"
-    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
-        
-    input:
-    tuple val(id), path(reads), val(dosplit)
-
-    when: !dosplit
-
-    output:
-    tuple val(id), path("${id}_split_1.fq.gz"), path("${id}_split_2.fq.gz"), emit: reads
-    tuple val(id), path("split_stat_read1.log"), emit: log
-
-    tag "${id}"
-    publishDir "${params.outdir}/$id/fq/", mode: 'link'
-
-    script:
-    def r1 = reads[0]
-    def r2 = reads[1]
-    """
-    mv $r1 ${id}_split_1.fq.gz 2>/dev/null || true
-    mv $r2 ${id}_split_2.fq.gz 2>/dev/null || true
-
-    ${params.BIN}python ${params.SCRIPT}/splitRate.py ${id}_split_1.fq.gz > split_stat_read1.log
-    """
-}
 process bwa {    
     cpus params.cpu3
     memory params.MEM2 + "g"
@@ -220,7 +7,7 @@ process bwa {
 
     input:
     val(lib)
-    tuple val(id), path(reads)
+    tuple val(id), path(r1), path(r2)
 
     output:
     tuple val(id), path("${id}.${lib}.sort.bam*") 
@@ -228,13 +15,13 @@ process bwa {
     // publishDir "${params.outdir}/$id/align/", mode: 'link', enabled: !params.sampleBam
  
     script:
+    def ref
     if (params.ref.startsWith('/')) {
-        def ref = params.ref
+        ref = params.ref
     } else {
-        def ref = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
+        ref = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
     }
-    def r1 = reads[0]
-    def r2 = reads[1]
+    
     """
     ${params.BIN}bwa mem -t ${task.cpus} -R '@RG\\tID:${id}\\tSM:sample\\tPL:COMPLETE' $ref $r1 $r2 | \
     ${params.BIN}samtools view -bhS -@ ${task.cpus} -t ${ref}.fai -T $ref - | \
@@ -853,10 +640,7 @@ process sampleBam {
     def cov = lib == "stlfr" ? "${params.stLFR_sampling_cov}" : "${params.PF_sampling_cov}"
 
     cmd = """
-    bamcov=`${params.BIN}samtools depth -@ ${task.cpus} $bam | awk '{sum += \$3}END{print sum/${params.ref_len}}'`
-    echo \$bamcov > tmp
-    ratio=`echo "scale=5; $cov/\$bamcov" | bc`
-    if [[ \$ratio > 1 ]];then
+    if [ $cov -eq 0 ];then 
         cp $bam ${id}.${lib}.${aligner}.sampled.bam
         cp ${bam}.bai ${id}.${lib}.${aligner}.sampled.bam.bai
     else 
@@ -882,7 +666,32 @@ process sampleBam {
     stub:
     "touch ${id}.${lib}.${aligner}.sampled.bam"
 }
+process intersect {
+    cpus params.cpu2
+    memory params.MEM1 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
+    input:
+    val(aligner)
+    tuple val(id), path(stlfrbam), path(pfbam)
+
+    output:
+    tuple val(id), path("*.intersect.bed") //demo.stlfr.bwa.cov10.bed
+
+    tag "$id, $aligner"
+    publishDir "${params.outdir}/$id/align/", mode: 'link'
+    
+    script:
+    stlfrbam = stlfrbam.first() //demo.stlfr.bwa.bam
+    pfbam = pfbam.first()
+    """
+    ${params.BIN}samtools depth -@ ${task.cpus} $stlfrbam $pfbam | awk -v cov="${params.PF_lt_stLFR_depth}" '\$3 >= cov && \$4 < cov {print \$1"\\t"\$2"\\t"\$2}' | \\
+    ${params.BIN}bedtools merge > ${id}.${aligner}.cov${params.PF_lt_stLFR_depth}.intersect.bed
+
+    """
+    stub:
+    "touch ${id}.${aligner}.cov${params.PF_lt_stLFR_depth}.intersect.bed"
+}
 process depth {
     cpus params.cpu2
     memory params.MEM1 + "g"
@@ -934,8 +743,66 @@ process bed {
     "touch ${id}.${aligner}.cov${params.bamcov}.intersect.bed"
 }
 
+process mergeBam {
+    cpus params.cpu2
+    memory params.MEM3 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
+    input:
+    val(aligner)
+    tuple val(id), path(pfbam), path(stlfrbam), path(bed) 
 
+    output:
+    tuple val(id), path("${id}.${aligner}.merge.bam*") 
+    tag "$id, $aligner"
+
+    publishDir "${params.outdir}/$id/align/", mode: 'link'
+
+    script:
+    def pfbam = pfbam.first()
+    def stlfrbam = stlfrbam.first()
+    """
+    ${params.BIN}samtools view -hb -L $bed $stlfrbam > lfr_lfr10_pf10.bam && \\
+    ${params.BIN}samtools index lfr_lfr10_pf10.bam && \\
+    ${params.BIN}samtools addreplacerg -w -O BAM -r '@RG\\tID:${id}\\tSM:sample' -o new.bam lfr_lfr10_pf10.bam && \\
+    ${params.BIN}samtools index new.bam && \\
+    ${params.BIN}samtools reheader $pfbam new.bam > new2.bam && \\
+    ${params.BIN}samtools index new2.bam && \\
+    # ${params.BIN}samtools addreplacerg -O BAM -r '@RG\\tID:sample\\tSM:sample' -o new3.bam new2.bam && \\
+    # ${params.BIN}samtools index new3.bam && \\
+    ${params.BIN}samtools merge -@ ${task.cpus} -f ${id}.${aligner}.merge.bam $pfbam new2.bam && \\
+    ${params.BIN}samtools index -@ ${task.cpus} ${id}.${aligner}.merge.bam
+
+    """
+    stub:
+    "touch ${id}.${aligner}.merge.bam"
+}
+
+process combinebam {
+    cpus params.cpu2
+    memory params.MEM3 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+
+    input:
+    tuple val(id), path(pfbam), path(stlfrbam)
+
+    output:
+    tuple val(id), path("${id}.lariat.merge.bam*") 
+
+    publishDir "${params.outdir}/$id/align/", mode: 'link'
+
+    script:
+    def pfbam = pfbam.first()
+    def stlfrbam = stlfrbam.first()
+    def aligner = 'lariat'
+    """
+    ${params.BIN}samtools merge -@ ${task.cpus} -f ${id}.${aligner}.merge.bam $pfbam $stlfrbam && \\
+    ${params.BIN}samtools index -@ ${task.cpus} ${id}.${aligner}.merge.bam
+
+    """
+    stub:
+    "touch ${id}.lariat.merge.bam"
+}
 process stLFRQC {
     cpus params.CPU1
     memory params.MEM1 + "g"

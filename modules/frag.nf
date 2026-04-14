@@ -11,7 +11,7 @@ process frag1 {
     tuple val(id), path("${id}.stlfr.${chr}.frag1.txt")
 
     tag "$id, $chr"
-    publishDir "${params.outdir}/$id/align/", mode: 'link'
+    // publishDir "${params.outdir}/$id/"
 
     script:
     def bam = bam.first()
