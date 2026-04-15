@@ -11,14 +11,27 @@ workflow parse_sample {
             def id = row.sample
             def out = []
 
+            // stlfr2 column is ambiguous:
+            //   - row has stlfr1 + stlfr2 → regular PE stLFR (stlfr2 = R2)
+            //   - row has stlfr2 only (no stlfr1) → SE stLFR2 library
+            def hasStlfr1 = row.containsKey('stlfr1') && row['stlfr1']?.trim()
+
             // 先按列名把文件分组
-            def byLibType = [:]         // [stlfr:[fq:[], bam:[]], pf:[fq:[], bam:[]]]
+            def byLibType = [:]         // [stlfr:[fq:[], bam:[]], stlfr2:[fq:[], bam:[]], pf:[fq:[], bam:[]]]
             row.each { hdr, pathStr ->
                 if (!pathStr) return     // 空路径跳过
                 def trimmed = pathStr.trim()
                 if (!trimmed) return
-                def lib  = hdr.contains('stlfr') ? 'stlfr' :
-                           hdr.contains('pf')    ? 'pf'    : null
+                def lib
+                if (hdr == 'stlfr2' && !hasStlfr1) {
+                    lib = 'stlfr2'   // SE stLFR2 library (single-end, barcode at read end)
+                } else if (hdr.contains('stlfr')) {
+                    lib = 'stlfr'    // regular PE stLFR (stlfr1=R1, stlfr2=R2)
+                } else if (hdr.contains('pf')) {
+                    lib = 'pf'
+                } else {
+                    lib = null
+                }
                 if (!lib) return
                 def type = hdr.endsWith('bam') ? 'bam' : 'fq'
 
