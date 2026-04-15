@@ -7,7 +7,8 @@ if (!params.use_megabolt && params.dv_version == "v0.7" ) { exit 1, 'dv v0.7 can
 include { parse_sample      } from "${params.MOD}/parseSample"                   
 include { WF_align_pf;
         WF_align_stlfr;
-        stLFRQC             } from "${params.MOD}/align"    
+        WF_align_stlfr2;
+        stLFRQC             } from "${params.MOD}/align"
 include { WF_mergebam       } from "${params.MOD}/mergebam"
 include { WF_callvariants   } from "${params.MOD}/callvariants"
 include { WF_phase;
@@ -76,27 +77,36 @@ workflow CWGS {
 
 
     ch_datapath.branch { meta, path ->
-        fq_stlfr    : meta.type == 'fq'     && meta.lib == 'stlfr'  
-            [meta.id, path] 
-        fq_pf       : meta.type == 'fq'     && meta.lib == 'pf'     
+        fq_stlfr    : meta.type == 'fq'     && meta.lib == 'stlfr'
             [meta.id, path]
-        bam_stlfr   : meta.type == 'bam'    && meta.lib == 'stlfr'  
+        fq_stlfr2   : meta.type == 'fq'     && meta.lib == 'stlfr2'
             [meta.id, path]
-        bam_pf      : meta.type == 'bam'    && meta.lib == 'pf'  
+        fq_pf       : meta.type == 'fq'     && meta.lib == 'pf'
+            [meta.id, path]
+        bam_stlfr   : meta.type == 'bam'    && meta.lib == 'stlfr'
+            [meta.id, path]
+        bam_stlfr2  : meta.type == 'bam'    && meta.lib == 'stlfr2'
+            [meta.id, path]
+        bam_pf      : meta.type == 'bam'    && meta.lib == 'pf'
             [meta.id, path]
     }.set {ch_data}
 
-    // ch_data.fq_stlfr.view()
-    // ch_data.bam_pf.view()
+    // regular stLFR (PE, lariat/bwa)
+    ch_data.bam_stlfr.mix(WF_align_stlfr(ch_data.fq_stlfr)).set {ch_stlfrbam_only}
 
-    ch_data.bam_stlfr   .mix(WF_align_stlfr(ch_data.fq_stlfr))  .set {ch_stlfrbam}
-    ch_data.bam_pf      .mix(WF_align_pf(ch_data.fq_pf))        .set {ch_pfbam}
+    // stLFR2 SE 600/700bp (vg, barcodes at read end, header reformatted inside vg process)
+    ch_data.bam_stlfr2.mix(WF_align_stlfr2(ch_data.fq_stlfr2)).set {ch_stlfr2bam}
+
+    // combined stlfr-side bam channel fed into mergebam
+    ch_stlfrbam_only.mix(ch_stlfr2bam).set {ch_stlfrbam}
+
+    ch_data.bam_pf.mix(WF_align_pf(ch_data.fq_pf)).set {ch_pfbam}
 
     // merge (or just combine)
     WF_mergebam(ch_stlfrbam.join(ch_pfbam)).set {ch_mergebam}
 
-    // bamstats
-    stLFRQC(ch_stlfrbam).report.set {ch_lfr}
+    // bamstats – stLFRQC only for regular stLFR (not stlfr2 SE reads)
+    stLFRQC(ch_stlfrbam_only).report.set {ch_lfr}
     samtoolsDepthMerge('merge', ch_mergebam).set {ch_depthreport}
 
 

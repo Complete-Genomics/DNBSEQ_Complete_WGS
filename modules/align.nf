@@ -112,6 +112,31 @@ workflow WF_align_pf {
     emit:
     ch_pfbam
 }
+// stLFR single-end 600/700bp reads
+// - fastq columns in samp.list: stlfr21 / stlfr22  (same PE format as regular stLFR)
+// - barcodes are at the 3' end of each read
+// - Lariat cannot handle SE → align with vg giraffe (same as PF)
+// - vg process already strips GRCh38#0# from BAM header (sed 's/GRCh38#0#//g')
+workflow WF_align_stlfr2 {
+    take:
+    ch_stlfr2fq   // [id, [r1, r2]]
+
+    main:
+    if (params.ref != 'hg38' && !params.ref.contains('GRCh38')) {
+        exit 1, 'stlfr2 aligner only supports hg38/GRCh38 ref (vg giraffe)!'
+    }
+
+    ch_stlfr2fq.map { id, reads -> [id, reads[0], reads[1]] }.set { ch_stlfr2fq_flat }
+    kff(ch_stlfr2fq_flat).set { ch_kff2 }
+    vg(ch_kff2.join(ch_stlfr2fq_flat)).set { ch_stlfr2bam0 }
+    markdup('stlfr2', 'vg', ch_stlfr2bam0).set { ch_stlfr2bam }
+
+    if (params.sampleBam) { sampleBam('stlfr2', 'vg', ch_stlfr2bam).set { ch_stlfr2bam } }
+
+    emit:
+    ch_stlfr2bam
+}
+
 process needSplit {
     cpus params.CPU0
     memory params.MEM0 + "g"
