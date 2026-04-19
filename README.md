@@ -315,13 +315,15 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
         bwa
         lariat
         bwa,lariat (this will execute both)
-
+    ```
+    Variant calling: pangenome_aware_deepvariant-head784362481 (default)
+    modify dv_sif_image and dv_pangenome path in modules/nextflow.config if you encounter issues loading container or reference.     
+    ```
     --var_tool STRING
       Specify the variant calling tools for merged bam file. [dv]
       Supports:
         gatk
-        dv (DeepVariant)
-        gatk,dv (this will execute both)
+        dv
     ```
     *If two alignment tools ("lariat,bwa") and two variant calling programs ("gatk,dv") are specified, four result sets will be generated.
     ```
@@ -338,11 +340,7 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
       Run Variant Quality Score Recalibration (VQSR) of GATK. [true]
 
     --split_by_intervals BOOL [only valid when '--var_tool' contains "gatk" and '--use_megabolt' is false]
-      Utilizes -L option for GATK haplotypecaller; split by chromosome. [true]
-
-    --dv_version STRING [only valid when '--var_tool' contains "dv"]
-      Specify the DeepVariant version. [default: pangenome_aware_deepvariant-head784362481]
-      modify dv_sif_image and dv_pangenome path in modules/nextflow.config if you encounter issues loading container or reference     
+      Utilizes -L option for GATK haplotypecaller; split by chromosome. [true]    
   ...
 
     ```
