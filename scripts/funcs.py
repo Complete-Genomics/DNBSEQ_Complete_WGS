@@ -60,20 +60,30 @@ def fsplitrate(splitLog):
 	f.close()
 	return bctype, bcsplitrate
 def flfr(lfr):
-	f = open(lfr)
-	for line in f:
-		a = line.rstrip().split()[1]
-		if "good" in line:
-			lfrnum = a
-		elif "length" in line:
-			avglen = a
-		elif "readpair" in line:
-			avgfragreadcount = a
-		else:
-			lfrperbc = a
-	f.close()
-	avglen = int(float(avglen) / 1e3)
-	return int(lfrnum), avglen
+	lfrnum, avglen = 'NA', 'NA'
+	try:
+		f = open(lfr)
+		for line in f:
+			parts = line.rstrip().split()
+			if len(parts) < 2:
+				continue
+			a = parts[1]
+			if "good" in line:
+				lfrnum = a
+			elif "length" in line:
+				avglen = a
+			elif "readpair" in line:
+				avgfragreadcount = a
+			else:
+				lfrperbc = a
+		f.close()
+		if avglen != 'NA':
+			avglen = int(float(avglen) / 1e3)
+		if lfrnum != 'NA':
+			lfrnum = int(lfrnum)
+	except Exception:
+		pass
+	return lfrnum, avglen
 
 def parse_flgstat(flgstat):
 	f = open(flgstat)

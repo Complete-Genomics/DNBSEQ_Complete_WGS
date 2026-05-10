@@ -2,7 +2,7 @@ import pandas as pd
 import os, sys, glob
 from datetime import datetime
 import base64
-import pdfkit
+# import pdfkit
 
 title = 'CompleteWGS report'
 
@@ -30,11 +30,12 @@ def image_to_base64(image_path):
         return ''
 
 def generate_html(outdir, sample):
-    csv                 = glob.glob(os.path.join(outdir, sample + '.lariat.dv.report'))[0]
+    csv_matches         = glob.glob(os.path.join(outdir, sample + '.lariat.dv.report'))
+    csv                 = csv_matches[0] if csv_matches else None
     hlala_path          = os.path.join(outdir, 'hlala_out', sample, 'hla', 'R1_bestguess_G.txt')
 
     # table
-    metrics     = parse_report(csv)
+    metrics     = parse_report(csv) if csv else '<div class="noDataTitle">stLFRQC result not available</div>'
     hla         = parse_hlala(hlala_path)
 
     var_class_table           = parse_report(os.path.join(outdir, 'var_class.csv'))
