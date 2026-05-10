@@ -13,7 +13,8 @@ include { WF_mergebam       } from "${params.MOD}/mergebam"
 include { WF_callvariants   } from "${params.MOD}/callvariants"
 include { WF_phase;
         ideogram;
-        cumuplot            } from "${params.MOD}/phase"
+        cumuplot;
+        hapblock2bed        } from "${params.MOD}/phase"
 include {
     coverage;
     coverage as coveragePf;
@@ -62,7 +63,8 @@ include {gangstr} from "${params.MOD}/gangstr"
 include {frag1; frag2} from "${params.MOD}/frag"
 include {pangenie;
     pangenie_plot;
-    pangenie_var_plot } from "${params.MOD}/pangenie"
+    pangenie_var_plot;
+    pangenie_frombam } from "${params.MOD}/pangenie"
 include {hlala} from "${params.MOD}/hlala"
 
 include {report0;
@@ -127,8 +129,9 @@ workflow CWGS {
     WF_phase.out.hb.set {hb}
     WF_phase.out.report.set {ch_phasereport}
 
-    ideogram(hb) 
+    ideogram(hb)
     cumuplot(hb)
+    hapblock2bed(hb)
 
     // sv
     pangenie(ch_data.fq_pf).set {ch_pangenie}
@@ -392,7 +395,10 @@ workflow CWGS_frombam {
     if (params.align_tool.contains("lariat") && params.var_tool.contains("dv")) {
         ch_vcf = ch_phasedvcf
         ch_phase = ch_phasereport
-        
+        hb = phaseCatLariatDv.out.hb
+        ideogram(hb)
+        cumuplot(hb)
+        hapblock2bed(hb)
 
         if (!params.fromMergedBam) {
             if (params.ref == 'hg38' || params.ref.contains('GRCh38')) {
@@ -404,12 +410,16 @@ workflow CWGS_frombam {
                 gangstr(ch_mergebam)
                 hlala(ch_mergebam)
 
+                pangenie_frombam(ch_pfbam).set {ch_pangenie}
+                pangenie_plot(ch_pangenie.join(hb))
+                pangenie_var_plot(ch_pangenie)
+
                 reportLariatDv(ch_lariat, ch_dv, ch_vcf.join(ch_lfr).join(ch_cmrgMergebamhistbed).join(ch_cmrgMergebammeanbed).join(ch_depthreport).join(ch_phase)).set {ch_report}
 
                 ch_report.collect().mix(ch_reports).set {ch_reports}
                 report(ch_reports)
-                
-                ch_reports.mix(vep_data.out, hlala.out).collect().set {ch_flg}
+
+                ch_reports.mix(vep_data.out, hlala.out, cumuplot.out, pangenie_var_plot.out).collect().set {ch_flg}
                 html(ch_flg)
 
             } else {
