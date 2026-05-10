@@ -442,3 +442,27 @@ process phaseCat_cwx {
 
     """
 }
+
+process hapblock2bed {
+    cpus params.CPU0
+    memory params.MEM0 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+
+    input:
+    tuple val(id), path(hapblock)
+
+    output:
+    tuple val(id), path("${id}.hapblock.bed")
+
+    tag "$id"
+    publishDir "${params.outdir}/$id/phase/", mode: 'link'
+
+    script:
+    """
+    python3 ${params.SCRIPT}/hapcutPS2bed.py \
+        --input $hapblock \
+        --output ${id}.hapblock.bed
+    """
+    stub:
+    "touch ${id}.hapblock.bed"
+}
