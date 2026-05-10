@@ -984,13 +984,18 @@ process stLFRQC {
     ${params.BIN}stLFRQC --samtools /usr/bin/samtools --python3 /usr/bin/python3 \
         --ref $ref \
         --bam $bam \
-        --thread ${task.cpus}
+        --thread ${task.cpus} \
+        --script ${params.SCRIPT}/stLFRQC || echo "stLFRQC failed, using NA placeholders" >&2
 
-    sed -n '11p' 06.lfr_highquality.txt > tmp
-    sed -n '4p' 06.lfr_length.txt >> tmp
-    sed -n '4p' 06.lfr_readpair.txt >> tmp
-    sed -n '77p' 06.lfr_per_barcode.txt >> tmp
-    mv tmp  ${id}.lfr.report
+    if [ -f 06.lfr_highquality.txt ]; then
+        sed -n '11p' 06.lfr_highquality.txt > tmp
+        sed -n '4p' 06.lfr_length.txt >> tmp
+        sed -n '4p' 06.lfr_readpair.txt >> tmp
+        sed -n '77p' 06.lfr_per_barcode.txt >> tmp
+    else
+        printf 'NA\nNA\nNA\nNA\n' > tmp
+    fi
+    mv tmp ${id}.lfr.report
     """
     stub:
     "touch 06*.txt ${id}.lfr.report "
