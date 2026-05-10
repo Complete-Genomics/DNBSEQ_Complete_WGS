@@ -89,3 +89,37 @@ process pangenie_var_plot {
     python ${params.SCRIPT}/pangenie_var_plot.py $vcf
     """
 }
+process pangenie_frombam {
+    cpus params.cpu3
+    memory params.MEM1 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+
+    when: params.ref == 'hg38' || params.ref.contains('GRCh38')
+
+    input:
+    tuple val(id), path(bam)
+
+    output:
+    tuple val(id), path("pangenie_genotyping_biallelic.vcf.gz*")
+
+    tag "$id"
+    publishDir "${params.outdir}/$id/", mode: 'link'
+
+    script:
+    def bam_file = bam.first()
+    def python = "/usr/local/app/miniconda3/bin/python"
+    def py = "/usr/local/app/pangenie/pipelines/run-from-callset/scripts/convert-to-biallelic.py"
+    """
+    ${params.BIN}samtools fastq -@ ${task.cpus} -0 /dev/null -s /dev/null \
+        -1 reads_r1.fq.gz -2 reads_r2.fq.gz $bam_file
+
+    cat reads_r1.fq.gz reads_r2.fq.gz | gunzip > merge.fq
+
+    PanGenie -f ${params.DB}/pangenie/HPRC_index -i merge.fq -o pangenie -j ${task.cpus} -t ${task.cpus}
+
+    cat pangenie_genotyping.vcf | $python $py ${params.DB}/pangenie/cactus_filtered_ids_biallelic.vcf.gz | bgzip > pangenie_genotyping_biallelic.vcf.gz
+    tabix pangenie_genotyping_biallelic.vcf.gz
+
+    rm merge.fq reads_r1.fq.gz reads_r2.fq.gz pangenie_genotyping.vcf
+    """
+}
