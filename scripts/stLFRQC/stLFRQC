@@ -1,0 +1,311 @@
+#!/bin/bash
+
+#-------------- tools ------------------
+BWA='bwa'
+SAMTOOLS='samtools'
+PYTHON3='python3'
+#-------------- inputs ------------------
+REF=
+READ1=
+READ2=
+#-------------- other parameters --------------
+TEMP_PREFIX="temp"
+CPU=8
+GAP_THRESHOLD=300000
+VALID_LFR=3
+VALID_BARCODE=5
+GOOD_LFR=5
+GOOD_LFR_L=10000
+
+function usage() {
+echo """
+Usage :
+     ./stLFRQC [OPTION] 
+
+quality control of stLFR reads.
+
+Options  :
+        -h/--help         print usage
+        --bwa             bwa
+        --samtools        samtools
+        --python3         python3 from anaconda
+        --ref             reference
+        --read1           read1
+        --read2           read2
+        --gap_threshold   max gap distance to treat as same lfr
+                          default 3000,000
+        --thread         thread for bwa & samtools
+                          default 8
+        --valid_lfr_rp    min valid lfr read pair 
+                          default 3
+        --valid_barcod_rp min valid barcode read pair 
+                          default 5
+        --good_lfr_rp     min good lfr read pair 
+                          default 5
+        --good_lfr_ln     min good lfr length
+                          default 10000
+Example  :
+
+ ./stLFRQC --ref ref.fa --read1 r1.fq.gz --read2 r2.fq.gz \\
+           --bwa /path/to/bwa --samtools /path/to/samtools \\
+           --python3 /path/to/python3
+"""
+}
+
+if [[ $# == 0 ]] ; then 
+    usage
+    exit 0
+fi
+echo "INFO : command --(  $0 $* )"
+while [[ $# > 0 ]] 
+do
+    case $1 in
+        "-h")
+            usage
+            exit 0
+            ;;
+        "--help")
+            usage
+            exit 0
+            ;;
+        "--python3")
+            PYTHON3=$2
+            shift
+            ;;
+        "--samtools")
+            SAMTOOLS=$2
+            shift
+            ;;
+        "--thread")
+            CPU=$2
+            shift
+            ;;
+        "--gap_threshold")
+            GAP_THRESHOLD=$2
+            shift
+            ;;
+        "--temp")
+            TEMP_PREFIX=$2
+            shift
+            ;;
+        "--ref")
+            REF=$2
+            shift
+            ;;
+        "--valid_lfr_rp")
+            VALID_LFR=$2
+            shift
+            ;;
+        "--good_lfr_rp")
+            GOOD_LFR=$2
+            shift
+            ;;
+        "--good_lfr_ln")
+            GOOD_LFR_L=$2
+            shift
+            ;;
+        "--valid_barcode_rp")
+            VALID_BARCODE=$2
+            shift
+            ;;
+        "--bam")
+            BAM=$2
+            shift
+            ;;
+
+        *)
+            echo "invalid params : \"$1\" . exit ... "
+            exit
+        ;;
+    esac
+    shift
+done
+
+#######  BASIC FUNCTIONS  #################################
+function check_file_exist() {
+    file_description=$1
+    file_name=$2
+    if [[ ! -e $file_name ]] ; then
+        echo "$file_description : [ $file_name ] is not exist ! "
+        echo "exit now ...!!!"
+        exit 1
+    fi
+}
+
+function check_self_exist() {
+    file_description=$1
+    file_name=$2
+    if [[ ! -e $file_name ]] ; then
+        echo "$file_description : [ $file_name ] is not exist ! "
+        echo "please re-download a new copy from github !"
+        echo "exit now ...!!!"
+        exit 1
+    fi
+}
+
+function check_selfbinary_exist() {
+    file_description=$1
+    file_name=$2
+    if [[ ! -e $file_name ]] ; then
+        echo "$file_description : [ $file_name ] is not exist ! "
+        echo "please run make command first !"
+        echo "exit now ...!!!"
+        exit 1
+    fi
+}
+
+function try_mkdir(){
+    if [[ ! -d $1 ]] ; then
+        mkdir $1
+    fi
+}
+
+#######  SCRIPT MAIN  #####################################
+
+# sanity check configures.
+# check_file_exist "samtools binary file" $SAMTOOLS
+# check_file_exist "python3 file" $PYTHON3
+check_file_exist "reference fasta file" $REF
+check_file_exist "bam file" $BAM
+
+# version=`$SAMTOOLS --version | head -n1 | awk '{print $2}'`
+# if [[ $version < 1.9 ]] ; then 
+#     echo "FATAL : found samtools version -- $version but require samtools 1.9 . exit ..."
+#     exit 1
+# else
+#     echo "INFO : found samtools version = $version ;"
+# fi
+
+INSTALL_DIR=`realpath $0`
+INSTALL_DIR=`dirname $INSTALL_DIR`
+EAWK=$INSTALL_DIR"/extraction_barcode_infos.awk"
+DEPTH_PY=$INSTALL_DIR"/depth.py"
+LFR_PY=$INSTALL_DIR"/lfr.py"
+LFR_PER_BARCODE=$INSTALL_DIR"/lfr_per_barcode_53"
+LFR_LENGTH=$INSTALL_DIR"/lfr_length_53"
+LFR_READPAIR=$INSTALL_DIR"/lfr_readpair_53"
+LFR_GOOD=$INSTALL_DIR"/lfr_highquality_53"
+
+check_self_exist "extraction_barcode_infos.awk" $EAWK
+check_self_exist "depth.py" $DEPTH_PY
+check_self_exist "lfr.py" $LFR_PY
+
+check_selfbinary_exist "lfr_per_barcode" $LFR_PER_BARCODE
+check_selfbinary_exist "lfr_length" $LFR_LENGTH
+check_selfbinary_exist "lfr_readpair" $LFR_READPAIR
+check_selfbinary_exist "lfr_highquality" $LFR_GOOD
+
+# echo "INFO : stage 0 mapping "
+# # step 00 : mapping reads into reference by "bwa mem"
+# if [[ -e $REF".bwt" && -e $REF".sa" ]] ;  then
+#     echo "INFO : skip indexing $REF..."
+# else
+#     echo "INFO : run bwa index now ..."
+#     $BWA index $REF 2>$TEMP_PREFIX".00.bwa_index.log" || exit 1
+#     echo "INFO : run bwa index done."
+# fi
+
+# echo "INFO : --> run bwa mem now ..."
+# $BWA mem -t $CPU $REF $READ1 $READ2 >$TEMP_PREFIX".00.sam" \
+#                              2>$TEMP_PREFIX".00.bwa_mem.log" || exit 1
+# echo "INFO : --> run bwa mem done."
+# echo "INFO : stage 0 done."
+# echo "INFO : stage 1 ngs analysising ....."
+
+# # step 01 : mark PCR duplicate by "samtools markdup"
+# echo "INFO : --> run samtools fixmate now ..."
+# $SAMTOOLS fixmate -m -@ $CPU $TEMP_PREFIX".00.sam" \
+#                                   $TEMP_PREFIX".01.fixmate.sam"\
+#                                   2>$TEMP_PREFIX".log.01.samtools_fixmate" || exit 1
+# echo "INFO : --> run samtools fixmate done."
+# echo "INFO : --> remove 00.sam ..."
+# rm -rf $TEMP_PREFIX".00.sam" || exit 1
+
+# echo "INFO : --> run samtools sort now ..."
+# $SAMTOOLS sort -@ $CPU -o $TEMP_PREFIX".01.fixmate.sort.bam" \
+#                                   $TEMP_PREFIX".01.fixmate.sam"\
+#                                   --output-fmt 'bam' \
+# 				  -T '/hwfssz8/MGI_BIOINFO/USER/biancai/sv/stlfrqc/'\
+#                                   2>$TEMP_PREFIX".log.01.samtools_sort" || exit 1
+# echo "INFO : --> run samtools sort done."
+# echo "INFO : --> remove 01.fixmate.sam ..."
+# rm -rf $TEMP_PREFIX".01.fixmate.sam" || exit 1
+
+# echo "INFO : --> run samtools markdup now ..."
+# $SAMTOOLS markdup -s  $TEMP_PREFIX".01.fixmate.sort.bam" \
+#                                   $TEMP_PREFIX".01.fixmate.sort.markdup.bam" \
+#                                   2>$TEMP_PREFIX".01.rmdup.stats" || exit 1
+# echo "INFO : --> run samtools markdup done"
+# echo "INFO : --> remove 01.fixmate.sort.sam ..."
+# rm -rf $TEMP_PREFIX".01.fixmate.sort.bam" || exit 1
+
+# # step 02 : stats basic metrics by "samtools stats"
+# echo "INFO : --> run samtools stats now ..."
+# $SAMTOOLS stats -@ $CPU $TEMP_PREFIX".01.fixmate.sort.markdup.bam" \
+#                                   >"02.sam.stats" \
+#                                   2>"02.sam.stats.log" || exit 1 
+# echo "INFO : --> run samtools stats done."
+# echo "INFO : --> print NGS basic now ..."
+# grep ^SN 02.sam.stats | cut -f 2- >"02.ngs.basic.txt"
+# echo "INFO : --> print NGS basic done"
+
+# echo "INFO : --> print indel now ..."
+# printf "length\tinsert_count\tdelete_count\n" >"02.ngs.indel.txt"
+# grep ^ID 02.sam.stats | awk '{print $2,$3,$4}' >>"02.ngs.indel.txt"
+# echo "INFO : --> print indel done."
+# echo "INFO : --> run samtools depth now ..."
+# # step 03 : calculate & draw depth infomation
+# $SAMTOOLS depth -a $TEMP_PREFIX".01.fixmate.sort.markdup.bam" \
+#             | awk '{tB[$3]=tB[$3]+1} END{for(k in tB){print k,tB[k];}}' \
+#             | sort -n > "03.depth.txt"  || exit 1
+# echo "INFO : --> run samtools depth done."
+# $PYTHON3  $DEPTH_PY >"03.depth_detail.txt"
+# echo ""
+# echo "INFO : stage 1 ngs analysising done."
+
+
+
+echo "INFO : stage 2 LFR analysising ....."
+# step 04 : barcode information extraction
+# filter unmaped / duplicate / unbarcoded infomation
+# output format : read_name	barcode_name	ref_name	map_pos
+echo "`date` INFO : --> get read_barcode.pos ..." 
+$SAMTOOLS view $BAM |  grep -v '^@'  | \
+    awk -F '#|\t' -f $EAWK >$TEMP_PREFIX".04.read_barcode.pos"
+echo "`date` INFO : --> get read_barcode.pos done."
+#step 05 : run lfr analysising ...
+echo "`date` INFO : --> detect & print lfr infomation ..."
+$PYTHON3 $LFR_PY -i $TEMP_PREFIX".04.read_barcode.pos" -b $GAP_THRESHOLD
+# cp temp.04.read_barcode.pos 04.read_barcode.pos
+echo "`date` INFO : --> detect & print lfr infomation done"
+#step 06 : extract lfr features ...
+echo "`date` INFO : --> run lfr_per_barcode_53 ..."
+$LFR_PER_BARCODE -l $VALID_LFR -b $VALID_BARCODE < "05.long_fragment.details.txt" 2>"06.lfr_per_barcode.txt"
+echo "`date` INFO : --> run lfr_per_barcode_53 done."
+echo "`date` INFO : --> run lfr_length_53 ..."
+$LFR_LENGTH    -l $VALID_LFR -b $VALID_BARCODE  < "05.long_fragment.details.txt" 2>"06.lfr_length.txt"
+echo "`date` INFO : --> run lfr_length_53 done."
+echo "`date` INFO : --> run lfr_readpair_53 ..."
+$LFR_READPAIR   -l $VALID_LFR -b $VALID_BARCODE < "05.long_fragment.details.txt" 2>"06.lfr_readpair.txt"
+echo "`date` INFO : --> run lfr_readpair_53 done"
+echo "`date` INFO : --> run lfr_highquality_53 ..."
+$LFR_GOOD   -l $VALID_LFR -b $VALID_BARCODE -g $GOOD_LFR -m $GOOD_LFR_L  < "05.long_fragment.details.txt" 2>"06.lfr_highquality.txt"
+echo "`date` INFO : --> run lfr_highquality_53 done"
+echo ""
+echo "`date` INFO : stage 2 LFR analysising done."
+rm temp.04.read_barcode.pos
+# echo "INFO : stage 3 pack reports ..."
+# tar -czf 10.report.tar.gz "02.ngs.basic.txt" \
+#                           "02.ngs.indel.txt" \
+#                           "03.depth_detail.txt" \
+#                           "03.cumulative_depth_freq.png" \
+#                           "03.depth_freq.png" \
+#                           "03.depth_freq.png" \
+#                           "06.lfr_per_barcode.txt" \
+#                           "06.lfr_length.txt" \
+#                           "06.lfr_readpair.txt" \
+#                           "06.lfr_highquality.txt" \
+
+# echo "INFO : stage 3 pack reports done."
+# echo "INFO : final report : \"10.report.tar.gz\""
+# echo "_____ALL_END_____"
