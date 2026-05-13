@@ -29,6 +29,8 @@ process vep {
     bgzip -c ${id}.vep.vcf > ${id}.vep.vcf.gz
     tabix -p vcf ${id}.vep.vcf.gz
     """
+    stub:
+    "touch ${id}.vep.vcf.gz ${id}.vep.vcf.gz.tbi ${id}.vep.vcf_summary.html"
 }
 
 process vep_data {
@@ -50,4 +52,6 @@ process vep_data {
     """
     python ${params.SCRIPT}/mk_vep_pic.py ${html}
     """
+    stub:
+    "touch vep_summary.csv vep_summary.png"
 }

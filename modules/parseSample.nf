@@ -23,11 +23,11 @@ workflow parse_sample {
                 def trimmed = pathStr.trim()
                 if (!trimmed) return
                 def lib
-                if (hdr == 'stlfr2' && !hasStlfr1) {
-                    lib = 'stlfr2'   // SE stLFR2 library (single-end, barcode at read end)
+                if ((hdr == 'stlfr2' && !hasStlfr1) || hdr.startsWith('stlfr2') && hdr != 'stlfr2') {
+                    lib = 'stlfr2'   // SE stLFR2 (stlfr2 alone) or PE SE600 (stlfr21/stlfr22)
                 } else if (hdr.contains('stlfr')) {
                     lib = 'stlfr'    // regular PE stLFR (stlfr1=R1, stlfr2=R2)
-                } else if (hdr.contains('pf')) {
+                } else if (hdr.startsWith('pf') || hdr.startsWith('pcrfree')) {
                     lib = 'pf'
                 } else {
                     lib = null
@@ -89,14 +89,22 @@ workflow parse_sample_frombam {
     main:
     toCsv(samplesheet).set {ch_x}
 
-    // Channel.fromPath( "${params.outdir}/samplesheet.csv" )
-    // Channel.fromPath(samplesheet)
-        // .view()
     ch_x
-        .splitCsv ( header:true, sep:',' ) // dict: [sample:hg002, stlfr1: path, ...]
-        .map { create_channel_frombam(it) }   //       [test1, [stlfr1, stlfr2, pf1, pf2]]
-        .set { bam }                      
-    emit: bam 
+        .splitCsv(header:true, sep:',')
+        .multiMap { row ->
+            bam:    create_channel_frombam(row)
+            fq_pf:  create_channel_frombam_fq(row)   // pf1/pf2 columns, may be null
+        }
+        .set { parsed }
+
+    parsed.bam.set { bam }
+    parsed.fq_pf
+        .filter { id, fqs -> fqs != null }
+        .set { fq_pf }
+
+    emit:
+    bam   = bam
+    fq_pf = fq_pf
 }
 process tosamplelist {
     cpus params.CPU0
@@ -174,6 +182,22 @@ def create_fastq_channel(LinkedHashMap row) {
         exit 1, "ERROR: Please check input samplesheet -> ${pcrfree2} does not exist!\n"
     }
     return [row.sample, stlfr1, stlfr2, pcrfree1, pcrfree2]
+}
+
+def create_channel_frombam_fq(LinkedHashMap row) {
+    def resolvePath = { path ->
+        def p = java.nio.file.Paths.get(path)
+        return p.isAbsolute() ? p : workflow.launchDir.parent.resolve(p).toAbsolutePath()
+    }
+    def pf1str = row['pcrfree1']?.trim()
+    def pf2str = row['pcrfree2']?.trim()
+    if (!pf1str || !pf2str) return [row.sample, null]
+
+    def pf1 = file(resolvePath(pf1str).toString())
+    def pf2 = file(resolvePath(pf2str).toString())
+    if (!pf1.exists()) exit 1, "ERROR: pcrfree1 not found: ${pf1}\n"
+    if (!pf2.exists()) exit 1, "ERROR: pcrfree2 not found: ${pf2}\n"
+    return [row.sample, [pf1, pf2]]
 }
 
 def create_channel_frombam(LinkedHashMap row) {

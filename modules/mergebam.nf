@@ -38,6 +38,8 @@ process intersect {
     ${params.BIN}bedtools merge > ${id}.${aligner}.cov${params.PF_lt_stLFR_depth}.intersect.bed
 
     """
+    stub:
+    "touch ${id}.${params.align_tool}.cov${params.PF_lt_stLFR_depth}.intersect.bed"
 }
 process mergeBam {
     cpus params.cpu2
@@ -70,6 +72,8 @@ process mergeBam {
     ${params.BIN}samtools index -@ ${task.cpus} ${id}.${aligner}.merge.bam
 
     """
+    stub:
+    "touch ${id}.${params.align_tool}.merge.bam ${id}.${params.align_tool}.merge.bam.bai"
 }
 
 process combinebam {
@@ -94,4 +98,6 @@ process combinebam {
     ${params.BIN}samtools index -@ ${task.cpus} ${id}.${aligner}.merge.bam
 
     """
+    stub:
+    "touch ${id}.lariat.merge.bam ${id}.lariat.merge.bam.bai"
 }

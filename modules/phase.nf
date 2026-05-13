@@ -77,7 +77,7 @@ process splitBam4phasing {
   ${params.BIN}samtools index ${id}.${aligner}.${chr}.bam 
   """
   stub:
-  "touch ${id}.${aligner}.${chr}.bam "
+  "touch ${id}.${params.align_tool}.${chr}.bam ${id}.${params.align_tool}.${chr}.bam.bai"
 }
 process splitvcf {
   
@@ -101,6 +101,8 @@ process splitvcf {
   """
   zcat $vcf | awk -F'\\t' -v chr="$chr" '(\$0 ~ /^#/) || (\$1 == chr && \$10 ~ /^(1\\/1|0\\/1|1\\/2):/)' | ${params.BIN}bgzip > ${id}.${params.align_tool}.${params.var_tool}.${chr}.vcf.gz
   """
+  stub:
+  "touch ${id}.${params.align_tool}.${params.var_tool}.${chr}.vcf.gz"
 }
 
 process getchrs {
@@ -172,6 +174,14 @@ process phase {
         """
     }
     return cmd
+    stub:
+    def prefix2 = "${id}.${params.align_tool}.${params.var_tool}.${chr}"
+    """
+    touch ${prefix2}.hapblock.phased.VCF.gz
+    touch ${prefix2}.lf
+    touch ${prefix2}.hapblock
+    touch ${prefix2}.hapcut_stat.txt
+    """
 }
 
 process ideogram {
@@ -223,6 +233,8 @@ process cumuplot {
     """
     /usr/local/miniconda3/envs/six/bin/python ${params.SCRIPT}/cumuplot.py $hapblock
     """
+    stub:
+    "touch cumulative_coverage_plot.png"
 }
 
 process hapKaryotype {
@@ -389,6 +401,14 @@ process phaseCat {
 
     
     python3 ${params.SCRIPT}/phase.py ${prefix} $fai > ${prefix}.phase.report
+    """
+    stub:
+    def prefix2 = "${id}.${params.align_tool}.${params.var_tool}"
+    """
+    touch ${prefix2}.hapblock
+    touch ${prefix2}.hapcut_stat.txt
+    touch ${prefix2}.phased.vcf.gz ${prefix2}.phased.vcf.gz.tbi
+    touch ${prefix2}.phase.report
     """
 }
 

@@ -20,4 +20,6 @@ process gangstr {
     """
     GangSTR --bam $bam --ref $ref --regions $bed --out GangSTR_out
     """
+    stub:
+    "touch GangSTR_out.vcf GangSTR_out.samplestats.tab GangSTR_out.insdata.tab"
 }

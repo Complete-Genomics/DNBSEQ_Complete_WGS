@@ -38,4 +38,6 @@ process hlala {
     mkdir hlala_out
     HLA-LA.pl --BAM $bam --graph ${params.DB}/hlala/PRG_MHC_GRCh38_withIMGT --sampleID $id --workingDir hlala_out --maxThreads ${task.cpus}
     """
+    stub:
+    "mkdir -p hlala_out && touch hlala_out/hlaTypeInference.txt"
 }
