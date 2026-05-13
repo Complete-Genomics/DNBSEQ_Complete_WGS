@@ -108,8 +108,8 @@ process makeWindows {
 
     script:
     def fai  = "${params.DB}/${params.ref}/reference/${params.ref}.fa.fai"
-    def win  = params.denovo_window_size ?: 60000
-    def step = params.denovo_window_step ?: 30000
+    def win  = params.denovo_window_size
+    def step = params.denovo_window_step
     """
     awk 'BEGIN{OFS="\\t"} \$1 ~ /^chr([0-9]+|X|Y)\$/ {print \$1, 0, \$2}' $fai \\
     | ${params.BIN}bedtools makewindows -b - -w ${win} -s ${step} > windows.bed
@@ -134,9 +134,9 @@ process denovoBatch {
     tag "$id hp${hp} ${bed_chunk.name}"
 
     script:
-    def min_reads   = params.denovo_min_reads   ?: 50
-    def min_contig  = params.denovo_min_contig  ?: 500
-    def max_reads   = params.denovo_max_reads   ?: 20000  // subsample cap per window
+    def min_reads   = params.denovo_min_reads
+    def min_contig  = params.denovo_min_contig
+    def max_reads   = params.denovo_max_reads
     """
     > out.fa
     while IFS=\$'\\t' read -r chr s e; do
@@ -231,7 +231,7 @@ workflow WF_haplodenovo {
     makeWindows(ch_prop.bam.map{ it[0] }.first()).set { ch_winbed }
 
     // split BED into chunks
-    def chunk = params.denovo_chunk_lines ?: 200
+    def chunk = params.denovo_chunk_lines
     ch_winbed
         .splitText(by: chunk, file: true)
         .set { ch_chunks }
