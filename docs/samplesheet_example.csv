@@ -1,0 +1,5 @@
+sample,stlfr1,stlfr2,pcrfree1,pcrfree2,stlfrbam,pfbam
+# from FQ (CWGS workflow): stlfrbam/pfbam 留空
+HG002_fq,/data/HG002_stlfr_R1.fq.gz,/data/HG002_stlfr_R2.fq.gz,/data/HG002_pf_R1.fq.gz,/data/HG002_pf_R2.fq.gz,,
+# from BAM (CWGS_frombam workflow): stlfr1/stlfr2 留空; pcrfree1/2 仍需填写供 PanGenie 使用
+HG002_bam,,,/data/HG002_pf_R1.fq.gz,/data/HG002_pf_R2.fq.gz,/data/HG002_stlfr.bam,/data/HG002_pf.bam

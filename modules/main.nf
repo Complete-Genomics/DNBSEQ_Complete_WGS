@@ -66,6 +66,7 @@ include {pangenie;
     pangenie_var_plot;
     pangenie_frombam } from "${params.MOD}/pangenie"
 include {hlala} from "${params.MOD}/hlala"
+include {WF_haplodenovo} from "${params.MOD}/haplodenovo"
 
 include {report0;
     report;
@@ -133,6 +134,11 @@ workflow CWGS {
     cumuplot(hb)
     hapblock2bed(hb)
 
+    // per-haplotype overlapping-window de novo assembly
+    if (params.run_haplodenovo) {
+        WF_haplodenovo(ch_mergebam.join(ch_phasedvcf))
+    }
+
     // sv
     pangenie(ch_data.fq_pf).set {ch_pangenie}
     pangenie_plot(ch_pangenie.join(hb))
@@ -157,7 +163,9 @@ workflow CWGS_frombam {
     }
     if (!params.fromMergedBam) {
         println("!!! run CWGS from stlfr and pf bams")
-        parse_sample_frombam(ch_input).bam.set {ch_bam}
+        parse_sample_frombam(ch_input).set { ch_parsed_frombam }
+        ch_parsed_frombam.bam.set    { ch_bam }
+        ch_parsed_frombam.fq_pf.set  { ch_fq_pf_frombam }   // pf1/pf2 from samplesheet for pangenie
         bam(ch_bam).stlfr.set {ch_lariatbam}
         bam.out.pf.set {ch_pfbam}       
 
@@ -410,9 +418,13 @@ workflow CWGS_frombam {
                 gangstr(ch_mergebam)
                 hlala(ch_mergebam)
 
-                pangenie_frombam(ch_pfbam).set {ch_pangenie}
+                pangenie(ch_fq_pf_frombam).set {ch_pangenie}
                 pangenie_plot(ch_pangenie.join(hb))
                 pangenie_var_plot(ch_pangenie)
+
+                if (params.run_haplodenovo) {
+                    WF_haplodenovo(ch_mergebam.join(ch_phasedvcf))
+                }
 
                 reportLariatDv(ch_lariat, ch_dv, ch_vcf.join(ch_lfr).join(ch_cmrgMergebamhistbed).join(ch_cmrgMergebammeanbed).join(ch_depthreport).join(ch_phase)).set {ch_report}
 

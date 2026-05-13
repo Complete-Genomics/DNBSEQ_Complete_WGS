@@ -26,6 +26,8 @@ process pangenie {
 
     rm merge.fq pangenie_genotyping.vcf
     """
+    stub:
+    "touch pangenie_genotyping_biallelic.vcf.gz pangenie_genotyping_biallelic.vcf.gz.tbi"
 }
 process pangenie_plot {
     cpus params.cpu3
@@ -41,6 +43,9 @@ process pangenie_plot {
     // cache false
     tag "$id"
     publishDir "${params.outdir}/report/$id/"
+
+    stub:
+    "touch chromosome_sv.png"
 
     script:
     vcf = vcf.first()
@@ -84,6 +89,9 @@ process pangenie_var_plot {
     tag "$id"
     publishDir "${params.outdir}/report/$id/", mode: 'link'
 
+    stub:
+    "touch pangenie_var_plot.png"
+
     script:
     """
     python ${params.SCRIPT}/pangenie_var_plot.py $vcf
@@ -104,6 +112,9 @@ process pangenie_frombam {
 
     tag "$id"
     publishDir "${params.outdir}/$id/", mode: 'link'
+
+    stub:
+    "touch pangenie_genotyping_biallelic.vcf.gz pangenie_genotyping_biallelic.vcf.gz.tbi"
 
     script:
     def bam_file = bam.first()

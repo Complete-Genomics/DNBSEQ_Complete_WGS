@@ -126,9 +126,10 @@ workflow WF_align_stlfr2 {
         exit 1, 'stlfr2 aligner only supports hg38/GRCh38 ref (vg giraffe)!'
     }
 
-    ch_stlfr2fq.map { id, reads -> [id, reads[0], reads[1]] }.set { ch_stlfr2fq_flat }
+    ch_stlfr2fq.map { id, reads -> [id, reads[0], reads.size() > 1 ? reads[1] : reads[0]] }.set { ch_stlfr2fq_flat }
     kff(ch_stlfr2fq_flat).set { ch_kff2 }
     vg(ch_kff2.join(ch_stlfr2fq_flat)).set { ch_stlfr2bam0 }
+    addBxSe600(ch_stlfr2bam0).set { ch_stlfr2bam0 }
     markdup('stlfr2', 'vg', ch_stlfr2bam0).set { ch_stlfr2bam }
 
     if (params.sampleBam) { sampleBam('stlfr2', 'vg', ch_stlfr2bam).set { ch_stlfr2bam } }
@@ -401,6 +402,8 @@ process vg {
 
     samtools index -@ ${task.cpus} ${id}.sort.bam
     """
+    stub:
+    "touch ${id}.sort.bam ${id}.sort.bam.bai"
 }
 
 process bqsr {
@@ -809,7 +812,7 @@ process markdup {
     }
     return cmd
     stub:
-    "touch ${id}.${lib}.${aligner}.*.bam"
+    "touch ${id}.${lib}.${aligner}.${params.markdup}.bam ${id}.${lib}.${aligner}.${params.markdup}.bam.bai"
 }
 process sampleBam_samtools {
     cpus params.cpu2
@@ -961,6 +964,29 @@ process bed {
 }
 
 
+
+process addBxSe600 {
+    cpus params.CPU0
+    memory params.MEM1 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+
+    input:
+    tuple val(id), path(bam_files)
+
+    output:
+    tuple val(id), path("${id}.stlfr2.vg.bx.bam*")
+
+    tag "$id"
+
+    script:
+    def bam = bam_files instanceof List ? bam_files.first() : bam_files
+    """
+    python3 ${params.SCRIPT}/add_bx_se600.py $bam ${id}.stlfr2.vg.bx.bam
+    ${params.BIN}samtools index -@ ${task.cpus} ${id}.stlfr2.vg.bx.bam
+    """
+    stub:
+    "touch ${id}.stlfr2.vg.bx.bam ${id}.stlfr2.vg.bx.bam.bai"
+}
 
 process stLFRQC {
     cpus params.CPU1
