@@ -126,8 +126,14 @@ workflow WF_align_stlfr2 {
         exit 1, 'stlfr2 aligner only supports hg38/GRCh38 ref (vg giraffe)!'
     }
 
-    ch_stlfr2fq.map { id, reads -> [id, reads[0], reads.size() > 1 ? reads[1] : reads[0]] }.set { ch_stlfr2fq_flat }
-    kff(ch_stlfr2fq_flat).set { ch_kff2 }
+    // SE600 is single-end (1 file); PE uses 2 files
+    ch_stlfr2fq.map { id, reads ->
+        def is_pe = reads.size() > 1
+        def r1 = reads[0]
+        def r2 = is_pe ? reads[1] : reads[0]
+        [id, r1, r2, is_pe]
+    }.set { ch_stlfr2fq_flat }
+    kff(ch_stlfr2fq_flat.map { id, r1, r2, is_pe -> [id, r1, r2] }).set { ch_kff2 }
     vg(ch_kff2.join(ch_stlfr2fq_flat)).set { ch_stlfr2bam0 }
     addBxSe600(ch_stlfr2bam0).set { ch_stlfr2bam0 }
     markdup('stlfr2', 'vg', ch_stlfr2bam0).set { ch_stlfr2bam }
@@ -363,7 +369,12 @@ process kff {
     script:
 
     """
-    echo -e "$r1\\n$r2" > file
+    # for SE (r1==r2) list only one file to avoid double-counting kmers
+    if [ "$r1" = "$r2" ]; then
+        echo "$r1" > file
+    else
+        echo -e "$r1\\n$r2" > file
+    fi
     kmc -k29 -m${task.memory.giga} -okff -t${task.cpus} @file ${id} .
     """
     stub:
@@ -377,24 +388,26 @@ process vg {
     tag "$id"
 
     input:
-    tuple val(id), path(kff), path(r1), path(r2)
+    tuple val(id), path(kff), path(r1), path(r2), val(is_pe)
 
     output:
-    tuple val(id), path("${id}.sort.bam*") 
+    tuple val(id), path("${id}.sort.bam*")
 
     // publishDir "${params.outdir}/$id/align/", mode: 'link', enabled: !params.sampleBam
- 
-    script:
-    def gbz = "${params.DB}/hg38/panGenome/hprc-v1.1-mc-grch38.gbz"
-    def hapl = "${params.DB}/hg38/panGenome/hprc-v1.1-mc-grch38.hapl"
-    def fai = params.ref.startsWith('/') ? "${params.ref}.fai" : "${params.DB}/hg38/reference/hg38.fa.fai"
-    def vg = "/usr/local/app/vg/bin/vg"
-    """
-    awk '{print \$1}' $fai |sed 's/^/GRCh38#0#/' > list
 
-    $vg giraffe -Z $gbz --progress --index-basename `pwd`/${id} --read-group "ID:$id LB:lib1 SM:$id PL:CG PU:unit1" --sample $id -o BAM \\
-        --ref-paths list -P -L 3000 -f $r1 -f $r2 --kff-name $kff --haplotype-name $hapl -t ${task.cpus} | \\
-    samtools sort -@ ${task.cpus} -T `pwd`/sort.tmp. -o ${id}.sort0.bam - 
+    script:
+    def gbz  = "${params.DB}/hg38/panGenome/hprc-v1.1-mc-grch38.gbz"
+    def hapl = "${params.DB}/hg38/panGenome/hprc-v1.1-mc-grch38.hapl"
+    def fai  = params.ref.startsWith('/') ? "${params.ref}.fai" : "${params.DB}/hg38/reference/hg38.fa.fai"
+    def vg_bin = "/usr/local/app/vg/bin/vg"
+    def fq_args = is_pe ? "-f $r1 -f $r2" : "-f $r1"
+    """
+    awk '{print \$1}' $fai | sed 's/^/GRCh38#0#/' > list
+
+    $vg_bin giraffe -Z $gbz --progress --index-basename `pwd`/${id} \\
+        --read-group "ID:$id LB:lib1 SM:$id PL:CG PU:unit1" --sample $id -o BAM \\
+        --ref-paths list -P -L 3000 $fq_args --kff-name $kff --haplotype-name $hapl -t ${task.cpus} | \\
+    samtools sort -@ ${task.cpus} -T `pwd`/sort.tmp. -o ${id}.sort0.bam -
 
     samtools view -H ${id}.sort0.bam > header
     sed 's/GRCh38#0#//g' header > new_header.txt

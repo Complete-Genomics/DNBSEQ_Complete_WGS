@@ -266,24 +266,32 @@ sample,stlfr1,stlfr2,pcrfree1,pcrfree2,stlfrbam,pfbam
 | Column | Description |
 |--------|-------------|
 | `sample` | Sample ID (used in output file names) |
-| `stlfr1` | cWGS/stLFR PE150 R1 FASTQ (gzipped) |
-| `stlfr2` | cWGS/stLFR PE150 R2 FASTQ (gzipped) |
+| `stlfr1` | cWGS/stLFR **PE150** R1 FASTQ (gzipped) |
+| `stlfr2` | cWGS/stLFR **PE150** R2 FASTQ (gzipped) |
+| `stlfr21` | cWGS/stLFR **SE600** FASTQ (gzipped, single-end) |
 | `pcrfree1` | PCR-free R1 FASTQ (gzipped) |
 | `pcrfree2` | PCR-free R2 FASTQ (gzipped) |
 | `stlfrbam` | Pre-aligned cWGS BAM (for `--frombam` mode) |
 | `pfbam` | Pre-aligned PCR-free BAM (for `--frombam` mode) |
 
-**Start from FASTQ (default):**
+**Library types:**
+
+| Library | Chemistry | Columns | Aligner |
+|---------|-----------|---------|---------|
+| stLFR PE150 | Paired-end 150 bp | `stlfr1` + `stlfr2` | Lariat |
+| SE600 (stLFR2) | Single-end 600 bp | `stlfr21` only | vg giraffe |
+
+**Start from FASTQ — PE150 (default):**
 ```csv
 sample,stlfr1,stlfr2,pcrfree1,pcrfree2,stlfrbam,pfbam
 demo1,/path/cWGS_01_1.fq.gz,/path/cWGS_01_2.fq.gz,/path/PF_01_1.fq.gz,/path/PF_01_2.fq.gz,,
 demo2,/path/cWGS_02_1.fq.gz,/path/cWGS_02_2.fq.gz,/path/PF_02_1.fq.gz,/path/PF_02_2.fq.gz,,
 ```
 
-**Start from SE600 + PE150 FASTQ** (cWGS SE600 library uses `stlfr21`/`stlfr22` columns):
+**Start from FASTQ — SE600** (single-end; use `stlfr21` column only, no `stlfr22`):
 ```csv
-sample,stlfr21,stlfr22,pcrfree1,pcrfree2,stlfrbam,pfbam
-demo1,/path/SE600_01_R1.fq.gz,/path/SE600_01_R2.fq.gz,/path/PF_01_1.fq.gz,/path/PF_01_2.fq.gz,,
+sample,stlfr21,pcrfree1,pcrfree2,stlfrbam,pfbam
+demo1,/path/SE600_01.fq.gz,/path/PF_01_1.fq.gz,/path/PF_01_2.fq.gz,,
 ```
 
 **Start from BAM** (`--frombam true`). FASTQ columns (`pcrfree1`/`pcrfree2`) are used for PanGenie SV genotyping if provided:
