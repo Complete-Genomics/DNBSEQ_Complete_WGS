@@ -392,6 +392,7 @@ process vg {
 
     script:
     def gbz  = "${params.DB}/hg38/panGenome/hprc-v1.1-mc-grch38.gbz"
+    def dist = "${params.DB}/hg38/panGenome/hprc-v1.1-mc-grch38.dist"
     def hapl = "${params.DB}/hg38/panGenome/hprc-v1.1-mc-grch38.hapl"
     def fai  = params.ref.startsWith('/') ? "${params.ref}.fai" : "${params.DB}/hg38/reference/hg38.fa.fai"
     def vg_bin = "/usr/local/app/vg/bin/vg"
@@ -399,7 +400,7 @@ process vg {
     """
     awk '{print \$1}' $fai | sed 's/^/GRCh38#0#/' > list
 
-    $vg_bin giraffe -Z $gbz --progress --index-basename `pwd`/${id} \\
+    $vg_bin giraffe -Z $gbz -d $dist --progress \\
         --read-group "ID:$id LB:lib1 SM:$id PL:CG PU:unit1" --sample $id -o BAM \\
         --ref-paths list -P -L 3000 $fq_args --kff-name $kff --haplotype-name $hapl -t ${task.cpus} | \\
     samtools sort -@ ${task.cpus} -T `pwd`/sort.tmp. -o ${id}.sort0.bam -
