@@ -99,9 +99,9 @@ workflow WF_align_pf {
         } 
     } else if (params.pfAligner == 'vg') {
         if (params.ref != 'hg38' && !params.ref.contains('GRCh38')) { exit 1, 'graph aligner only support hg38 ref!'}
-        ch_pffq.map { id, reads -> [id, reads[0], reads[1]] }.set {ch_pffq_flat}
-        kff(ch_pffq_flat).set {ch_kff}
-        vg(ch_kff.join(ch_pffq_flat)).set {ch_pfbam}
+        ch_pffq.map { id, reads -> [id, reads, true] }.set {ch_pffq_typed}
+        kff(ch_pffq_typed.map { id, reads, is_pe -> [id, reads] }).set {ch_kff}
+        vg(ch_kff.join(ch_pffq_typed)).set {ch_pfbam}
         markdup('pf', 'vg', ch_pfbam).set {ch_pfbam}
     } else {
         exit 1, 'pf aligner only supports bwa and vg!'
@@ -127,14 +127,14 @@ workflow WF_align_stlfr2 {
     }
 
     // SE600 is single-end (1 file); PE uses 2 files
+    // Pass reads as a list to avoid Nextflow path-staging collision when r1==r2
     ch_stlfr2fq.map { id, reads ->
         def is_pe = reads.size() > 1
-        def r1 = reads[0]
-        def r2 = is_pe ? reads[1] : reads[0]
-        [id, r1, r2, is_pe]
-    }.set { ch_stlfr2fq_flat }
-    kff(ch_stlfr2fq_flat.map { id, r1, r2, is_pe -> [id, r1, r2] }).set { ch_kff2 }
-    vg(ch_kff2.join(ch_stlfr2fq_flat)).set { ch_stlfr2bam0 }
+        def fqs = is_pe ? reads : [reads[0]]
+        [id, fqs, is_pe]
+    }.set { ch_stlfr2fq_typed }
+    kff(ch_stlfr2fq_typed.map { id, fqs, is_pe -> [id, fqs] }).set { ch_kff2 }
+    vg(ch_kff2.join(ch_stlfr2fq_typed)).set { ch_stlfr2bam0 }
     addBxSe600(ch_stlfr2bam0).set { ch_stlfr2bam0 }
     markdup('stlfr2', 'vg', ch_stlfr2bam0).set { ch_stlfr2bam }
 
@@ -359,22 +359,17 @@ process kff {
     tag "$id"
 
     input:
-    tuple val(id), path(r1), path(r2)
+    tuple val(id), path(reads)
 
     output:
-    tuple val(id), path("${id}.kff") 
+    tuple val(id), path("${id}.kff")
 
     // publishDir "${params.outdir}/$id/align/", mode: 'link', enabled: !params.sampleBam
- 
+
     script:
 
     """
-    # for SE (r1==r2) list only one file to avoid double-counting kmers
-    if [ "$r1" = "$r2" ]; then
-        echo "$r1" > file
-    else
-        echo -e "$r1\\n$r2" > file
-    fi
+    printf "%s\\n" ${reads} > file
     kmc -k29 -m${task.memory.giga} -okff -t${task.cpus} @file ${id} .
     """
     stub:
@@ -388,7 +383,7 @@ process vg {
     tag "$id"
 
     input:
-    tuple val(id), path(kff), path(r1), path(r2), val(is_pe)
+    tuple val(id), path(kff), path(reads), val(is_pe)
 
     output:
     tuple val(id), path("${id}.sort.bam*")
@@ -400,7 +395,7 @@ process vg {
     def hapl = "${params.DB}/hg38/panGenome/hprc-v1.1-mc-grch38.hapl"
     def fai  = params.ref.startsWith('/') ? "${params.ref}.fai" : "${params.DB}/hg38/reference/hg38.fa.fai"
     def vg_bin = "/usr/local/app/vg/bin/vg"
-    def fq_args = is_pe ? "-f $r1 -f $r2" : "-f $r1"
+    def fq_args = is_pe ? "-f ${reads[0]} -f ${reads[1]}" : "-f ${reads[0]}"
     """
     awk '{print \$1}' $fai | sed 's/^/GRCh38#0#/' > list
 
