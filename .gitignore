@@ -6,3 +6,8 @@ CWGS_run/out/.DS_Store
 cwgs.sh
 run.log
 report.md
+containers
+memory
+scripts/report_patch.py
+.nextflow*
+test_data

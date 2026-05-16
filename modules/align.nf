@@ -119,20 +119,20 @@ workflow WF_align_pf {
 // - vg process already strips GRCh38#0# from BAM header (sed 's/GRCh38#0#//g')
 workflow WF_align_stlfr2 {
     take:
-    ch_stlfr2fq   // [id, [r1, r2]]
+    ch_stlfr2fq   // [id, [r1]] — single-end raw FASTQ (barcodes embedded in sequence)
 
     main:
     if (params.ref != 'hg38' && !params.ref.contains('GRCh38')) {
         exit 1, 'stlfr2 aligner only supports hg38/GRCh38 ref (vg giraffe)!'
     }
 
-    // SE600 is single-end (1 file); PE uses 2 files
-    // Pass reads as a list to avoid Nextflow path-staging collision when r1==r2
-    ch_stlfr2fq.map { id, reads ->
-        def is_pe = reads.size() > 1
-        def fqs = is_pe ? reads : [reads[0]]
-        [id, fqs, is_pe]
-    }.set { ch_stlfr2fq_typed }
+    // SE600: extract barcodes from read sequence, encode in read name (#bc1_bc2_bc3)
+    barcode_split_se600(ch_stlfr2fq).set { ch_stlfr2_split }
+
+    // Pass split FASTQ as single-element list to avoid Nextflow path-staging collision
+    ch_stlfr2_split.map { id, fq -> [id, [fq], false] }
+                   .set { ch_stlfr2fq_typed }   // [id, [fq], is_pe=false]
+
     kff(ch_stlfr2fq_typed.map { id, fqs, is_pe -> [id, fqs] }).set { ch_kff2 }
     vg(ch_kff2.join(ch_stlfr2fq_typed)).set { ch_stlfr2bam0 }
     addBxSe600(ch_stlfr2bam0).set { ch_stlfr2bam0 }
@@ -244,7 +244,32 @@ process splitRate {
     ${params.BIN}python ${params.SCRIPT}/splitRate.py ${id}_split_1.fq.gz > split_stat_read1.log
     """
 }
-process bwa {    
+process barcode_split_se600 {
+    cpus params.CPU1
+    memory params.MEM2 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+
+    input:
+    tuple val(id), path(reads)
+
+    output:
+    tuple val(id), path("${id}_split.fq.gz")
+
+    tag "${id}"
+    publishDir "${params.outdir}/$id/fq/", mode: 'link'
+
+    script:
+    def bcList = "${params.DB}/barcode/barcode.list"
+    def fq = "${reads[0]}"
+    """
+    ${params.BIN}python3 ${params.SCRIPT}/stlfr2lariatfq_se600.py \\
+        $bcList $fq ${id}_split.fq.gz ${params.se600_umi_start}
+    """
+
+    stub:
+    "touch ${id}_split.fq.gz"
+}
+process bwa {
     cpus params.cpu3
     memory params.MEM2 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
