@@ -401,7 +401,8 @@ process vg {
 
     $vg_bin giraffe -Z $gbz --progress --index-basename `pwd`/${id} \\
         --read-group "ID:$id LB:lib1 SM:$id PL:CG PU:unit1" --sample $id -o BAM \\
-        --ref-paths list -P -L 3000 $fq_args --kff-name $kff --haplotype-name $hapl -t ${task.cpus} | \\
+        --ref-paths list -P -L 3000 $fq_args --kff-name $kff --haplotype-name $hapl \\
+        --max-multimaps 3 -t ${task.cpus} | \\
     samtools sort -@ ${task.cpus} -T `pwd`/sort.tmp. -o ${id}.sort0.bam -
 
     samtools view -H ${id}.sort0.bam > header
