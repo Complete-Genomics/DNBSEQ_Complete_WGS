@@ -61,7 +61,8 @@ flowchart TD
     end
 
     subgraph ALIGN_SE600["Alignment — SE600 / vg giraffe"]
-        kff_se600[kff] --> vg_se600[vg giraffe]
+        barcode_split_se600[barcode_split_se600] --> kff_se600[kff]
+        kff_se600 --> vg_se600[vg giraffe]
         vg_se600 --> addBxSe600[addBxSe600]
         addBxSe600 --> markdup_se600[markdup]
     end
@@ -126,7 +127,7 @@ flowchart TD
     fq --> qc_pf
     fq --> qc_stlfr_stats
     fq --> barcode_split
-    fq --> kff_se600
+    fq --> barcode_split_se600
     qc_pf --> bwaPf
 
     sampleBamPf --> sampleBamPf_s
@@ -180,7 +181,7 @@ flowchart TD
 
     class samplesheet,fq,parse_sample,toCsv input
     class qc_pf,readLenPf,fqcheckPf,fqdistPf,fqstats_pf,qc_stlfr_stats,readLen,basecount,fqstats_stlfr qc
-    class bwaPf,markdupPf,sampleBamPf,barcode_split,splitfq,lariatBC,mergeFq,lariat,sortbam,markdupStlfrLariat,sampleBamStlfrLariat,kff_se600,vg_se600,addBxSe600,markdup_se600 align
+    class bwaPf,markdupPf,sampleBamPf,barcode_split,splitfq,lariatBC,mergeFq,lariat,sortbam,markdupStlfrLariat,sampleBamStlfrLariat,barcode_split_se600,kff_se600,vg_se600,addBxSe600,markdup_se600 align
     class deepvariantv16BwaPf,vcfevalPf,deepvariantv16,vcfevalLariatDv,varStatsLariatDv vc
     class splitVcfLariatDv,splitBam4phasing,phaseLariatDv,phaseCatLariatDv,hapKaryotype,hapcutstat,phaseall,intersectLariat,mergeBamLariat,ideogram,cumuplot phase
     class coveragePf,coverageMeanPf,samtoolsFlagstatPf,samtoolsStatsPf,samtoolsDepthPf,insertsizePf,alignCatPf,samtools_flagstat,samtools_stats,insertsize,samtools_depth,stLFRQC,align_cat,coverage,coverageMean,coverageAvg stats
