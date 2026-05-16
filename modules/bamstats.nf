@@ -89,7 +89,7 @@ process insertsize {
     bam = bam.first()
     """    
     ${params.BIN}java -Xms${task.memory.giga}g -Xmx${task.memory.giga}g -jar ${params.SCRIPT}/picard/picard.jar CollectInsertSizeMetrics \\
-      I=$bam O=${id}.Insertsize.metrics.txt H=${id}.Insertsize.pdf TMP_DIR=.
+      I=$bam O=${id}.Insertsize.metrics.txt H=${id}.Insertsize.pdf TMP_DIR=/tmp
 
     """
     stub:

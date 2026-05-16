@@ -213,10 +213,12 @@ process vqsrSnp {
       ${params.BIN}gatk --java-options "-Xmx${task.memory.giga}g" \\
         SelectVariants -R $ref -V $vcf -select-type SNP --exclude-non-variants -O raw.snp.vcf.gz
 
-      mkdir tmpdir
+      gatk_tmp=/tmp/gatk_snp_${id}_\${BASHPID}
+      trap 'rm -rf \${gatk_tmp}' EXIT
+      mkdir -p \${gatk_tmp}
       ${params.BIN}gatk --java-options "-Xmx${task.memory.giga}g" \\
         VariantRecalibrator \\
-        -V raw.snp.vcf.gz --tmp-dir tmpdir \\
+        -V raw.snp.vcf.gz --tmp-dir \${gatk_tmp} \\
         --resource:hapmap,known=false,training=true,truth=true,prior=15.0 \$hapmap \\
         --resource:omni,known=false,training=true,truth=true,prior=12.0 \$omni \\
         --resource:1000G,known=false,training=true,truth=false,prior=10.0 \$kgsnp \\
@@ -237,7 +239,7 @@ process vqsrSnp {
       ${params.BIN}gatk --java-options "-Xmx${task.memory.giga}g" \\
         SelectVariants -R $ref -V snp.vcf.gz --exclude-filtered -O ${id}.${aligner}.vqsr4.snp.vcf.gz
 
-      rm -rf tmpdir snp.vcf.gz raw.snp.vcf.gz*
+      rm -f snp.vcf.gz raw.snp.vcf.gz*
       """
     } else if (params.gatk_version == "v3") {
       cmd += """
@@ -306,10 +308,12 @@ process vqsrIndel {
       ${params.BIN}gatk --java-options "-Xmx${task.memory.giga}g" \\
         SelectVariants -R $ref -V $vcf -select-type INDEL --exclude-non-variants -O raw.indel.vcf.gz
 
-      mkdir tmpdir
+      gatk_tmp=/tmp/gatk_indel_${id}_\${BASHPID}
+      trap 'rm -rf \${gatk_tmp}' EXIT
+      mkdir -p \${gatk_tmp}
       ${params.BIN}gatk --java-options "-Xmx${task.memory.giga}g" \\
         VariantRecalibrator \\
-        -V raw.indel.vcf.gz --tmp-dir tmpdir \\
+        -V raw.indel.vcf.gz --tmp-dir \${gatk_tmp} \\
         -resource:mills,known=true,training=true,truth=true,prior=12.0 \$mills \\
         -an DP -an QD -an FS -an SOR -an ReadPosRankSum \\
         -mode INDEL \\
@@ -327,7 +331,7 @@ process vqsrIndel {
       ${params.BIN}gatk --java-options "-Xmx${task.memory.giga}g" \\
         SelectVariants -R $ref -V indel.vcf.gz --exclude-filtered -O ${id}.${aligner}.vqsr4.indel.vcf.gz
 
-      rm -rf tmpdir indel.vcf.gz raw.indel.vcf.gz* 
+      rm -f indel.vcf.gz raw.indel.vcf.gz*
       """
     } else if (params.gatk_version == "v3") {
       cmd += """
@@ -569,12 +573,12 @@ process deepvariant {
     def ver = "dv"
     def outvcf = bam.toString().contains("pf") ? "${id}.pf.bwa.${ver}.vcf.gz" : "${id}.${aligner}.${ver}.vcf.gz"
     """
-    bazel_tmp=/tmp/dv_${id}_\${BASHPID}
-    export TEST_TMPDIR=\${bazel_tmp}
-    export HOME=\${bazel_tmp}_home
-    trap 'rm -rf \${bazel_tmp} \${bazel_tmp}_home' EXIT
-    rm -rf \${bazel_tmp} \${bazel_tmp}_home
-    mkdir -p \${TEST_TMPDIR} \${HOME}
+    dv_tmp=/tmp/dv_${id}_\${BASHPID}
+    export TEST_TMPDIR=\${dv_tmp}/bazel
+    export HOME=\${dv_tmp}/home
+    trap 'rm -rf \${dv_tmp}' EXIT
+    rm -rf \${dv_tmp}
+    mkdir -p \${TEST_TMPDIR} \${HOME} \${dv_tmp}/intermediate
 
     ${params.dv_binary_path} \\
       --model_type WGS \\
@@ -583,7 +587,7 @@ process deepvariant {
       --pangenome $pangenome \\
       --output_vcf $outvcf \\
       --num_shards ${task.cpus} \\
-      --intermediate_results_dir intermediate_results_dir \\
+      --intermediate_results_dir \${dv_tmp}/intermediate \\
       --make_examples_extra_args '${params.dv_make_examples_extra_args}' \\
       --postprocess_variants_extra_args '${params.dv_postprocess_variants_extra_args}'
     """
