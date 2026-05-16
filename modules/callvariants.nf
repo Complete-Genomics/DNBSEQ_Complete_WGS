@@ -569,6 +569,13 @@ process deepvariant {
     def ver = "dv"
     def outvcf = bam.toString().contains("pf") ? "${id}.pf.bwa.${ver}.vcf.gz" : "${id}.${aligner}.${ver}.vcf.gz"
     """
+    bazel_tmp=/tmp/dv_${id}_\${BASHPID}
+    export TEST_TMPDIR=\${bazel_tmp}
+    export HOME=\${bazel_tmp}_home
+    trap 'rm -rf \${bazel_tmp} \${bazel_tmp}_home' EXIT
+    rm -rf \${bazel_tmp} \${bazel_tmp}_home
+    mkdir -p \${TEST_TMPDIR} \${HOME}
+
     ${params.dv_binary_path} \\
       --model_type WGS \\
       --ref $ref \\
