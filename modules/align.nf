@@ -296,7 +296,7 @@ process bwa {
     """
     ${params.BIN}bwa mem -t ${task.cpus} -R '@RG\\tID:${id}\\tSM:sample\\tPL:COMPLETE' $ref $r1 $r2 | \
     ${params.BIN}samtools view -bhS -@ ${task.cpus} -t ${ref}.fai -T $ref - | \
-    ${params.BIN}samtools sort -@ ${task.cpus} -T `pwd`/sort.tmp. -o ${id}.${lib}.sort.bam - 
+    ${params.BIN}samtools sort -@ ${task.cpus} -T /tmp/sort.${id}.${lib}. -o ${id}.${lib}.sort.bam -
     ${params.BIN}samtools index -@ ${task.cpus} ${id}.${lib}.sort.bam
     """
     stub:
@@ -428,7 +428,7 @@ process vg {
         --read-group "ID:$id LB:lib1 SM:$id PL:CG PU:unit1" --sample $id -o BAM \\
         --ref-paths list -P -L 3000 $fq_args --kff-name $kff --haplotype-name $hapl \\
         --max-multimaps 3 -t ${task.cpus} | \\
-    samtools sort -@ ${task.cpus} -T `pwd`/sort.tmp. -o ${id}.sort0.bam -
+    samtools sort -@ ${task.cpus} -T /tmp/sort.${id}.vg. -o ${id}.sort0.bam -
 
     samtools view -H ${id}.sort0.bam > header
     sed 's/GRCh38#0#//g' header > new_header.txt
@@ -817,12 +817,12 @@ process markdup {
     if (params.markdup == "sambamba") {
         cmd += """
         ${params.BIN}sambamba markdup \\
-            -t ${task.cpus} --tmpdir . $bam ${id}.${lib}.${aligner}.sambamba.bam
+            -t ${task.cpus} --tmpdir /tmp $bam ${id}.${lib}.${aligner}.sambamba.bam
         ${params.BIN}samtools index -@ ${task.cpus} ${id}.${lib}.${aligner}.sambamba.bam
         """
     } else if (params.markdup == "picard") {
         cmd += """
-        java -Xms${task.memory.giga}g -Xmx${task.memory.giga}g -jar ${params.SCRIPT}/picard/picard.jar MarkDuplicates I=$bam O=${id}.${lib}.${aligner}.picard.bam M=${id}.${lib}.${aligner}.picardMarkdup.log TMP_DIR=. 
+        java -Xms${task.memory.giga}g -Xmx${task.memory.giga}g -jar ${params.SCRIPT}/picard/picard.jar MarkDuplicates I=$bam O=${id}.${lib}.${aligner}.picard.bam M=${id}.${lib}.${aligner}.picardMarkdup.log TMP_DIR=/tmp
         ${params.BIN}samtools index -@ ${task.cpus} ${id}.${lib}.${aligner}.picard.bam
         """
     } else if (params.markdup == "biobambam2") {
