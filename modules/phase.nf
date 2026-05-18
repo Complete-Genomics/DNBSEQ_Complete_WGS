@@ -63,18 +63,25 @@ process splitBam4phasing {
   def aligner = params.align_tool
   def bam = bam.first()
   """
-  # ${params.BIN}samtools view -h -F 0x400 ${bam} ${chr} \\
-  #  | awk -v OFS='\\t' '{if(\$1~/#/){split(\$1,a,"#"); if(a[2]!~/0_0_0/){sub(/BX:Z:.*/, "BX:Z:"a[2]); print \$0} }else{print}}' - \\
-  #  | ${params.BIN}samtools view -bhS - > ${id}.${aligner}.${chr}.bam
-
-  # ${params.BIN}samtools view -h -F 0x400 $bam $chr \\
-  # | perl -ne '\$p1=index(\$_,"#");\$p2=index(\$_,"\\t",\$p1);if (\$p1>0 && \$p2>0) {\$p3=rindex(\$_,"\\tBX:Z:");if (\$p3>0){substr(\$_,\$p3)="\\tBX:Z:".substr(\$_,\$p1+1,\$p2-\$p1-1)."\\n"}}print' | ${params.BIN}samtools view -bhS - > ${id}.${aligner}.${chr}.bam
-  
-  
   ${params.BIN}samtools view -h -F 0x400 $bam $chr \\
-  | perl -ne '\$p1=index(\$_,"#");\$p2=index(\$_,"\\t",\$p1);if (\$p1>=0 && \$p2>\$p1) {\$bx_tag="BX:Z:".substr(\$_,\$p1+1,\$p2-\$p1-1); \$p3=rindex(\$_,"\tBX:Z:"); if (\$p3>=0){substr(\$_,\$p3)="\\t\$bx_tag\\n"} else {chomp; \$_.="\\t\$bx_tag\\n"}} print' | ${params.BIN}samtools view -bhS - > ${id}.${aligner}.${chr}.bam
-
-  ${params.BIN}samtools index ${id}.${aligner}.${chr}.bam 
+  | awk 'BEGIN{FS=OFS="\\t"}
+         /^@/{print; next}
+         {
+           bx=""
+           for (i=12; i<=NF; i++) {
+             if (substr(\$i,1,5)=="BX:Z:") { bx=substr(\$i,6); break }
+           }
+           if (bx=="") {
+             n=index(\$1,"#")
+             if (n>0) {
+               bx=substr(\$1,n+1)
+               \$0=\$0 "\\t" "BX:Z:" bx
+             }
+           }
+           print
+         }' \\
+  | ${params.BIN}samtools view -bhS - > ${id}.${aligner}.${chr}.bam
+  ${params.BIN}samtools index ${id}.${aligner}.${chr}.bam
   """
   stub:
   "touch ${id}.${params.align_tool}.${chr}.bam ${id}.${params.align_tool}.${chr}.bam.bai"
