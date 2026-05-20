@@ -307,11 +307,17 @@ workflow CWGS {
         
         mapq(ch_pfbam).set {ch_pfbam}
 
-        //pf bam call variant
-        dvBwaPf(ch_bwa, ch_pfbam).set {ch_pfdvvcf} 
-        
+        //pf bam call variant — only when PF-only (no stLFR), so we don't duplicate against merge.bam
+        ch_pfdvvcf  = Channel.empty()
+        ch_vcfevalPf = Channel.empty()
+        if (params.PF_only) {
+            dvBwaPf(ch_bwa, ch_pfbam).set {ch_pfdvvcf}
+            if (params.ref == 'hg38' || params.ref.contains('GRCh38')) {
+                vcfevalPf(ch_libpf, ch_pfdvvcf).set {ch_vcfevalPf}
+            }
+        }
+
         if (params.ref == 'hg38' || params.ref.contains('GRCh38')) {
-            vcfevalPf(ch_libpf, ch_pfdvvcf).set {ch_vcfevalPf}
             coveragePf(ch_libpf, ch_pfbam).join(coverageMeanPf(ch_libpf, ch_pfbam)).set { ch_PfGeneCov }
         }
 
@@ -782,9 +788,11 @@ workflow CWGS_frombam {
             sampleBamStlfrLariat(ch_libstlfr, ch_lariat, ch_lariatbam).set {ch_lariatbam}
         }
         mapq_frombam(ch_pfbam).set {ch_pfbam}
-        dvBwaPf(ch_bwa, ch_pfbam).set {ch_pfdvvcf} 
+
+        // pf bam call variant — skipped here (both stlfr+pf bams present → variants come from merge.bam)
+        ch_pfdvvcf   = Channel.empty()
+        ch_vcfevalPf = Channel.empty()
         if (!params.ref.startsWith('/')) {
-            vcfevalPf(ch_libpf, ch_pfdvvcf).set {ch_vcfevalPf}
             coveragePf(ch_libpf, ch_pfbam).join(coverageMeanPf(ch_libpf, ch_pfbam)).set { ch_PfGeneCov }
         }
         
