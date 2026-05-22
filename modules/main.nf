@@ -114,9 +114,26 @@ workflow CWGS {
 
 
     // call variants
-    // ch_mergebam.mix(ch_stlfrbam).first().view() //set {ch_bam}
-    // ch_bam.view()
-    WF_callvariants(ch_mergebam).set {ch_mergevcf}
+    // Route per sample composition:
+    //   both stlfr + pf → merge.bam
+    //   stlfr-only      → stlfr.bam
+    //   pf-only         → pf.bam
+    ch_stlfrbam.map { id, bam -> tuple(id, 'stlfr') }
+        .mix(ch_pfbam.map { id, bam -> tuple(id, 'pf') })
+        .groupTuple(by: 0)
+        .branch { id, srcs ->
+            both       : srcs.size() == 2
+            stlfr_only : srcs == ['stlfr']
+            pf_only    : srcs == ['pf']
+        }.set { ch_sampleType }
+
+    ch_sampleType.both      .join(ch_mergebam).map { id, srcs, bam -> [id, bam] }
+        .mix(
+            ch_sampleType.stlfr_only.join(ch_stlfrbam).map { id, srcs, bam -> [id, bam] },
+            ch_sampleType.pf_only   .join(ch_pfbam)   .map { id, srcs, bam -> [id, bam] }
+        ).set { ch_callbam }
+
+    WF_callvariants(ch_callbam).set {ch_mergevcf}
     
     // vcfeval (hg38)
     vcfeval('merge', ch_mergevcf).set {ch_vcfeval}
