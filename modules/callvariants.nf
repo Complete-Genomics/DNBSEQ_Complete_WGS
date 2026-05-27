@@ -572,6 +572,16 @@ process deepvariant {
     def pangenome = params.dv_pangenome ?: "${params.DB}/${params.ref}/panGenome/hprc-v1.1-mc-grch38.gbz"
     def ver = "dv"
     def outvcf = bam.toString().contains("pf") ? "${id}.pf.bwa.${ver}.vcf.gz" : "${id}.${aligner}.${ver}.vcf.gz"
+    def gbz_shm = params.dv_gbz_shm_size_gb ? "--gbz_shared_memory_size_gb ${params.dv_gbz_shm_size_gb}" : ""
+    // haploid_contigs: male="chrX chrY", female="" (omit flag entirely)
+    def haploid_args = (params.dv_haploid_contigs && params.dv_haploid_contigs != "") ?
+        "--haploid_contigs=\"${params.dv_haploid_contigs}\"" : ""
+    def par_args = (params.dv_par_regions_bed && params.dv_par_regions_bed != "") ?
+        "--par_regions_bed=\"${params.dv_par_regions_bed}\"" : ""
+    def haploid_make_args = [haploid_args, par_args].findAll { it }.join(",")
+    def make_examples_args = haploid_make_args ?
+        "${params.dv_make_examples_extra_args},${haploid_make_args}" :
+        "${params.dv_make_examples_extra_args}"
     """
     dv_tmp=/tmp/dv_${id}_\${BASHPID}
     export TEST_TMPDIR=\${dv_tmp}/bazel
@@ -587,8 +597,9 @@ process deepvariant {
       --pangenome $pangenome \\
       --output_vcf $outvcf \\
       --num_shards ${task.cpus} \\
+      $gbz_shm \\
       --intermediate_results_dir \${dv_tmp}/intermediate \\
-      --make_examples_extra_args '${params.dv_make_examples_extra_args}' \\
+      --make_examples_extra_args '${make_examples_args}' \\
       --postprocess_variants_extra_args '${params.dv_postprocess_variants_extra_args}'
     """
     stub:
