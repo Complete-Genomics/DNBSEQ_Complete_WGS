@@ -505,7 +505,7 @@ process dvMegabolt {
 process deepvariant {
     cpus params.cpu3
     memory params.MEM3 + "g"
-    container "${params.dv_sif_image}"
+    container "${params.dv_container}"
     containerOptions "--env PATH=/opt/deepvariant/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin:/usr/bin"
 
     input:
@@ -518,15 +518,30 @@ process deepvariant {
     tag "$id"
     publishDir "${params.outdir}/$id/align/", mode: 'link'
     beforeScript "export PATH=/opt/deepvariant/bin:\$PATH"
- 
+
     script:
     def bam = bam.first()
     def ref = params.ref.startsWith('/') ? params.ref : "${params.DB}/${params.ref}/reference/${params.ref}.fa"
     def pangenome = params.dv_pangenome
     def ver = "dv"
     def outvcf = bam.toString().contains("pf") ? "${id}.pf.bwa.${ver}.vcf.gz" : "${id}.${aligner}.${ver}.vcf.gz"
-    //def outgvcf = bam.toString().contains("pf") ? "${id}.pf.bwa.${ver}.g.vcf.gz" : "${id}.${aligner}.${ver}.g.vcf.gz"
+    def gbz_shm = params.dv_gbz_shm_size_gb ? "--gbz_shared_memory_size_gb ${params.dv_gbz_shm_size_gb}" : ""
+    def haploid_args = (params.dv_haploid_contigs && params.dv_haploid_contigs != "") ?
+        "--haploid_contigs=\"${params.dv_haploid_contigs}\"" : ""
+    def par_args = (params.dv_par_regions_bed && params.dv_par_regions_bed != "") ?
+        "--par_regions_bed=\"${params.dv_par_regions_bed}\"" : ""
+    def haploid_make_args = [haploid_args, par_args].findAll { it }.join(",")
+    def make_examples_args = haploid_make_args ?
+        "${params.dv_make_examples_extra_args},${haploid_make_args}" :
+        "${params.dv_make_examples_extra_args}"
     """
+    dv_tmp=/tmp/dv_${id}_\${BASHPID}
+    export TEST_TMPDIR=\${dv_tmp}/bazel
+    export HOME=\${dv_tmp}/home
+    trap 'rm -rf \${dv_tmp}' EXIT
+    rm -rf \${dv_tmp}
+    mkdir -p \${TEST_TMPDIR} \${HOME} \${dv_tmp}/intermediate
+
     ${params.dv_binary_path} \\
       --model_type WGS \\
       --ref $ref \\
@@ -534,8 +549,9 @@ process deepvariant {
       --pangenome $pangenome \\
       --output_vcf $outvcf \\
       --num_shards ${task.cpus} \\
-      --intermediate_results_dir intermediate_results_dir \\
-      --make_examples_extra_args '${params.dv_make_examples_extra_args}' \\
+      $gbz_shm \\
+      --intermediate_results_dir \${dv_tmp}/intermediate \\
+      --make_examples_extra_args '${make_examples_args}' \\
       --postprocess_variants_extra_args '${params.dv_postprocess_variants_extra_args}'
     """
     stub:
