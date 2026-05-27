@@ -552,7 +552,7 @@ process dvMegabolt {
 process deepvariant {
     cpus params.cpu3
     memory params.MEM3 + "g"
-    container "${params.dv_sif_image}"
+    container "${params.dv_container}"
     containerOptions "--env PATH=/opt/deepvariant/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/sbin:/bin:/usr/bin"
 
     input:
