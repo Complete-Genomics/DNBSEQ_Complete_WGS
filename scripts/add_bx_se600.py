@@ -12,7 +12,8 @@ def main(input_bam, output_bam):
                 # readname: @...#1_2_3/1  or  @...#1_2_3
                 try:
                     bc = read.query_name.split("#")[1].split("/")[0]
-                    read.set_tag("BX", bc, value_type="Z")
+                    if bc != "0_0_0":  # 0_0_0 = no valid barcode; skip to avoid fake linked-fragment in extractHAIRS
+                        read.set_tag("BX", bc, value_type="Z")
                 except (IndexError, AttributeError):
                     pass
 
