@@ -5,3 +5,5 @@ CWGS_run/out/.DS_Store
 
 cwgs.sh
 run.log
+.nextflow*
+test_data
