@@ -174,7 +174,7 @@ flowchart TD
 # Requirements  
 **Hardware requirements**  
 Multiple core computer (default >=48CPU)  
-Minium 72GB RAM  
+Minium 72GB RAM (250G for VG aligner)  
 Exact storage may vary depending on sample count and coverage, expect 1TB per sample.  
 **Software requirements**  
 Linux CentOS >=7  
@@ -479,9 +479,7 @@ demo.lariat.dv.phased.vcf.gz.tbi
 
 **Log file**  
 1. The run.log shows excution information etc.  
-For a typical run of 1 sample, with 30x cWGS and 40x PCR free library, with 60CPU:  
-MegaBOLT: ~14hr   
-non-MegaBOLT: ~45hr  
+For a typical run of 20 sample, with 30x cWGS and 40x PCR free library, with 60CPU: ~8hr/sample, total ~7 days  
 (Run time can be reduced by a batch run of multiple N samples, total time <= N*time_per_sample)     
 
 3. The ./CWGS_run/report.html is output of nextflow, with runtime, CPU usage etc.  
