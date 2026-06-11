@@ -204,10 +204,6 @@ singularity exec -B`pwd -P` --pwd `pwd -P` CWGS.sif cp -rL /usr/local/bin/CWGS /
 ```
 ./CWGS -createdb
 ```
-Or for MegaBolt or ZBolt nodes (MGI's Bioinformatics analysis accelerator, including MegaBOLT/ZBOLT/ZBOLT Pro)  
-```
-./CWGS -createdb --megabolt
-```
 This command will download around 32G data from internet and build index locally, which will occupy another 30G storage. Use [db_tree.txt](docs/db_tree.txt) to validate the completion of database creation.      
 4. Test demo data:
 
@@ -223,10 +219,6 @@ Test demo data on clusters by SGE (Sun Grid Engine):
 ```
 ./CWGS samplelist.txt --queue mgi.q --project none
 ```
-Test demo data on clusters by SGE (Sun Grid Engine) with MegaBolt/ZBolt nodes:
-```
-./CWGS samplelist.txt -bolt --queue mgi.q --project none --boltq fpga.q
-```
 5. ***UPDATE***  
 To use SV function and pipeline version>1.0.6:  
 Get all 6 new .sif container from Dockerhub (https://hub.docker.com/repository/docker/stlfr/complete_wgs), for example:   
@@ -240,7 +232,7 @@ Install Nextflow (with conda etc.) in your environment to excute the pipeline.
 CWGS=DNBSEQ_Complete_WGS/CWGS
 modules=DNBSEQ_Complete_WGS/modules
 scripts=DNBSEQ_Complete_WGS/scripts
-$CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exec local -module ${modules} -script ${scripts} -debug --use_megabolt false --skipBarcodeSplit false --pfmapq 3 --pfAligner vg --ref ${ref} --ref_len ${ref_len}
+$CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exec local -module ${modules} -script ${scripts} -debug --skipBarcodeSplit false --pfmapq 3 --pfAligner vg --ref ${ref} --ref_len ${ref_len}
 ```
 
    
@@ -273,7 +265,7 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
    ```
    Updates are pushed to the github module and script folders, use the latest ones. Currently, it's recommended to remove PF reads of MAPQ<3 with the --pfmapq tag. Also, to customize and make the pipeline adapt to your needs, you may revise the scripts. An example run:  
    ```
-   ./CWGS run sample.list -module <module_path> -script <script_path> -exec local -debug --use_megabolt false --pfmapq 3
+   ./CWGS run sample.list -module <module_path> -script <script_path> -exec local -debug --pfmapq 3
    ```
    Run customized reference with --ref </absolute/path/to/ref/fasta>; prepare all indices etc. in the same directory before run. Using the GRCh38 reference from the database building is recommended, otherwise hlala/pangenie/gangstr modules may be skipped.  
    To create .nonN.region file for the customized reference, run:
@@ -339,7 +331,7 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
     --run_vqsr BOOL [only valid when '--var_tool' contains "gatk"]
       Run Variant Quality Score Recalibration (VQSR) of GATK. [true]
 
-    --split_by_intervals BOOL [only valid when '--var_tool' contains "gatk" and '--use_megabolt' is false]
+    --split_by_intervals BOOL [only valid when '--var_tool' contains "gatk"]
       Utilizes -L option for GATK haplotypecaller; split by chromosome. [true]    
   ...
 
@@ -376,7 +368,7 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
    scripts=$path_to_your_scirpts/DNBSEQ_Complete_WGS/scripts
    db=path to CWGS_db
    
-   ./CWGS run sample.list -sif $sif -B $data_path:$data_path -module ${modules} -db $db -script ${scripts} -exec local -debug --use_megabolt false --stLFR_only true > run.log 2>&1
+   ./CWGS run sample.list -sif $sif -B $data_path:$data_path -module ${modules} -db $db -script ${scripts} -exec local -debug --stLFR_only true > run.log 2>&1
    ```
     Enable resuming the running
     ```
@@ -389,33 +381,20 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
     By default, each process only keeps the output files. If you want to check the intermediate files within a process, use this flag.
     ```
 
-4. Executor and MegaBOLT setting, four combinations:
+4. Executor setting:
     Make sure CWGS is in your PATH.
-    1. on clusters by SGE (Sun Grid Engine) and no MegaBOLT (default)
+    1. on clusters by SGE (Sun Grid Engine) (default)
         Confirm the working queue and project number, which can be specified using --queue, and --project for regular queue, and project id, respectively. Use "--project none" if the system doesn't support a project id.
         E.g.
         ```
         CWGS sample.list --queue all.q --project none > run.log 2>&1 &
         ```
-    2. on clusters by SGE with MegaBOLT nodes.
-        Ensure the clusters contain at least one MegaBOLT queue and have a queue for them, e.g. bolt.q.
-        Confirm the working queue and project number, which can be specified using --queue, --boltq, and --project for regular queue, MegaBOLT queue, and project id, respectively. Use "--project none" if the system doesn't support a project id.
-        E.g.
-        ```
-        CWGS sample.list -bolt --queue all.q --boltq bolt.q --project none > run.log 2>&1 &
-        ```
-    3. locally run, or slurm run
+    2. locally run, or slurm run
         Run with "-exec local" option.
         Run with "-exec slurm -partition ${partition} -nodelist ${nodelist} " option.
         E.g.
         ```
         CWGS sample.list -exce local > run.log 2>&1 &
-        ```
-    5. locally run on a MegaBOLT machine.
-        Run with "-exce local" and "--use_megabolt true " option. 
-        E.g.
-        ```
-        CWGS sample.list -exce local --use_megabolt true > run.log 2>&1 &
         ```
 5. Parameters:  
    Set parameters with command line or with [nextflow.config](modules/nextflow.config). For example, MEM, CPU, deepvariant model dv_machine = "t7" or "g400".   
@@ -462,8 +441,6 @@ demo.pf.bwa.dv.vcf.gz
 demo.pf.bwa.dv.vcf.gz.tbi
 demo.pf.cmrg.hist.bed
 demo.pf.cmrg.mean.bed
-demo.pf.megaboltbwabqsr.bam
-demo.pf.megaboltbwabqsr.bam.bai
 demo.stlfr.lariat.biobambam2.bam
 demo.stlfr.lariat.biobambam2.bam.bai
 
@@ -495,7 +472,5 @@ A deep learning-based variant caller
 A haplotype assembly tool
 4. [SOAPnuke](https://github.com/BGI-flexlab/SOAPnuke)  
 A novel quality control tool  
-5. [MegaBOLT](https://en.mgi-tech.com/products/software_info/6/)  
-A Bioinformatics analysis accelerator  
-6. [cWGS/stLFR](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6499310/)  
+5. [cWGS/stLFR](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6499310/)  
 A DNA cobarcoding technique  
