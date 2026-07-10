@@ -4,7 +4,7 @@ from datetime import datetime
 import base64
 # import pdfkit
 
-title = 'CompleteWGS report'
+title = 'cWGS Report'
 
 def parse_report(csv_file):
     try:
@@ -12,7 +12,7 @@ def parse_report(csv_file):
         df = pd.DataFrame(data[1:], columns=data[0])
         return df.to_html(index=False, classes='data-table', border=1)
     except:
-        return f'<div class="noDataTitle">data do not exist: {csv_file}</div>' 
+        return '<div class="noDataTitle">Result was not generated for this sample.</div>'
 
 def parse_hlala(csv_file):
     try:
@@ -20,7 +20,7 @@ def parse_hlala(csv_file):
         df = pd.DataFrame(data[1:], columns=data[0])
         return df.to_html(index=False, classes='data-table', border=1)
     except:
-        return f'<div class="noDataTitle">data do not exist: {csv_file}</div>' 
+        return '<div class="noDataTitle">HLA result was not generated for this sample.</div>'
 
 def image_to_base64(image_path):
     try:
