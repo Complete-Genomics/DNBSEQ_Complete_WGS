@@ -7,3 +7,4 @@ cwgs.sh
 run.log
 .nextflow*
 test_data
+resources
