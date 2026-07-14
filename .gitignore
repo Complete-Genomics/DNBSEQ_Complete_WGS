@@ -4,3 +4,4 @@ CWGS_run/out/.DS_Store
 .DS_Store
 .nextflow*
 test_data
+resources/
