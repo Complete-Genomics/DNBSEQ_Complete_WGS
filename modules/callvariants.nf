@@ -579,9 +579,12 @@ process deepvariant {
     def par_args = (params.dv_par_regions_bed && params.dv_par_regions_bed != "") ?
         "--par_regions_bed=\"${params.dv_par_regions_bed}\"" : ""
     def haploid_make_args = [haploid_args, par_args].findAll { it }.join(",")
-    def make_examples_args = haploid_make_args ?
-        "${params.dv_make_examples_extra_args},${haploid_make_args}" :
-        "${params.dv_make_examples_extra_args}"
+    def base_make_args = params.dv_make_examples_extra_args ?: ""
+    def make_examples_args = [base_make_args, haploid_make_args].findAll { it }.join(",")
+    def make_examples_flag = make_examples_args ? "--make_examples_extra_args '${make_examples_args}'" : ""
+    def postprocess_flag = (params.dv_postprocess_variants_extra_args && params.dv_postprocess_variants_extra_args != "") ?
+        "--postprocess_variants_extra_args '${params.dv_postprocess_variants_extra_args}'" : ""
+    def optional_args = [gbz_shm, make_examples_flag, postprocess_flag].findAll { it }.join(" \\\n      ")
     """
     dv_tmp=/tmp/dv_${id}_\${BASHPID}
     export TEST_TMPDIR=\${dv_tmp}/bazel
@@ -597,10 +600,8 @@ process deepvariant {
       --pangenome $pangenome \\
       --output_vcf $outvcf \\
       --num_shards ${task.cpus} \\
-      $gbz_shm \\
       --intermediate_results_dir \${dv_tmp}/intermediate \\
-      --make_examples_extra_args '${make_examples_args}' \\
-      --postprocess_variants_extra_args '${params.dv_postprocess_variants_extra_args}'
+      $optional_args
     """
     stub:
     def ver = "dv"
