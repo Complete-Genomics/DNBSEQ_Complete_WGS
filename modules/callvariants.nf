@@ -576,8 +576,11 @@ process deepvariant {
     // haploid_contigs: male="chrX chrY", female="" (omit flag entirely)
     def haploid_args = (params.dv_haploid_contigs && params.dv_haploid_contigs != "") ?
         "--haploid_contigs=\"${params.dv_haploid_contigs}\"" : ""
-    def par_args = (params.dv_par_regions_bed && params.dv_par_regions_bed != "") ?
-        "--par_regions_bed=\"${params.dv_par_regions_bed}\"" : ""
+    def default_par_bed = pangenome.contains("/") ?
+        "${pangenome.substring(0, pangenome.lastIndexOf('/'))}/GRCh38_PAR.bed" : ""
+    def par_bed = (params.dv_par_regions_bed && params.dv_par_regions_bed != "") ?
+        params.dv_par_regions_bed : default_par_bed
+    def par_args = par_bed ? "--par_regions_bed=\"${par_bed}\"" : ""
     def haploid_make_args = [haploid_args, par_args].findAll { it }.join(",")
     def base_make_args = params.dv_make_examples_extra_args ?: ""
     def make_examples_args = [base_make_args, haploid_make_args].findAll { it }.join(",")
