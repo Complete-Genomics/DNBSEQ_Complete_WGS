@@ -402,7 +402,8 @@ process kff {
 }
 process vg {    
     cpus params.cpu3
-    memory params.MEM2 + "g"
+    memory "250 GB"
+    maxForks 1
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
     tag "$id"
