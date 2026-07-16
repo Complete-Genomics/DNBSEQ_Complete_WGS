@@ -633,10 +633,23 @@ workflow CWGS_frombam_PFonly {
     report(ch_reports)
 }
 workflow.onComplete {
+    def hprcPangenome = params.dv_pangenome ?: params.vg_pangenome_gbz
+    def hprcName = hprcPangenome ? hprcPangenome.tokenize('/').last() : 'not configured'
+    def hapcut2Path = params.SCRIPT_HapCUT2 ?: 'not configured'
+    def hapcut2Version = hapcut2Path
+    def hapcut2Match = (hapcut2Path =~ /HapCUT2-([^\/]+)/)
+    if (hapcut2Match.find()) {
+        hapcut2Version = hapcut2Match.group(1)
+    }
+
     println "CWGS started at: $workflow.start"
     println "CWGS completed at: $workflow.complete"
     println "The duration is: $workflow.duration"
     println "Execution status: ${ workflow.success ? 'OK' : 'failed' }"
+    println "Tool versions:"
+    println "  DeepVariant: ${params.dv_version} (${params.dv_binary_path}; ${params.dv_container})"
+    println "  HPRC pangenome: ${hprcName} (${hprcPangenome})"
+    println "  HapCUT2: ${hapcut2Version} (${hapcut2Path})"
 }
 
 workflow {
