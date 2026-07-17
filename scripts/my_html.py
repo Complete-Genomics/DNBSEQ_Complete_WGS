@@ -29,6 +29,17 @@ def image_to_base64(image_path):
     except:
         return ''
 
+def report_image_path(sample_dir, filename):
+    report_dir = os.path.dirname(sample_dir.rstrip(os.sep))
+    candidates = [
+        os.path.join(sample_dir, filename),
+        os.path.join(report_dir, filename),
+    ]
+    for image_path in candidates:
+        if os.path.exists(image_path):
+            return image_path
+    return candidates[0]
+
 def generate_html(outdir, sample):
     csv_matches         = glob.glob(os.path.join(outdir, sample + '.lariat.dv.report'))
     csv                 = csv_matches[0] if csv_matches else None
@@ -45,16 +56,16 @@ def generate_html(outdir, sample):
 
 
     # png
-    cumuplot = image_to_base64(os.path.join(outdir, 'cumulative_coverage_plot.png'))
-    ideogram = image_to_base64(os.path.join(outdir, 'chromosome_sv.png'))
+    cumuplot = image_to_base64(report_image_path(outdir, 'cumulative_coverage_plot.png'))
+    ideogram = image_to_base64(report_image_path(outdir, 'chromosome_sv.png'))
 
-    pangenie_png            = image_to_base64(os.path.join(outdir, 'pangenie_var_plot.png'))
+    pangenie_png            = image_to_base64(report_image_path(outdir, 'pangenie_var_plot.png'))
 
-    var_class_png           = image_to_base64(os.path.join(outdir, 'var_class.png'))
-    cons_type_severe_png    = image_to_base64(os.path.join(outdir, 'cons_type_severe.png'))
-    cons_type_all_png       = image_to_base64(os.path.join(outdir, 'cons_type_all.png'))
-    coding_cons_type_png    = image_to_base64(os.path.join(outdir, 'coding_cons_type.png'))
-    var_chrom_png           = image_to_base64(os.path.join(outdir, 'var_chrom.png'))
+    var_class_png           = image_to_base64(report_image_path(outdir, 'var_class.png'))
+    cons_type_severe_png    = image_to_base64(report_image_path(outdir, 'cons_type_severe.png'))
+    cons_type_all_png       = image_to_base64(report_image_path(outdir, 'cons_type_all.png'))
+    coding_cons_type_png    = image_to_base64(report_image_path(outdir, 'coding_cons_type.png'))
+    var_chrom_png           = image_to_base64(report_image_path(outdir, 'var_chrom.png'))
 
     # HTML模板
     html_content = f'''

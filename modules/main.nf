@@ -169,7 +169,8 @@ workflow CWGS {
     // WF_report()
     if (params.ref == 'hg38' || params.ref.contains('GRCh38')) {
         report0(ch_phasedvcf.join(ch_lfr).join(ch_cmrgMergebamhistbed).join(ch_cmrgMergebammeanbed).join(ch_depthreport).join(ch_phasereport)).collect().set {ch_reports}
-        html(report(ch_reports))
+        report(ch_reports).mix(vep_data.out, hlala.out, cumuplot.out, pangenie_var_plot.out, pangenie_plot.out).collect().set {ch_flg}
+        html(ch_flg)
     }
 }
 
@@ -448,7 +449,7 @@ workflow CWGS_frombam {
                 ch_report.collect().mix(ch_reports).set {ch_reports}
                 report(ch_reports)
 
-                ch_reports.mix(vep_data.out, hlala.out, cumuplot.out, pangenie_var_plot.out).collect().set {ch_flg}
+                ch_reports.mix(vep_data.out, hlala.out, cumuplot.out, pangenie_var_plot.out, pangenie_plot.out).collect().set {ch_flg}
                 html(ch_flg)
 
             } else {
