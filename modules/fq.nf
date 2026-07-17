@@ -266,7 +266,7 @@ process fqdist {
     memory params.MEM1 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
-    publishDir "${params.outdir}/report/$id", mode: 'link'
+    publishDir "${params.outdir}/report/$id", mode: 'copy'
   // publishDir (
   //   path: "${params.outdir}/report/",
   //   saveAs: { fn ->
@@ -307,7 +307,7 @@ process eachstat_fastq {
     path("*.xls")
 
     // publishDir "${params.outdir}/report/", saveAs: {"${id}.31.qc-stlfr.stats.xls"}
-    publishDir "${params.outdir}/report/$id/", mode: 'link'
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
 
     script:
     """

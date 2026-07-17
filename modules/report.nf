@@ -10,7 +10,7 @@ process report0 {
     path "${id}.*report"
 
     tag "$id"
-    publishDir "${params.outdir}/report/$id/"
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
     // cache false
 
     script:

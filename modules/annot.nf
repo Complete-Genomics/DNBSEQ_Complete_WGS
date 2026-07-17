@@ -14,7 +14,7 @@ process vep {
 
     tag "$id"
     publishDir "${params.outdir}/$id/annot/", pattern: "*vcf.gz*", mode: 'link'
-    publishDir "${params.outdir}/report/$id/", pattern: "*html", mode: 'link'
+    publishDir "${params.outdir}/report/$id/", pattern: "*html", mode: 'copy'
 
     script:
     def vcf = phasedvcf.first()
@@ -45,7 +45,7 @@ process vep_data {
     tuple val(id), path("*.{csv,png}")
 
     tag "$id"
-    publishDir "${params.outdir}/report/$id/", mode: 'link'
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
 
     // cache false
     script:

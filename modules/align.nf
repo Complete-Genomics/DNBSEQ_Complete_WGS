@@ -1036,7 +1036,7 @@ process stLFRQC {
     path("06*.txt")
 
     tag "$id"
-    publishDir "${params.outdir}/report/$id/", mode:'link'
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
  
     script:
     bam = bam.first()

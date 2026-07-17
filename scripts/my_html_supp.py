@@ -1,21 +1,43 @@
 import argparse
 import base64
 import glob
-import html
 import os
 from datetime import datetime
 
 import pandas as pd
 
+try:
+    from html import escape as html_escape
+except ImportError:
+    try:
+        from cgi import escape as html_escape
+    except ImportError:
+        html_escape = None
+
 
 TITLE = 'cWGS Report'
 
 
-def missing_html(label, expected_path):
-    path = html.escape(expected_path)
+def escape_html(value):
+    value = str(value)
+    if html_escape:
+        return html_escape(value)
     return (
-        f'<div class="noDataTitle">{label} was not generated for this sample.'
-        f'<br><span class="missingPath">Expected file: {path}</span></div>'
+        value.replace('&', '&amp;')
+        .replace('<', '&lt;')
+        .replace('>', '&gt;')
+        .replace('"', '&quot;')
+    )
+
+
+def missing_html(label, expected_path):
+    path = escape_html(expected_path)
+    return (
+        '<div class="noDataTitle">{label} was not generated for this sample.'
+        '<br><span class="missingPath">Expected file: {path}</span></div>'
+    ).format(
+        label=label,
+        path=path
     )
 
 
@@ -67,7 +89,10 @@ def image_html(sample_dir, filename, alt, label):
     image_data = image_to_base64(image_path)
     if not image_data:
         return missing_html(label, image_path)
-    return f'<img src="data:image/png;base64,{image_data}" alt="{alt}">'
+    return '<img src="data:image/png;base64,{image_data}" alt="{alt}">'.format(
+        image_data=image_data,
+        alt=alt
+    )
 
 
 def find_metrics_report(sample_dir, sample):
@@ -83,12 +108,13 @@ def sample_dirs(report_dir, selected_sample=None):
         sample_dir = os.path.join(report_dir, selected_sample)
         if os.path.isdir(sample_dir):
             return [(selected_sample, sample_dir)]
-        raise FileNotFoundError(f'Sample report directory does not exist: {sample_dir}')
+        raise IOError('Sample report directory does not exist: {0}'.format(sample_dir))
 
     dirs = []
-    for entry in os.scandir(report_dir):
-        if entry.is_dir():
-            dirs.append((entry.name, entry.path))
+    for name in os.listdir(report_dir):
+        sample_dir = os.path.join(report_dir, name)
+        if os.path.isdir(sample_dir):
+            dirs.append((name, sample_dir))
     return sorted(dirs)
 
 
@@ -115,7 +141,7 @@ def generate_html(report_dir, sample, sample_dir):
     coding_cons_type_png = image_html(sample_dir, 'coding_cons_type.png', 'plot', 'Coding consequence plot')
     var_chrom_png = image_html(sample_dir, 'var_chrom.png', 'plot', 'Variants by chromosome plot')
 
-    html_content = f'''
+    html_content = '''
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -247,11 +273,28 @@ def generate_html(report_dir, sample, sample_dir):
         </div>
 
         <div style="text-align: right; margin-top: 20px; color: #666;">
-            {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+            {timestamp}
         </div>
     </body>
     </html>
-    '''
+    '''.format(
+        TITLE=TITLE,
+        metrics=metrics,
+        ideogram=ideogram,
+        cumuplot=cumuplot,
+        pangenie_png=pangenie_png,
+        var_class_png=var_class_png,
+        var_class_table=var_class_table,
+        cons_type_severe_png=cons_type_severe_png,
+        cons_type_severe_table=cons_type_severe_table,
+        cons_type_all_png=cons_type_all_png,
+        cons_type_all_table=cons_type_all_table,
+        coding_cons_type_png=coding_cons_type_png,
+        coding_cons_type_table=coding_cons_type_table,
+        var_chrom_png=var_chrom_png,
+        hla=hla,
+        timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    )
 
     output_html = os.path.join(report_dir, sample + '_report.html')
     with open(output_html, 'w', encoding='utf-8') as f:

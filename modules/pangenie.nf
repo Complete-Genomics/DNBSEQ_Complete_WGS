@@ -42,7 +42,7 @@ process pangenie_plot {
 
     // cache false
     tag "$id"
-    publishDir "${params.outdir}/report/$id/"
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
 
     stub:
     "touch chromosome_sv.png"
@@ -87,7 +87,7 @@ process pangenie_var_plot {
     path "pangenie_var_plot.png"
 
     tag "$id"
-    publishDir "${params.outdir}/report/$id/", mode: 'link'
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
 
     stub:
     "touch pangenie_var_plot.png"

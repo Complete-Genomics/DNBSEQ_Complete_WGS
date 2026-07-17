@@ -13,8 +13,8 @@ process vcfeval {
     output:
     tuple val(id), path("*.xls")
     tag "$id"
-    publishDir "${params.outdir}/report/$id", saveAs: {"${id}.${lib}.evaluation.xls"}, mode: 'link'
-    publishDir "${params.outdir}/report/$id", saveAs: {"${id}.evaluation.xls"}, mode: 'link', enabled: params.stLFR_only
+    publishDir "${params.outdir}/report/$id", saveAs: {"${id}.${lib}.evaluation.xls"}, mode: 'copy'
+    publishDir "${params.outdir}/report/$id", saveAs: {"${id}.evaluation.xls"}, mode: 'copy', enabled: params.stLFR_only
     // publishDir (
     //   path: "${params.outdir}/report/", 
     //   saveAs: { fn ->
@@ -95,7 +95,7 @@ process eachstat_vcf {
     output:
     tuple val(id), path("${id}.varianttable.xls")
 
-    publishDir "${params.outdir}/report/$id", mode: 'link'
+    publishDir "${params.outdir}/report/$id", mode: 'copy'
     // publishDir (
     //   path: "${params.outdir}/report/", 
     //   saveAs: { fn ->
@@ -127,7 +127,7 @@ process variant_fix {
     path "${id}.var.xls"
 
     tag "$id"
-    publishDir "${params.outdir}/report/$id/", mode: 'link', saveAs: {"${id}.varianttable.xls"}
+    publishDir "${params.outdir}/report/$id/", mode: 'copy', saveAs: {"${id}.varianttable.xls"}
     // publishDir (
     //   path: "${params.outdir}/report/", 
     //   saveAs: { fn ->

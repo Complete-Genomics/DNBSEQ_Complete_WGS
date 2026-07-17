@@ -201,7 +201,7 @@ process ideogram {
     path("*svg")
 
     tag "$id"
-    publishDir "${params.outdir}/report/$id/", mode: 'link'
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
 
     script:
     def fai = "${params.DB}/${params.ref}/reference/${params.ref}.fa.fai"
@@ -229,7 +229,7 @@ process cumuplot {
 
     // tag "$id, $aligner, $varcaller"
     tag "$id"
-    publishDir "${params.outdir}/report/$id/", mode: 'link'
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
 
     script:
     """
@@ -256,7 +256,7 @@ process hapKaryotype {
 
     // tag "$id, $aligner, $varcaller"
     tag "$id"
-    publishDir "${params.outdir}/report/$id/", mode: 'link'
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
 
     script:
     def fai = "${params.DB}/${params.ref}/reference/${params.ref}.fa.fai"
@@ -286,9 +286,9 @@ process hapKaryotype_bak {
 
     // tag "$id, $aligner, $varcaller"
     tag "$id"
-    publishDir "${params.outdir}/report/$id/", pattern: "*pdf", saveAs: {"${id}.haplotype.perl.pdf"}, mode: 'link'
-    publishDir "${params.outdir}/report/$id/", pattern: "karyotype.${id}.genome.txt", saveAs: {"karyotype.${id}.genome.perl.txt"}, mode: 'link'
-    publishDir "${params.outdir}/report/$id/", pattern: "karyotype.${id}.band.txt", saveAs: {"karyotype.${id}.band.perl.txt"}, mode: 'link'
+    publishDir "${params.outdir}/report/$id/", pattern: "*pdf", saveAs: {"${id}.haplotype.perl.pdf"}, mode: 'copy'
+    publishDir "${params.outdir}/report/$id/", pattern: "karyotype.${id}.genome.txt", saveAs: {"karyotype.${id}.genome.perl.txt"}, mode: 'copy'
+    publishDir "${params.outdir}/report/$id/", pattern: "karyotype.${id}.band.txt", saveAs: {"karyotype.${id}.band.perl.txt"}, mode: 'copy'
 
     script:
     def fa = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
@@ -315,7 +315,7 @@ process circos {
 
     // cache false
     tag "$id"
-    publishDir "${params.outdir}/report/$id/", mode: 'link'
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
 
     script:
     def ref = "${params.DB}/${params.ref}/reference/${params.ref}.fa"

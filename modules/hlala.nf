@@ -11,7 +11,7 @@ process hlala {
     path "hlala_out"
     
     tag "$id"
-    publishDir "${params.outdir}/report/$id/"
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
 
     script:
     bam = bam.first()

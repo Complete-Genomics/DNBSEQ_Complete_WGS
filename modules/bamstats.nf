@@ -74,7 +74,7 @@ process insertsize {
     tuple val(id), path("*.metrics.txt"), emit: insertsize
 
     tag "$id, $lib"
-    publishDir "${params.outdir}/report/$id/", mode: 'link'
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
 
     // publishDir (
     //   path: "${params.outdir}/report/", 
@@ -109,7 +109,7 @@ process gcbias {
     tuple val(id), path("*.metrics.txt"), emit: gcbias
 
     tag "$id, $lib"
-    publishDir "${params.outdir}/report/$id/"
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
 
     // publishDir (
     //   path: "${params.outdir}/report/", 
@@ -359,7 +359,7 @@ process eachstat_cov {
     tuple val(id), path("*info_1.xls"), emit: info1
 
     tag "$id"
-    publishDir "${params.outdir}/report/$id/"
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
     // cache false
     script:
     def bam = bam.first()
@@ -383,7 +383,7 @@ process eachstat_depth {
     tuple val(id), path("*info_2.xls"), emit: info2
 
     tag "$id"
-    publishDir "${params.outdir}/report/$id/"
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
     // cache false
     script:
     def bam = bam.first()
@@ -406,7 +406,7 @@ process eachstat_aligncat {
     tuple val(id), path("${id}.aligntable.xls")
 
     tag "$id"
-    publishDir "${params.outdir}/report/$id/", mode: 'link'
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
 
     script:
     """
