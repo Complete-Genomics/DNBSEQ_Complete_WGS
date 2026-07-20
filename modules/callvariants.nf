@@ -569,7 +569,7 @@ process deepvariant {
     script:
     def bam = bam.first()
     def ref = params.ref.startsWith('/') ? params.ref : "${params.DB}/${params.ref}/reference/${params.ref}.fa"
-    def pangenome = params.dv_pangenome ?: "${params.DB}/${params.ref}/panGenome/hprc-v2.1-mc-grch38.gbz"
+    def pangenome = params.dv_pangenome ?: "${params.DB}/${params.ref}/panGenome/hprc-v1.1-mc-grch38.gbz"
     def ver = "dv"
     def outvcf = bam.toString().contains("pf") ? "${id}.pf.bwa.${ver}.vcf.gz" : "${id}.${aligner}.${ver}.vcf.gz"
     def gbz_shm = params.dv_gbz_shm_size_gb ? "--gbz_shared_memory_size_gb ${params.dv_gbz_shm_size_gb}" : ""

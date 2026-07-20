@@ -417,8 +417,8 @@ process vg {
     // publishDir "${params.outdir}/$id/align/", mode: 'link', enabled: !params.sampleBam
 
     script:
-    def gbz  = params.vg_pangenome_gbz ?: "${params.DB}/${params.ref}/panGenome/hprc-v2.1-mc-grch38.gbz"
-    def hapl = params.vg_pangenome_hapl ?: "${params.DB}/${params.ref}/panGenome/hprc-v2.1-mc-grch38.hapl"
+    def gbz  = params.vg_pangenome_gbz ?: "${params.DB}/${params.ref}/panGenome/hprc-v1.1-mc-grch38.gbz"
+    def hapl = params.vg_pangenome_hapl ?: "${params.DB}/${params.ref}/panGenome/hprc-v1.1-mc-grch38.hapl"
     def fai  = params.ref.startsWith('/') ? "${params.ref}.fai" : "${params.DB}/hg38/reference/hg38.fa.fai"
     def vg_bin = "/usr/local/app/vg/bin/vg"
     def fq_args = is_pe ? "-f ${reads[0]} -f ${reads[1]}" : "-f ${reads[0]}"
