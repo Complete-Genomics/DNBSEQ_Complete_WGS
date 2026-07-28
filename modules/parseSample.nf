@@ -106,6 +106,43 @@ workflow parse_sample_frombam {
     bam   = bam
     fq_pf = fq_pf
 }
+
+workflow bam {
+    take:
+    ch_bam
+
+    main:
+    ch_bam.map { id, stlfrbam, pfbam ->
+        [id, [file(stlfrbam), file("${stlfrbam}.bai")]]
+    }.set { stlfr }
+
+    ch_bam.map { id, stlfrbam, pfbam ->
+        [id, [file(pfbam), file("${pfbam}.bai")]]
+    }.set { pf }
+
+    emit:
+    stlfr = stlfr
+    pf    = pf
+}
+
+workflow bam2 {
+    take:
+    ch_bam
+
+    main:
+    ch_bam.map { id, stlfrbam, mergebam ->
+        [id, [file(stlfrbam), file("${stlfrbam}.bai")]]
+    }.set { stlfr }
+
+    ch_bam.map { id, stlfrbam, mergebam ->
+        [id, [file(mergebam), file("${mergebam}.bai")]]
+    }.set { merge }
+
+    emit:
+    stlfr = stlfr
+    merge = merge
+}
+
 process tosamplelist {
     cpus params.CPU0
     memory params.MEM1 + "g"

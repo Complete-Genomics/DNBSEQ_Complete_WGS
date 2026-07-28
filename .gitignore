@@ -11,3 +11,4 @@ memory
 scripts/report_patch.py
 .nextflow*
 test_data
+resources/

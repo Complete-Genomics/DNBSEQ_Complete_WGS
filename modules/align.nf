@@ -67,7 +67,7 @@ workflow WF_align_stlfr {
         }
     }
     
-    if (params.sampleBam) { sampleBamStlfrLariat('stlfr', 'lariat', ch_stlfrbam).set {ch_stlfrbam} } 
+    if (params.sampleBam) { sampleBam('stlfr', 'lariat', ch_stlfrbam).set {ch_stlfrbam} } 
 
     emit:
     ch_stlfrbam
