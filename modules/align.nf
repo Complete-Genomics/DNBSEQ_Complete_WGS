@@ -402,7 +402,8 @@ process kff {
 }
 process vg {    
     cpus params.cpu3
-    memory params.MEM2 + "g"
+    memory "250 GB"
+    maxForks 1
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
     tag "$id"
@@ -1044,8 +1045,10 @@ process stLFRQC {
     ${params.BIN}stLFRQC --samtools /usr/bin/samtools --python3 /usr/bin/python3 \
         --ref $ref \
         --bam $bam \
-        --thread ${task.cpus} \
-        --script ${params.SCRIPT}/stLFRQC || echo "stLFRQC failed, using NA placeholders" >&2
+        --thread ${task.cpus} || {
+            echo "stLFRQC failed, using NA placeholders" >&2
+            touch 06.lfr_highquality.txt 06.lfr_length.txt 06.lfr_readpair.txt 06.lfr_per_barcode.txt
+        }
 
     if [ -f 06.lfr_highquality.txt ]; then
         sed -n '11p' 06.lfr_highquality.txt > tmp
