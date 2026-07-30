@@ -694,5 +694,17 @@ workflow.onComplete {
 }
 
 workflow {
-    CWGS()
+    println "Cmd line: $workflow.commandLine"
+    println "CWGS started at: $workflow.start"
+    if (params.frombam) {
+        if (params.PF_only) {
+            CWGS_frombam_PFonly()
+        } else if (params.stLFR_only) {
+            CWGS_frombam_stLFRonly()
+        } else {
+            CWGS_frombam()
+        }
+    } else {
+        CWGS()
+    }
 }
