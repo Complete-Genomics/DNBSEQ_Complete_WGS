@@ -4,14 +4,47 @@ if (params.input) { ch_input = file(params.input) } else { exit 1, 'Input sample
 if (params.gatk_version != "v3" && params.gatk_version != "v4") { exit 1, 'wrong gatk version!'}
 if (!params.use_megabolt && params.dv_version == "v0.7" ) { exit 1, 'dv v0.7 can only be used in megabolt!'}
 
-include { parse_sample      } from "${params.MOD}/parseSample"                   
+include {
+    parse_sample;
+    parse_sample_frombam;
+    bam;
+    bam2                  } from "${params.MOD}/parseSample"
 include { WF_align_pf;
         WF_align_stlfr;
         WF_align_stlfr2;
+        bqsr as bqsrStlfrLariat;
+        bqsrMegabolt;
+        sampleBam as sampleBamPf;
+        sampleBam as sampleBamStlfrLariat;
         stLFRQC             } from "${params.MOD}/align"
-include { WF_mergebam       } from "${params.MOD}/mergebam"
-include { WF_callvariants   } from "${params.MOD}/callvariants"
+include {
+    WF_mergebam;
+    intersect as intersectLariat;
+    mergeBam as mergeBamLariat } from "${params.MOD}/mergebam"
+include {
+    WF_callvariants;
+    gatk_interval;
+    gatherVcfsHc;
+    gatherVcfsVqsr;
+    deepvariant;
+    deepvariant as dvBwaPf;
+    dvMegabolt;
+    hcMegabolt;
+    vqsrMegabolt;
+    hc;
+    hcSplit;
+    vqsrSnp;
+    vqsrIndel } from "${params.MOD}/callvariants"
 include { WF_phase;
+        getchrs;
+        splitBam4phasing;
+        splitvcf as splitVcfLariatDv;
+        splitvcf as splitVcfLariatGatk;
+        phase as phaseLariatDv;
+        phase as phaseLariatGatk;
+        phaseCat as phaseCatLariatDv;
+        phaseCat as phaseCatLariatGatk;
+        phaseCat as phaseCatRef;
         ideogram;
         cumuplot;
         hapblock2bed        } from "${params.MOD}/phase"
@@ -25,8 +58,15 @@ include {
 include { vcfstats } from "${params.MOD}/vcfstats"
 
 include {
-    vcfeval
+    vcfeval;
+    vcfeval as vcfevalLariatDv;
+    vcfeval as vcfevalLariatGatk;
+    vcfeval as vcfevalPf;
     variant_fix } from "${params.MOD}/vcfeval"
+include {
+    variant_stats as varStatsLariatDv;
+    variant_stats as varStatsLariatGatk } from "${params.MOD}/variantstats"
+include { mapq as mapq_frombam } from "${params.MOD}/bam"
 
 include {
     bamdepth;
@@ -69,9 +109,23 @@ include {hlala} from "${params.MOD}/hlala"
 include {WF_haplodenovo} from "${params.MOD}/haplodenovo"
 
 include {report0;
+    report0 as reportLariatGatk1;
+    report0 as reportLariatDv;
     report;
     reportref;
+    report_stlfronly;
+    report_frombam_PFonly;
+    FQC;
     html } from "${params.MOD}/report"
+
+def ch_libpf = "pf"
+def ch_libstlfr = "stlfr"
+def ch_merge = "merge"
+
+def ch_bwa = "bwa"
+def ch_lariat = "lariat"
+def ch_dv = "dv"
+def ch_gatk = "gatk"
 
 
 workflow CWGS {
@@ -654,5 +708,17 @@ workflow.onComplete {
 }
 
 workflow {
-    CWGS()
+    println "Cmd line: $workflow.commandLine"
+    println "CWGS started at: $workflow.start"
+    if (params.frombam) {
+        if (params.PF_only) {
+            CWGS_frombam_PFonly()
+        } else if (params.stLFR_only) {
+            CWGS_frombam_stLFRonly()
+        } else {
+            CWGS_frombam()
+        }
+    } else {
+        CWGS()
+    }
 }
