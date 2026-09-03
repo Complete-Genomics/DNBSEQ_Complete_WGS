@@ -13,3 +13,4 @@ scripts/report_patch.py
 test_data/
 resources/
 subprojects/
+tmp/

@@ -587,7 +587,9 @@ process deepvariant {
     def make_examples_flag = make_examples_args ? "--make_examples_extra_args '${make_examples_args}'" : ""
     def postprocess_flag = (params.dv_postprocess_variants_extra_args && params.dv_postprocess_variants_extra_args != "") ?
         "--postprocess_variants_extra_args '${params.dv_postprocess_variants_extra_args}'" : ""
-    def optional_args = [gbz_shm, make_examples_flag, postprocess_flag].findAll { it }.join(" \\\n      ")
+    def customized_model_flag = (params.dv_customized_model && params.dv_customized_model != "") ?
+        "--customized_model=${params.dv_customized_model}" : ""
+    def optional_args = [gbz_shm, customized_model_flag, make_examples_flag, postprocess_flag].findAll { it }.join(" \\\n      ")
     """
     dv_tmp=/tmp/dv_${id}_\${BASHPID}
     export TEST_TMPDIR=\${dv_tmp}/bazel
