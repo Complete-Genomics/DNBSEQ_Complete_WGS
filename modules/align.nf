@@ -131,7 +131,7 @@ process kff {
 }
 process vg {    
     cpus params.cpu3
-    memory "250 GB"
+    memory params.vg_memory
     maxForks 1
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
@@ -806,7 +806,8 @@ process combinebam {
 }
 process stLFRQC {
     cpus params.CPU1
-    memory params.MEM1 + "g"
+    memory params.stlfrqc_memory
+    maxForks 2
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
     input:

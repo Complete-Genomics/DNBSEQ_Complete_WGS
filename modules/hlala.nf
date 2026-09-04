@@ -1,6 +1,7 @@
 process hlala {
     cpus params.cpu3
     memory params.MEM1 + "g"
+    maxForks 1
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     when: !params.demo && (params.ref == 'hg38' || params.ref.contains('GRCh38'))
     
