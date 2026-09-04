@@ -1,6 +1,7 @@
 process pangenie {
     cpus params.cpu3
-    memory params.MEM1 + "g"
+    memory params.pangenie_memory
+    maxForks 2
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
     when: params.ref == 'hg38' || params.ref.contains('GRCh38')

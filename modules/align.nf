@@ -127,7 +127,7 @@ workflow WF_align_stlfr2 {
     }
 
     // SE600 reads normally carry the 42 bp barcode in sequence.  A pre-split
-    // input already has #bc1_bc2_bc3/1 in the FASTQ header and must not be
+    // input already has #bc1_bc2_bc3/[12] in the FASTQ header and must not be
     // split a second time.
     if (params.skipBarcodeSplit) {
         ch_stlfr2fq.map { id, reads -> [id, reads[0]] }.set { ch_stlfr2_split }
@@ -408,7 +408,7 @@ process kff {
 }
 process vg {    
     cpus params.cpu3
-    memory "250 GB"
+    memory params.vg_memory
     maxForks 1
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
@@ -1031,7 +1031,8 @@ process addBxSe600 {
 
 process stLFRQC {
     cpus params.CPU1
-    memory params.MEM1 + "g"
+    memory params.stlfrqc_memory
+    maxForks 2
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
     input:
