@@ -126,8 +126,14 @@ workflow WF_align_stlfr2 {
         exit 1, 'stlfr2 aligner only supports hg38/GRCh38 ref (vg giraffe)!'
     }
 
-    // SE600: extract barcodes from read sequence, encode in read name (#bc1_bc2_bc3)
-    barcode_split_se600(ch_stlfr2fq).set { ch_stlfr2_split }
+    // SE600 reads normally carry the 42 bp barcode in sequence.  A pre-split
+    // input already has #bc1_bc2_bc3/1 in the FASTQ header and must not be
+    // split a second time.
+    if (params.skipBarcodeSplit) {
+        ch_stlfr2fq.map { id, reads -> [id, reads[0]] }.set { ch_stlfr2_split }
+    } else {
+        barcode_split_se600(ch_stlfr2fq).set { ch_stlfr2_split }
+    }
 
     // Pass split FASTQ as single-element list to avoid Nextflow path-staging collision
     ch_stlfr2_split.map { id, fq -> [id, [fq], false] }
@@ -868,7 +874,7 @@ process sampleBam_samtools {
  
     script:
     def bam = indexedbam.first()
-    def cov = lib == "stlfr" ? "${params.stLFR_sampling_cov}" : "${params.PF_sampling_cov}"
+    def cov = lib == "pf" ? "${params.PF_sampling_cov}" : "${params.stLFR_sampling_cov}"
     if (params.debug) {
         cmd = """
         cp $bam ${id}.${lib}.${aligner}.sampled.bam
@@ -914,7 +920,7 @@ process sampleBam {
  
     script:
     def bam = indexedbam.first()
-    def cov = lib == "stlfr" ? "${params.stLFR_sampling_cov}" : "${params.PF_sampling_cov}"
+    def cov = lib == "pf" ? "${params.PF_sampling_cov}" : "${params.stLFR_sampling_cov}"
 
     cmd = """
     bamcov=`${params.BIN}samtools depth -@ ${task.cpus} $bam | awk '{sum += \$3}END{print sum/${params.ref_len}}'`
