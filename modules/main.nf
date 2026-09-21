@@ -396,12 +396,12 @@ workflow CWGS {
                 
                 //phase
                 splitVcfLariatDv(ch_lariat, ch_dv, ch_mergevcf, chrs).eachvcf.set {ch_eachvcf}
-                vcfs = splitVcfLariatDv.out.vcf.groupTuple()
+                vcfs = splitVcfLariatDv.out.vcf.groupTuple(size: 24)
                 ch_eachbamlariat.combine(ch_eachvcf, by: [0,1]).set {ch_eachchr}
-                pvcfs = phaseLariatDv(ch_lariat, ch_dv, ch_eachchr).phasedvcf.groupTuple()  
-                lfs = phaseLariatDv.out.lf.groupTuple()  
-                hbs = phaseLariatDv.out.hapblock.groupTuple()  
-                stats = phaseLariatDv.out.stat.groupTuple()  
+                pvcfs = phaseLariatDv(ch_lariat, ch_dv, ch_eachchr).phasedvcf.groupTuple(size: 24)
+                lfs = phaseLariatDv.out.lf.groupTuple(size: 24)
+                hbs = phaseLariatDv.out.hapblock.groupTuple(size: 24)
+                stats = phaseLariatDv.out.stat.groupTuple(size: 24)
                 if (params.ref == 'hg38' || params.ref.contains('GRCh38')) {
                     phaseCatLariatDv(ch_lariat, ch_dv, vcfs.join(pvcfs).join(lfs).join(hbs).join(stats)).report.set {ch_phasereport}//report
                     phaseCatLariatDv.out.phasedvcf.set {ch_phasedvcf}
@@ -1162,4 +1162,3 @@ workflow {
     }
     
 }
-
