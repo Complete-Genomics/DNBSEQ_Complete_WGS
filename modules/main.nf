@@ -844,12 +844,12 @@ workflow CWGS_frombam {
 
         //phase
         splitVcfLariatDv(ch_lariat, ch_dv, ch_mergevcf, chrs).eachvcf.set {ch_eachvcf}
-        vcfs = splitVcfLariatDv.out.vcf.groupTuple()
+        vcfs = splitVcfLariatDv.out.vcf.groupTuple(size: chrs.size())
         ch_eachbamlariat.combine(ch_eachvcf, by: [0,1]).set {ch_eachchr}
-        pvcfs = phaseLariatDv(ch_lariat, ch_dv, ch_eachchr).phasedvcf.groupTuple()  
-        lfs = phaseLariatDv.out.lf.groupTuple()  
-        hbs = phaseLariatDv.out.hapblock.groupTuple()  
-        stats = phaseLariatDv.out.stat.groupTuple()  
+        pvcfs = phaseLariatDv(ch_lariat, ch_dv, ch_eachchr).phasedvcf.groupTuple(size: chrs.size())
+        lfs = phaseLariatDv.out.lf.groupTuple(size: chrs.size())
+        hbs = phaseLariatDv.out.hapblock.groupTuple(size: chrs.size())
+        stats = phaseLariatDv.out.stat.groupTuple(size: chrs.size())
         if (!params.ref.startsWith('/')) {
             phaseCatLariatDv(ch_lariat, ch_dv, vcfs.join(pvcfs).join(lfs).join(hbs).join(stats)).report.set {ch_phasereport}//report
             vep(phaseCatLariatDv.out.phasedvcf)
@@ -1010,12 +1010,12 @@ workflow CWGS_frombam_stLFRonly {
 
         //phase
         splitVcfLariatDv(ch_lariat, ch_dv, ch_vcf, chrs).eachvcf.set {ch_eachvcf}
-        vcfs = splitVcfLariatDv.out.vcf.groupTuple()
+        vcfs = splitVcfLariatDv.out.vcf.groupTuple(size: chrs.size())
         ch_eachbamlariat.combine(ch_eachvcf, by: [0,1]).set {ch_eachchr}
-        pvcfs = phaseLariatDv(ch_lariat, ch_dv, ch_eachchr).phasedvcf.groupTuple()  
-        lfs = phaseLariatDv.out.lf.groupTuple()  
-        hbs = phaseLariatDv.out.hapblock.groupTuple()  
-        stats = phaseLariatDv.out.stat.groupTuple()  
+        pvcfs = phaseLariatDv(ch_lariat, ch_dv, ch_eachchr).phasedvcf.groupTuple(size: chrs.size())
+        lfs = phaseLariatDv.out.lf.groupTuple(size: chrs.size())
+        hbs = phaseLariatDv.out.hapblock.groupTuple(size: chrs.size())
+        stats = phaseLariatDv.out.stat.groupTuple(size: chrs.size())
         if (!params.ref.startsWith('/')) {
             phaseCatLariatDv(ch_lariat, ch_dv, vcfs.join(pvcfs).join(lfs).join(hbs).join(stats)).report.set {ch_phasereport}//report
             phaseCatLariatDv.out.phasedvcf.set {ch_phasedvcf}
