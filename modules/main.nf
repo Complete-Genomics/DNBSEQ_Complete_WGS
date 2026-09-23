@@ -28,7 +28,6 @@ include {
 	gatherVcfsVqsr;
 	inferDvSex;
 	deepvariant;
-    deepvariant as dvBwaPf;
     dvMegabolt;
     hcMegabolt;
     vqsrMegabolt;
@@ -62,7 +61,6 @@ include {
     vcfeval;
     vcfeval as vcfevalLariatDv;
     vcfeval as vcfevalLariatGatk;
-    vcfeval as vcfevalPf;
     variant_fix } from "${params.MOD}/vcfeval"
 include {
     variant_stats as varStatsLariatDv;
@@ -115,7 +113,6 @@ include {report0;
     report;
     reportref;
     report_stlfronly;
-    report_frombam_PFonly;
     FQC;
     html } from "${params.MOD}/report"
 
@@ -168,27 +165,8 @@ workflow CWGS {
     samtoolsDepthMerge('merge', ch_mergebam).set {ch_depthreport}
 
 
-    // call variants
-    // Route per sample composition:
-    //   both stlfr + pf → merge.bam
-    //   stlfr-only      → stlfr.bam
-    //   pf-only         → pf.bam
-    ch_stlfrbam.map { id, bam -> tuple(id, 'stlfr') }
-        .mix(ch_pfbam.map { id, bam -> tuple(id, 'pf') })
-        .groupTuple(by: 0)
-        .branch { id, srcs ->
-            both       : srcs.size() == 2
-            stlfr_only : srcs == ['stlfr']
-            pf_only    : srcs == ['pf']
-        }.set { ch_sampleType }
-
-    ch_sampleType.both      .join(ch_mergebam).map { id, srcs, bam -> [id, bam] }
-        .mix(
-            ch_sampleType.stlfr_only.join(ch_stlfrbam).map { id, srcs, bam -> [id, bam] },
-            ch_sampleType.pf_only   .join(ch_pfbam)   .map { id, srcs, bam -> [id, bam] }
-        ).set { ch_callbam }
-
-    WF_callvariants(ch_callbam).set {ch_mergevcf}
+    // Call variants only on the merged stLFR + PF BAM.
+    WF_callvariants(ch_mergebam).set {ch_mergevcf}
     
     // vcfeval (hg38)
     vcfeval('merge', ch_mergevcf).set {ch_vcfeval}
@@ -247,9 +225,9 @@ workflow CWGS_frombam {
             sampleBamStlfrLariat(ch_libstlfr, ch_lariat, ch_lariatbam).set {ch_lariatbam}
         }
         mapq_frombam(ch_pfbam).set {ch_pfbam}
-        dvBwaPf(ch_bwa, ch_pfbam).set {ch_pfdvvcf} 
+        ch_pfdvvcf = Channel.empty()
+        ch_vcfevalPf = Channel.empty()
         if (!params.ref.startsWith('/')) {
-            vcfevalPf(ch_libpf, ch_pfdvvcf).set {ch_vcfevalPf}
             coveragePf(ch_libpf, ch_pfbam).join(coverageMeanPf(ch_libpf, ch_pfbam)).set { ch_PfGeneCov }
             // mosdepthPf(ch_libpf, ch_pfbam).set {ch_}
             //depth bed
@@ -558,10 +536,10 @@ workflow CWGS_frombam_stLFRonly {
     frag2(frag1(ch_eachbamlariat).groupTuple())
 
     if (params.var_tool.contains("dv")) {
-        if (params.use_megabolt && params.dv_version == "v0.6" ) {dvMegabolt(ch_lariat, ch_mergeLariatBam).set {ch_mergevcf}}
+        if (params.use_megabolt && params.dv_version == "v0.6" ) {dvMegabolt(ch_lariat, ch_mergeLariatBam).set {ch_vcf}}
 		else {
-			inferDvSex(ch_lariatbam).set {ch_dv_sex}
-			deepvariant(ch_lariat, ch_lariatbam.join(ch_dv_sex)).set {ch_vcf}
+			inferDvSex(ch_mergeLariatBam).set {ch_dv_sex}
+			deepvariant(ch_lariat, ch_mergeLariatBam.join(ch_dv_sex)).set {ch_vcf}
 		}
         
 
@@ -668,7 +646,7 @@ workflow CWGS_frombam_stLFRonly {
     } 
 }
 workflow CWGS_frombam_PFonly {
-    println("!!! run CWGS from pf bams")
+    exit 1, 'CWGS_frombam_PFonly cannot call variants: DeepVariant requires merge.bam input.'
     
     parse_sample_frombam(ch_input).bam.set {ch_bam}
     bam(ch_bam).stlfr.set {ch_lariatbam}
@@ -676,8 +654,6 @@ workflow CWGS_frombam_PFonly {
 
     if (params.sampleBam) {  sampleBamPf(ch_libpf, ch_bwa, ch_pfbam).set {ch_pfbam} }
     mapq_frombam(ch_pfbam).set {ch_pfbam}
-    dvBwaPf(ch_bwa, ch_pfbam).set {ch_pfdvvcf} 
-    vcfevalPf(ch_libpf, ch_pfdvvcf).set {ch_vcfevalPf}
     coveragePf(ch_libpf, ch_pfbam).join(coverageMeanPf(ch_libpf, ch_pfbam)).set { ch_PfGeneCov }
 
     //pf bam stats
@@ -689,10 +665,6 @@ workflow CWGS_frombam_PFonly {
     alignCatPf(ch_libpf, ch_flagstat2.join(ch_stat2).join(ch_depthreport2).join(ch_insertsize2)).set {ch_aligncatpf} //info
     bamdepthPf(ch_libpf, ch_pfbam).set {ch_pfbamdepth}
 
-    ch_vcf = ch_pfdvvcf
-    ch_reports = Channel.empty() 
-    report_frombam_PFonly(ch_vcf.join(ch_aligncatpf).join(ch_pfbamdepth)).collect().mix(ch_reports).set {ch_reports}
-    report(ch_reports)
 }
 workflow.onComplete {
     def hprcPangenome = params.dv_pangenome ?: params.vg_pangenome_gbz
@@ -718,10 +690,12 @@ workflow {
     println "Cmd line: $workflow.commandLine"
     println "CWGS started at: $workflow.start"
     if (params.frombam) {
-        if (params.PF_only) {
-            CWGS_frombam_PFonly()
+        if (params.fromMergedBam) {
+            CWGS_frombam()
+        } else if (params.PF_only) {
+            exit 1, 'PF-only input cannot be called; provide merge.bam for DeepVariant.'
         } else if (params.stLFR_only) {
-            CWGS_frombam_stLFRonly()
+            exit 1, 'stLFR-only input cannot be called; provide merge.bam for DeepVariant.'
         } else {
             CWGS_frombam()
         }
