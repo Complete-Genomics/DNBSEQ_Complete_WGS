@@ -191,6 +191,7 @@ include {
     report_stlfronly;
     report_stlfronly_ref;
     report;
+    reportSample;
     html;
     FQC } from "${params.MOD}/report"
 
@@ -616,6 +617,7 @@ workflow CWGS {
                     cumuplot(hb)
 
                     reportLariatDv(ch_lariat, ch_dv, ch_vcf.join(ch_lfr).join(ch_cmrgMergebamhistbed).join(ch_cmrgMergebammeanbed).join(ch_depthreport).join(ch_phase)).set {ch_report}
+                    reportSample(ch_report)
                     ch_report.collect().mix(ch_reports).set {ch_reports}
                     report(ch_reports)
 

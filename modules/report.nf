@@ -290,6 +290,28 @@ process report {
 
     """
 }
+
+process reportSample {
+    cpus params.CPU0
+    memory params.MEM0 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+
+    input:
+    path(report_file)
+
+    output:
+    path "*.report.csv"
+
+    tag "$report_file"
+    publishDir "${params.outdir}/report", mode: 'copy'
+
+    script:
+    def report_name = report_file.getBaseName()
+    """
+    cp $report_file ${report_name}.report.csv
+    """
+}
+
 process FQC {
     cpus params.CPU0
     memory params.MEM0 + "g"
