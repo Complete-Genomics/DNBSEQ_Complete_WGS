@@ -322,6 +322,10 @@ nextflow run modules/main.nf -entry CWGS_frombam \
     --input samplesheet.csv --outdir ./output --ref hg38 --var_tool dv --frombam true
 ```
 
+For SE600 VG BAM input, provide both `stlfrbam` and `pfbam` and leave
+`fromMergedBam` at its default `false`. The workflow merges the two BAMs before
+DeepVariant; it does not call variants on either input BAM separately.
+
 ## Key parameters
 
 ### CPU / Memory
