@@ -86,14 +86,19 @@ def flfr(lfr):
 	return lfrnum, avglen
 
 def parse_flgstat(flgstat):
+	pemaprate = None
+	maprate = None
 	f = open(flgstat)
 	for line in f:
 		match = re.search(r'(\d+) \+ \d+ properly paired \(([\d.]+%) : \S+\)', line)
 		if match:
 			pemaprate = match.group(2)
-			break
+		else:
+			match = re.search(r'\d+ \+ \d+ mapped \(([\d.]+%) : \S+\)', line)
+			if match:
+				maprate = match.group(1)
 	f.close()
-	return pemaprate
+	return pemaprate or maprate or 'NA'
 
 def fphase(phase):
     f = open(phase)

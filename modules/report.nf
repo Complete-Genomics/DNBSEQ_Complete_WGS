@@ -131,6 +131,7 @@ process report_stlfronly_ref {
 
     script:
     vcf = vcf.first()
+    cmrg_exon_bed = "${params.SCRIPT}/cmrg273_exon.bed"
     """
     ${params.BIN}bcftools stats $vcf > ${id}.bcftoolsStats.txt
     hetsnp=`${params.BIN}bcftools view -v snps -g het $vcf |grep -v \\# |wc -l`
@@ -181,13 +182,13 @@ process report01 { // from bam
     input:
     val(aligner)
     val(varcaller)
-    tuple val(id), path(vcf), path(aligncatstlfr), path(aligncatpf), path(phase), path(genecov), path(vcfeval), path(vcfevalPf), val(stlfrbamdepth), val(pfbamdepth)
+    tuple val(id), path(vcf), path(lfr), path(stlfrflagstat), path(pfflagstat), path(stlfrdepthreport), path(pfdepthreport), path(mergedepthreport), val(stlfrbamdepth), val(pfbamdepth), path(histbed), path(meanbed), path(phase), path(vcfeval)
 
     output:
     path "${id}.*report"
 
     tag "$id, $aligner, $varcaller"
-    // publishDir "${params.outdir}/$id/"
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
     // cache false
 
     script:
@@ -198,7 +199,11 @@ process report01 { // from bam
     hetindel=`${params.BIN}bcftools view -v indels -g het $vcf |grep -v \\# |wc -l`
     echo -e "\$hetsnp\\t\$hetindel" > het
 
-    ${params.BIN}python3 ${params.SCRIPT}/report_frombam.py $id $aligner $varcaller ${id}.bcftoolsStats.txt het $aligncatstlfr $aligncatpf $phase $genecov $vcfeval $vcfevalPf $stlfrbamdepth $pfbamdepth > ${id}.${aligner}.${varcaller}.report
+    ln -s ${params.DB}/hg38/GRCh38_CMRG_benchmark_gene_coordinates.bed bed
+    ln -s ${params.outdir}/$id/phase/${id}.lariat.dv.hapblock hapblock
+    bedtools intersect -a $vcf -b $cmrg_exon_bed -wb > cmrg_exon.vcf
+
+    ${params.BIN}python3 ${params.SCRIPT}/report.py frombam_merge $id $vcf $lfr $stlfrflagstat $pfflagstat $stlfrdepthreport $pfdepthreport $mergedepthreport $stlfrbamdepth $pfbamdepth $histbed $meanbed $phase $vcfeval > ${id}.${aligner}.${varcaller}.report
     """
     stub:
     "touch ${id}.${aligner}.${varcaller}.report"

@@ -177,7 +177,63 @@ def main():
 			CMRG avg depth (PCR-free)\t{cmrg_depth_pf}
 			CMRG avg depth (merged)\t{cmrg_depth_merge}
 			"""
-	elif flg == 'frombam_ref': # no vcfeval, 
+	elif flg == 'frombam_merge':
+		id, vcf, lfr, stlfrflagstat, pfflagstat, stlfrdepthreport, pfdepthreport, mergedepthreport, stlfrbamdepth, pfbamdepth, histbed, meanbed, phase, vcfeval = files
+
+		snps, indels, hetsnps, hetindels, hetsnpsphased, hetindelsphased = varcnt('varstat')
+		lfrcnt, lfravglen = flfr(lfr)
+		stlfrmaprate = parse_flgstat(stlfrflagstat)
+		pfmaprate = parse_flgstat(pfflagstat)
+		_, stlfr_genome_cov10, _ = fdepth(stlfrdepthreport)
+		_, pf_genome_cov10, _ = fdepth(pfdepthreport)
+		_, _, merge_genome_cov20 = fdepth(mergedepthreport)
+		n50 = fphase(phase)
+		phaseblockbases = fblock('hapblock')
+		cmrg_cov_merge, cmrg_depth_merge = cmrg(histbed, meanbed)
+		tt, hh = vcfstats(vcf)
+		cmrg_pct, cmrg_het, cmrg_hom = cmrg_genes(vcf)
+		tp, fp, fn, prec, reca, f1, indel_tp, indel_fp, indel_fn, indel_prec, indel_reca, indel_f1 = fvcfeval(vcfeval)
+
+		str = f"""
+			Sample\t{id}
+			stLFR bam avg depth\t{stlfrbamdepth}
+			PCR-free bam avg depth\t{pfbamdepth}
+			stLFR mapping rate\t{stlfrmaprate}
+			PCR-free mapping rate\t{pfmaprate}
+			stLFR genome coverage >10X\t{stlfr_genome_cov10}
+			PCR-free genome coverage >10X\t{pf_genome_cov10}
+			Percent of genome coverage >20X (merged bam)\t{merge_genome_cov20}
+			Total SNPs called\t{snps:,}
+			Total heterozygous SNPs called\t{hetsnps:,}
+			Total heterozygous SNPs phased\t{hetsnpsphased:,}
+			Total Indels (<50 bp) called\t{indels:,}
+			Total heterozygous Indels (<50 bp) called\t{hetindels:,}
+			Total phased heterozygous indels\t{hetindelsphased:,}
+			Ti/Tv\t{tt}
+			Het/hom\t{hh}
+			Merged-bam SNP evaluation TP\t{tp}
+			Merged-bam SNP evaluation FP\t{fp}
+			Merged-bam SNP evaluation FN\t{fn}
+			Merged-bam SNP evaluation precision\t{prec}
+			Merged-bam SNP evaluation recall\t{reca}
+			Merged-bam SNP evaluation F1\t{f1}
+			Merged-bam Indel evaluation TP\t{indel_tp}
+			Merged-bam Indel evaluation FP\t{indel_fp}
+			Merged-bam Indel evaluation FN\t{indel_fn}
+			Merged-bam Indel evaluation precision\t{indel_prec}
+			Merged-bam Indel evaluation recall\t{indel_reca}
+			Merged-bam Indel evaluation F1\t{indel_f1}
+			Total cWGS fragments\t{lfrcnt:,}
+			Average cWGS length (kb)\t{lfravglen:,}
+			Phased contig N50\t{n50:,}
+			Total bases in phase block\t{phaseblockbases:,}
+			Average percent coverage of CMRG genes\t{cmrg_cov_merge}
+			Average depth of coverage of CMRG genes\t{cmrg_depth_merge}
+			Percent of genes covered by single phased contig\t{cmrg_pct}
+			Number of genes with a homozygous coding variant\t{cmrg_hom}
+			Number of genes with at least one coding heterozygous variant on each allele\t{cmrg_het}
+			"""
+	elif flg == 'frombam_ref': # no vcfeval,
 		id, aligner, varcaller, varstats, het, aligncatstlfr,aligncatpf, phase, stlfrbamdepth, pfbamdepth = files
 		snps, indels = varcnt(varstats)
 		hetsnps, hetindels = hetvarcnt(het)

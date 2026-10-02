@@ -110,6 +110,7 @@ include {WF_haplodenovo} from "${params.MOD}/haplodenovo"
 include {report0;
     report0 as reportLariatGatk1;
     report0 as reportLariatDv;
+    report01 as reportFromBam;
     report;
     reportref;
     report_stlfronly;
@@ -433,13 +434,14 @@ workflow CWGS_frombam {
 
 
     //stlfr bam stats
-    // bamdepth(ch_libstlfr, stlfrbam).set {ch_stlfrbamdepth}
+    bamdepth(ch_libstlfr, stlfrbam).set {ch_stlfrbamdepth}
     // samtools_flagstat(ch_libstlfr, stlfrbam).set {ch_flagstat}
     // samtools_stats(ch_libstlfr, stlfrbam).set {ch_stat}
     // insertsize(ch_libstlfr, stlfrbam).insertsize.set {ch_insertsize} 
 
     
     samtools_depth(ch_libstlfr, stlfrbam).set {ch_depthreport}
+    samtools_flagstat(ch_libstlfr, stlfrbam).set {ch_stlfrflagstat}
     stLFRQC(stlfrbam).report.set {ch_lfr}
 
     ch_reports = Channel.empty() 
@@ -466,6 +468,7 @@ workflow CWGS_frombam {
             if (params.ref == 'hg38' || params.ref.contains('GRCh38')) {
                 coverage(ch_merge, ch_mergebam).set {ch_cmrgMergebamhistbed}
                 coverageMean(ch_merge, ch_mergebam).set {ch_cmrgMergebammeanbed}
+                samtoolsDepthMerge(ch_merge, ch_mergebam).set {ch_mergedepthreport}
 
                 vep_data(vep_frombam(ch_phasedvcf).html)
 
@@ -480,7 +483,7 @@ workflow CWGS_frombam {
                     WF_haplodenovo(ch_mergebam.join(ch_phasedvcf))
                 }
 
-                reportLariatDv(ch_lariat, ch_dv, ch_vcf.join(ch_lfr).join(ch_cmrgMergebamhistbed).join(ch_cmrgMergebammeanbed).join(ch_depthreport).join(ch_phase)).set {ch_report}
+                reportFromBam(ch_lariat, ch_dv, ch_vcf.join(ch_lfr).join(ch_stlfrflagstat).join(ch_flagstat2).join(ch_depthreport).join(ch_depthreport2).join(ch_mergedepthreport).join(ch_stlfrbamdepth).join(ch_pfbamdepth).join(ch_cmrgMergebamhistbed).join(ch_cmrgMergebammeanbed).join(ch_phase).join(ch_vcfevalLariatDv)).set {ch_report}
 
                 ch_report.collect().mix(ch_reports).set {ch_reports}
                 report(ch_reports)
