@@ -14,13 +14,23 @@ def parse_report(csv_file):
     except:
         return '<div class="noDataTitle">Result was not generated for this sample.</div>'
 
-def parse_hlala(csv_file):
+def parse_specimmune(result_dir, category):
     try:
-        data = [line.strip().split('\t')[:3] for line in open(csv_file)]
+        patterns = [
+            os.path.join(result_dir, category, '**', '*.hap.alleles.txt'),
+            os.path.join(result_dir, category, '**', '*.final.type.result.formatted.txt'),
+        ]
+        matches = []
+        for pattern in patterns:
+            matches.extend(glob.glob(pattern, recursive=True))
+        result_file = next((path for path in matches if os.path.getsize(path) > 0), None)
+        if not result_file:
+            raise FileNotFoundError(category)
+        data = [line.rstrip('\n').split('\t') for line in open(result_file)]
         df = pd.DataFrame(data[1:], columns=data[0])
         return df.to_html(index=False, classes='data-table', border=1)
     except:
-        return '<div class="noDataTitle">HLA result was not generated for this sample.</div>'
+        return f'<div class="noDataTitle">{category} result was not generated for this sample.</div>'
 
 def image_to_base64(image_path):
     try:
@@ -43,11 +53,11 @@ def report_image_path(sample_dir, filename):
 def generate_html(outdir, sample):
     csv_matches         = glob.glob(os.path.join(outdir, sample + '.lariat.dv.report'))
     csv                 = csv_matches[0] if csv_matches else None
-    hlala_path          = os.path.join(outdir, 'hlala_out', sample, 'hla', 'R1_bestguess_G.txt')
+    specimmune_dir      = os.path.join(outdir, 'specimmune_out')
 
     # table
     metrics     = parse_report(csv) if csv else '<div class="noDataTitle">stLFRQC result not available</div>'
-    hla         = parse_hlala(hlala_path)
+    hla         = parse_specimmune(specimmune_dir, 'HLA')
 
     var_class_table           = parse_report(os.path.join(outdir, 'var_class.csv'))
     cons_type_severe_table    = parse_report(os.path.join(outdir, 'cons_type_severe.csv'))

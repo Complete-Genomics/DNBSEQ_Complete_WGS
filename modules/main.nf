@@ -104,7 +104,7 @@ include {pangenie;
     pangenie_plot;
     pangenie_var_plot;
     pangenie_frombam } from "${params.MOD}/pangenie"
-include {hlala} from "${params.MOD}/hlala"
+include {specimmune} from "${params.MOD}/specimmune"
 include {WF_haplodenovo} from "${params.MOD}/haplodenovo"
 
 include {report0;
@@ -195,7 +195,7 @@ workflow CWGS {
     pangenie_plot(ch_pangenie.join(hb))
     pangenie_var_plot(ch_pangenie)
     gangstr(ch_mergebam)
-    hlala(ch_mergebam)
+    specimmune(ch_mergebam)
 
     // annot
     vep_data(vep_frombam(ch_phasedvcf).html)
@@ -203,7 +203,7 @@ workflow CWGS {
     // WF_report()
     if (params.ref == 'hg38' || params.ref.contains('GRCh38')) {
         report0(ch_phasedvcf.join(ch_lfr).join(ch_cmrgMergebamhistbed).join(ch_cmrgMergebammeanbed).join(ch_depthreport).join(ch_phasereport)).collect().set {ch_reports}
-        report(ch_reports).mix(vep_data.out, hlala.out, cumuplot.out, pangenie_var_plot.out, pangenie_plot.out).collect().set {ch_flg}
+        report(ch_reports).mix(vep_data.out, specimmune.out, cumuplot.out, pangenie_var_plot.out, pangenie_plot.out).collect().set {ch_flg}
         html(ch_flg)
     }
 }
@@ -473,7 +473,7 @@ workflow CWGS_frombam {
                 vep_data(vep_frombam(ch_phasedvcf).html)
 
                 gangstr(ch_mergebam)
-                hlala(ch_mergebam)
+                specimmune(ch_mergebam)
 
                 pangenie(ch_fq_pf_frombam).set {ch_pangenie}
                 pangenie_plot(ch_pangenie.join(hb))
@@ -488,7 +488,7 @@ workflow CWGS_frombam {
                 ch_report.collect().mix(ch_reports).set {ch_reports}
                 report(ch_reports)
 
-                ch_reports.mix(vep_data.out, hlala.out, cumuplot.out, pangenie_var_plot.out, pangenie_plot.out).collect().set {ch_flg}
+                ch_reports.mix(vep_data.out, specimmune.out, cumuplot.out, pangenie_var_plot.out, pangenie_plot.out).collect().set {ch_flg}
                 html(ch_flg)
 
             } else {

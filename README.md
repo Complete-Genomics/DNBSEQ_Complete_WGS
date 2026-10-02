@@ -107,11 +107,11 @@ flowchart TD
         denovoBatch --> catContigs[catContigs]
     end
 
-    subgraph SV_STR_HLA["SV / STR / HLA — hg38/GRCh38 only"]
+    subgraph SV_STR_HLA["SV / STR / immune-gene typing — hg38/GRCh38 only"]
         pangenie[pangenie] --> pangenie_var_plot[pangenie_var_plot]
         pangenie --> pangenie_plot[pangenie_plot]
         gangstr[gangstr]
-        hlala[hlala]
+        specimmune[specimmune]
     end
 
     subgraph ANNOT["Annotation — hg38/GRCh38 only"]
@@ -147,7 +147,7 @@ flowchart TD
     %% SV/STR/HLA inputs
     fq --> pangenie
     mergeBamLariat --> gangstr
-    mergeBamLariat --> hlala
+    mergeBamLariat --> specimmune
     phaseCatLariatDv --> pangenie_plot
 
     %% Annotation input
@@ -165,7 +165,7 @@ flowchart TD
     vep_data --> html
     pangenie_var_plot --> html
     pangenie_plot --> html
-    hlala --> html
+    specimmune --> html
 
     %% Styling
     classDef input    fill:#dae8fc,stroke:#6c8ebf
@@ -186,7 +186,7 @@ flowchart TD
     class splitVcfLariatDv,splitBam4phasing,phaseLariatDv,phaseCatLariatDv,hapKaryotype,hapcutstat,phaseall,intersectLariat,mergeBamLariat,ideogram,cumuplot phase
     class coveragePf,coverageMeanPf,samtoolsFlagstatPf,samtoolsStatsPf,samtoolsDepthPf,insertsizePf,alignCatPf,samtools_flagstat,samtools_stats,insertsize,samtools_depth,stLFRQC,align_cat,coverage,coverageMean,coverageAvg stats
     class reportLariatDv,report,html report
-    class pangenie,pangenie_plot,pangenie_var_plot,gangstr,hlala sv
+    class pangenie,pangenie_plot,pangenie_var_plot,gangstr,specimmune sv
     class vep_frombam,vep_data annot
     class haplotag,propagateBxHp,makeWindows,denovoBatch,catContigs denovo
 
@@ -298,6 +298,25 @@ demo1,/path/stLFR_SE600.fq.gz,/path/PCRfree_SE600.fq.gz,,
 
 PCR-free SE600 bypasses the paired-end SOAPnuke QC and FASTQ downsampling steps; run it with `--pfAligner vg` (the default).
 
+### Immune-gene typing for SE600
+
+For hg38/GRCh38, `specimmune` exports primary reads from the merged BAM as a
+single-end FASTQ and types `HLA`. Install the
+SpecImmune SIF as `modules/sifs/specimmune.sif`, build its database outside the
+Nextflow work directory, and override the database path when necessary:
+
+```bash
+nextflow run modules/main.nf \
+  --input samplesheet.csv --outdir ./output \
+  --specimmune_db /path/to/specimmune-hla-db
+```
+
+The configured `--specimmune_read_type pacbio` is the SE600 compatibility
+setting and should be benchmarked against known samples before production use.
+The HLA result directory is copied into `report/<sample>/specimmune_out/` and
+shown in the final HTML report. KIR, CYP, and IG/TR remain disabled until their
+databases are built.
+
 **Start from BAM** (`--frombam true`). FASTQ columns (`pcrfree1`/`pcrfree2`) are used for PanGenie SV genotyping if provided:
 ```csv
 sample,stlfr1,stlfr2,pcrfree1,pcrfree2,stlfrbam,pfbam
@@ -397,7 +416,7 @@ Output: `{outdir}/{sample}/haplodenovo/{sample}.hp1.contigs.fa.gz` and `.hp2.con
 --PF_only BOOL        Run PF alignment only [false]
 --frombam BOOL        Start from pre-aligned BAM files [false]
 --keepFiles BOOL      Keep intermediate files to enable -resume [false]
---demo BOOL           Skip optional analyses (gangstr, hlala) [false]
+--demo BOOL           Skip optional analyses (gangstr, SpecImmune) [false]
 ```
 
 ## Local Mac testing (stub mode)
