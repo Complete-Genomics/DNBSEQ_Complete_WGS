@@ -625,7 +625,7 @@ process deepvariant {
     def outvcf = bam.toString().contains("pf") ? "${id}.pf.bwa.${ver}.vcf.gz" : "${id}.${aligner}.${ver}.vcf.gz"
     def gbz_shm = params.dv_gbz_shm_size_gb ? "--gbz_shared_memory_size_gb ${params.dv_gbz_shm_size_gb}" : ""
     def male_haploid_args = (params.dv_haploid_contigs && params.dv_haploid_contigs != "") ?
-        "--haploid_contigs='${params.dv_haploid_contigs}'" : ""
+        "--haploid_contigs=${params.dv_haploid_contigs}" : ""
     def default_par_bed = pangenome.contains("/") ?
         "${pangenome.substring(0, pangenome.lastIndexOf('/'))}/GRCh38_PAR.bed" : ""
     def par_bed = (params.dv_par_regions_bed && params.dv_par_regions_bed != "") ?
