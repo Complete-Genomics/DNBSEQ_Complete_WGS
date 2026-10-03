@@ -330,6 +330,10 @@ The HLA result directory is copied into `report/<sample>/specimmune_out/` and
 shown in the final HTML report. KIR, CYP, and IG/TR remain disabled until their
 databases are built.
 
+GangSTR requires a paired-end insert-size distribution and is disabled by
+default for SE600 (`--skip_gangstr true`). It does not contribute to the final
+HTML report. Use `--skip_gangstr false` only for a compatible paired-end BAM.
+
 **Start from BAM** (`--frombam true`). FASTQ columns (`pcrfree1`/`pcrfree2`) are used for PanGenie SV genotyping if provided:
 ```csv
 sample,stlfr1,stlfr2,pcrfree1,pcrfree2,stlfrbam,pfbam
