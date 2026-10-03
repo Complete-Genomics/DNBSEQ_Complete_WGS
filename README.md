@@ -334,6 +334,18 @@ GangSTR requires a paired-end insert-size distribution and is disabled by
 default for SE600 (`--skip_gangstr true`). It does not contribute to the final
 HTML report. Use `--skip_gangstr false` only for a compatible paired-end BAM.
 
+### DeepVariant sex setting
+
+Use `--dv_sex_mode male` or `--dv_sex_mode female` when the sample sex is
+known. For an unknown sample, use `auto` (the default), which classifies sex
+from mean chrY depth. A shell launcher can make this explicit while preserving
+automatic detection when `sex` is unset:
+
+```bash
+sex="${sex:-auto}"  # male, female, or auto
+nextflow run modules/main.nf ... --dv_sex_mode "$sex"
+```
+
 **Start from BAM** (`--frombam true`). FASTQ columns (`pcrfree1`/`pcrfree2`) are used for PanGenie SV genotyping if provided:
 ```csv
 sample,stlfr1,stlfr2,pcrfree1,pcrfree2,stlfrbam,pfbam

@@ -575,8 +575,8 @@ process inferDvSex {
           echo "Cannot determine sex for $id: ${params.dv_sex_chrY_contig} is absent from $input_bam" >&2
           exit 2
         fi
-        chr_y_bases=`${params.BIN}samtools depth $input_bam "${params.dv_sex_chrY_contig}" | awk '{sum += \$3} END {print sum + 0}'`
-        chr_y_mean_depth=`awk -v bases="\${chr_y_bases}" -v length="\${chr_y_length}" 'BEGIN {printf "%.6f", bases / length}'`
+        chr_y_bases=`${params.BIN}samtools depth -r "${params.dv_sex_chrY_contig}" $input_bam | awk '{sum += \$3} END {print sum + 0}'`
+        chr_y_mean_depth=`awk -v bases="\${chr_y_bases}" -v contig_length="\${chr_y_length}" 'BEGIN {printf "%.6f", bases / contig_length}'`
         if awk -v depth="\${chr_y_mean_depth}" -v threshold="${params.dv_female_max_chrY_mean_depth}" 'BEGIN {exit !(depth < threshold)}'; then
           sex=female
         else
