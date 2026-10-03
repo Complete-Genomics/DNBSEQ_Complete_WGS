@@ -204,9 +204,20 @@ Nextflow >= 25.04.6
 You may need root access to install Singularity (Singularity is a more secure container platform as it does not require root access on execution, while Docker does.)      
 
 # Installation   
-1. On a Linux server, install singularity >= 3.8.1 with root on every node.
+1. Install the host runtime (Nextflow and Java) and the optional SpecImmune
+   Conda environment. The install prefix must be visible to every execution node:
+```bash
+./scripts/install-cwgs-host-tools.sh /shared/apps/cwgs-host-tools
+export NXF_HOME=/shared/apps/cwgs-host-tools/nxf-home
+export PATH=/shared/apps/cwgs-host-tools/runtime/bin:$PATH
+```
+This pins Nextflow `25.04.6` and SpecImmune `v0.0.3`. The installer uses the
+exact `environment.yml` shipped by that SpecImmune tag and does not install the
+SpecImmune database.
+
+2. On a Linux server, install singularity >= 3.8.1 with root on every node.
    
-2. Download the singularity images (internet connection required):
+3. Download the singularity images (internet connection required):
 ```bash
 cat <<EOF > CWGS.def
 Bootstrap: docker
@@ -224,7 +235,7 @@ sudo singularity build CWGS.sif CWGS.def
 singularity exec -B`pwd -P` --pwd `pwd -P` CWGS.sif cp -rL /usr/local/bin/CWGS /usr/local/bin/runit /usr/local/app/CWGS/PARAMS.txt /usr/local/app/CWGS/demo .
 ```
 
-3. Download the database (internet connection required):
+4. Download the database (internet connection required):
 ```bash
 ./CWGS -createdb
 ```
@@ -234,7 +245,7 @@ Or for MegaBolt or ZBolt nodes:
 ```
 This downloads ~32 GB and builds indices locally (~30 GB additional). Use [db_tree.txt](docs/db_tree.txt) to validate completion.
 
-4. Pull SIF containers for the Nextflow module pipeline:
+5. Pull SIF containers for the Nextflow module pipeline:
 ```bash
 for name in pangenie vg denovo; do
     apptainer pull oras://docker.io/stlfr/complete_wgs:${name}
@@ -242,7 +253,7 @@ done
 ```
 Remove the `complete_wgs_` prefix from .sif filenames and place them in `${sif_dir}`.
 
-5. Test with demo data:
+6. Test with demo data:
 ```bash
 cat << EOF > samplesheet.csv
 sample,stlfr1,stlfr2,stlfr21,pcrfree1,pcrfree2,stlfrbam,pfbam
@@ -301,13 +312,15 @@ PCR-free SE600 bypasses the paired-end SOAPnuke QC and FASTQ downsampling steps;
 ### Immune-gene typing for SE600
 
 For hg38/GRCh38, `specimmune` exports primary reads from the merged BAM as a
-single-end FASTQ and types `HLA`. Install the
-SpecImmune SIF as `modules/sifs/specimmune.sif`, build its database outside the
-Nextflow work directory, and override the database path when necessary:
+single-end FASTQ and types `HLA`. Run
+`scripts/install-cwgs-host-tools.sh` once, build the SpecImmune HLA database
+outside the Nextflow work directory, and provide all three external paths:
 
 ```bash
-nextflow run modules/main.nf \
+nextflow run modules/main.nf -profile singularity \
   --input samplesheet.csv --outdir ./output \
+  --specimmune_env /shared/apps/cwgs-host-tools/specimmune-env \
+  --specimmune_home /shared/apps/cwgs-host-tools/SpecImmune \
   --specimmune_db /path/to/specimmune-hla-db
 ```
 
