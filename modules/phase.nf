@@ -146,6 +146,9 @@ process phase {
     script:
     def bam = bam.first()
     def prefix = "${id}.${params.align_tool}.${params.var_tool}.${chr}"
+    def has_truth = params.sample_type in ['hg001', 'hg002']
+    def pv = "${params.DB}/hg38/phasedvcf/hg38.${params.sample_type}.${chr}.vcf.gz"
+    def fai = params.ref.startsWith('/') ? "${params.ref}.fai" : "${params.DB}/${params.ref}/reference/${params.ref}.fa.fai"
 
     cmd = """
     #export LD_LIBRARY_PATH=\$LD_LIBRARY_PATH:${params.DB}/htslib
@@ -162,7 +165,12 @@ process phase {
     rm tmp.vcf
     echo $chr > ${prefix}.hapcut_stat.txt
     """
-    if (params.stLFR_only) {
+    // phasing accuracy needs a truth VCF; skipped for sample_type=random
+    if (!has_truth) {
+        cmd += """
+        echo "sample_type=${params.sample_type}: no truth VCF, phasing accuracy stats skipped" >> ${prefix}.hapcut_stat.txt
+        """
+    } else if (params.stLFR_only) {
         cmd += """
         python3 ${params.SCRIPT}/calculate_haplotype_statistics.reseq.py \\
         -h1 ${prefix}.hapblock -v1 ${prefix}.hapblock.phased.VCF.gz -f1 ${prefix}.lf -pv $pv -c $fai >> ${prefix}.hapcut_stat.txt
@@ -358,7 +366,10 @@ process phaseCat {
     def prefix = "${id}.${params.align_tool}.${params.var_tool}"
     def fai = params.ref.startsWith('/') ? "${params.ref}.fai" : "${params.DB}/${params.ref}/reference/${params.ref}.fa.fai"
     def chr1 = (params.ref == "hs37d5") ? "" : "chr"
-    def py = "${params.SCRIPT}/calculate_haplotype_statistics_CWX.py -h1 \$hapblocks -v1 \$pvcfs -v2 \$pvs --indels >> ${prefix}.hapcut_stat.txt"
+    def has_truth = params.sample_type in ['hg001', 'hg002']
+    def py = has_truth ?
+        "python3 ${params.SCRIPT}/calculate_haplotype_statistics_CWX.py -h1 \$hapblocks -v1 \$pvcfs -v2 \$pvs --indels >> ${prefix}.hapcut_stat.txt" :
+        "echo 'sample_type=${params.sample_type}: no truth VCF, phasing accuracy stats skipped' >> ${prefix}.hapcut_stat.txt"
     """
     lfs=""
     hapblocks=""
@@ -372,7 +383,7 @@ process phaseCat {
             lfs="\$lfs ${prefix}.${chr1}\${i}.lf"
             hapblocks="\$hapblocks ${prefix}.${chr1}\${i}.hapblock"
             stat2s="\$stat2s ${prefix}.${chr1}\${i}.hapcut_stat.txt"
-            pvs="\$pvs ${params.DB}/hg38/phasedvcf/hg38.${params.std}.${chr1}\${i}.vcf.gz"
+            pvs="\$pvs ${params.DB}/hg38/phasedvcf/hg38.${params.sample_type}.${chr1}\${i}.vcf.gz"
             vcfs="\$vcfs ${prefix}.${chr1}\${i}.vcf.gz"
             pvcfs="\$pvcfs ${prefix}.${chr1}\${i}.hapblock.phased.VCF.gz"
         done
@@ -380,7 +391,7 @@ process phaseCat {
         lfs="${prefix}.${params.chr}.lf"
         hapblocks="${prefix}.${params.chr}.hapblock"
         stat2s="${prefix}.${params.chr}.hapcut_stat.txt"
-        pvs="${params.DB}/${params.ref}/phasedvcf/${params.ref}.${params.std}.${params.chr}.vcf.gz"
+        pvs="${params.DB}/${params.ref}/phasedvcf/${params.ref}.${params.sample_type}.${params.chr}.vcf.gz"
         vcfs="${prefix}.${params.chr}.vcf.gz"
         pvcfs="${prefix}.${params.chr}.hapblock.phased.VCF.gz"
     fi
@@ -391,7 +402,7 @@ process phaseCat {
 
     echo "combine all chrs" >> ${prefix}.hapcut_stat.txt
 
-    python3 $py
+    $py
 
  	${params.BIN}bcftools concat *phased.VCF.gz -O b -o tmp.vcf.gz 
     zcat tmp.vcf.gz | grep '^#' > header
@@ -448,7 +459,7 @@ process phaseCat_cwx {
         lfs="\$lfs ${prefix}.${chr1}\${i}.lf"
         hapblocks="\$hapblocks ${prefix}.${chr1}\${i}.hapblock"
         stat2s="\$stat2s ${prefix}.${chr1}\${i}.hapcut_stat.txt"
-        pvs="\$pvs ${params.DB}/${params.ref}/phasedvcf/${params.ref}.${params.std}.${chr1}\${i}.vcf.gz"
+        pvs="\$pvs ${params.DB}/${params.ref}/phasedvcf/${params.ref}.${params.sample_type}.${chr1}\${i}.vcf.gz"
         vcfs="\$vcfs ${prefix}.${chr1}\${i}.vcf"
         pvcfs="\$vcfs ${prefix}.${chr1}\${i}.hapblock.phased.VCF"
     done

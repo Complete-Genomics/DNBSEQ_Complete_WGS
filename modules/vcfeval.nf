@@ -5,7 +5,7 @@ process vcfeval {
     maxForks 2
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
-    when: params.ref == 'hg38' || params.ref.contains('GRCh38')
+    when: (params.ref == 'hg38' || params.ref.contains('GRCh38')) && params.sample_type in ['hg001', 'hg002']
     
     input:
     val(lib)
@@ -29,8 +29,8 @@ process vcfeval {
     script:
     def vcf = vcf.first()
     def prefix = "${vcf.getBaseName(2)}.${lib}"
-    def benchmark = "${params.DB}/hg38/hg38.${params.std}.vcf.gz"
-    def bed = "${params.DB}/hg38/hg38.${params.std}.bed"
+    def benchmark = "${params.DB}/hg38/hg38.${params.sample_type}.vcf.gz"
+    def bed = "${params.DB}/hg38/hg38.${params.sample_type}.bed"
     def sdf = "${params.DB}/hg38/hg38.SDF"
     """
     ${params.BIN}bcftools view -O z --type snps $vcf > ${id}.snp.vcf.gz
