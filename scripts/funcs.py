@@ -131,6 +131,13 @@ def fdepth(depthreport):
 	return cov1, cov10, cov20
 
 def cmrg(histbed, meanbed):
+	try:
+		return _cmrg(histbed, meanbed)
+	except Exception as e:
+		print(f"cmrg coverage failed: {e}", file=sys.stderr)
+		return "FAIL", "FAIL"
+
+def _cmrg(histbed, meanbed):
 	ratios = []
 	f = open(histbed)
 	for line in f:
@@ -273,6 +280,13 @@ def calculate_gene_coverage(gene_trees, block_tree):
     return covered_genes, total_genes
 
 def cmrg_genes(phasedvcf):
+    try:
+        return _cmrg_genes(phasedvcf)
+    except Exception as e:
+        print(f"cmrg_genes failed: {e}", file=sys.stderr)
+        return "FAIL", "FAIL", "FAIL"
+
+def _cmrg_genes(phasedvcf):
     cmrg_het, cmrg_hom = defaultdict(set), set()
     f = open('cmrg_exon.vcf')
     for line in f:

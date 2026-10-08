@@ -18,6 +18,13 @@ process specimmune {
     script:
     bam = bam instanceof List ? bam.first() : bam
     """
+    mkdir -p specimmune_out/HLA
+
+    # Never fail the task: the final report must still be generated.
+    # On failure write specimmune_out/HLA/FAILED (read by scripts/my_html.py) and exit 0.
+    set +e
+    (
+    set -e
     if [ ! -x "${params.specimmune_env}/bin/python" ]; then
         echo "Missing SpecImmune Conda environment: --specimmune_env" >&2
         exit 2
@@ -28,13 +35,19 @@ process specimmune {
     fi
 
     export PATH="${params.specimmune_env}/bin:\$PATH"
-    mkdir -p specimmune_out/HLA
     ${params.BIN}samtools fastq -@ ${task.cpus} -F 0x900 $bam | gzip -c > ${id}.specimmune.fastq.gz
 
     "${params.specimmune_env}/bin/python" "${params.specimmune_home}/scripts/main.py" \\
         -r ${id}.specimmune.fastq.gz -j ${task.cpus} -i HLA -n $id \\
         -o specimmune_out/HLA --db ${params.specimmune_db} \\
         --align_method_1 ${params.specimmune_align_method} -y ${params.specimmune_read_type}
+    )
+    rc=\$?
+    set -e
+    if [ \$rc -ne 0 ]; then
+        echo "SpecImmune exited with status \$rc" | tee specimmune_out/HLA/FAILED >&2
+    fi
+    exit 0
     """
 
     stub:

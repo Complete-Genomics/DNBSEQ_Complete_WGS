@@ -328,7 +328,9 @@ process html {
     
     // cache false
     script:
+    // sections intentionally disabled are shown as SKIPPED; anything else missing is shown as FAILED
+    def skipped = (params.skip_specimmune || params.demo) ? 'HLA' : ''
     """
-    ${params.BIN}python ${params.SCRIPT}/my_html.py ${params.outdir}/report/
+    ${params.BIN}python ${params.SCRIPT}/my_html.py ${params.outdir}/report/ "${skipped}"
     """
 }

@@ -38,7 +38,9 @@ process coverage {
     def fai = params.ref.startsWith('/') ? "${params.ref}.fai" : "${params.DB}/${params.ref}/reference/${params.ref}.fa.fai"
     def bed = "${params.DB}/hg38/GRCh38_CMRG_benchmark_gene_coordinates.bed"
     """
-    ${params.BIN}bedtools coverage -sorted -g $fai -a $bed -b $bam > ${id}.${lib}.cmrg.hist.bed 
+    # Soft-fail: leave an empty bed so report.py prints FAIL for the CMRG coverage fields.
+    ${params.BIN}bedtools coverage -sorted -g $fai -a $bed -b $bam > ${id}.${lib}.cmrg.hist.bed \\
+        || { echo "bedtools coverage failed" >&2; : > ${id}.${lib}.cmrg.hist.bed; }
     """
     stub:
     "touch ${id}.${lib}.cmrg.hist.bed "
@@ -65,7 +67,9 @@ process coverageMean {
     def fai = params.ref.startsWith('/') ? "${params.ref}.fai" : "${params.DB}/${params.ref}/reference/${params.ref}.fa.fai"
     def bed = "${params.DB}/hg38/GRCh38_CMRG_benchmark_gene_coordinates.bed"
     """
-    ${params.BIN}bedtools coverage -sorted -g $fai -a $bed -b $bam -mean > ${id}.${lib}.cmrg.mean.bed 
+    # Soft-fail: leave an empty bed so report.py prints FAIL for the CMRG depth fields.
+    ${params.BIN}bedtools coverage -sorted -g $fai -a $bed -b $bam -mean > ${id}.${lib}.cmrg.mean.bed \\
+        || { echo "bedtools coverage -mean failed" >&2; : > ${id}.${lib}.cmrg.mean.bed; }
     """
     stub:
     "touch ${id}.${lib}.cmrg.mean.bed "
