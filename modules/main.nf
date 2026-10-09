@@ -151,12 +151,24 @@ workflow CWGS {
     ch_data.bam_stlfr.mix(WF_align_stlfr(ch_data.fq_stlfr)).set {ch_stlfrbam_only}
 
     // stLFR2 SE 600/700bp (vg, barcodes at read end, header reformatted inside vg process)
-    ch_data.bam_stlfr2.mix(WF_align_stlfr2(ch_data.fq_stlfr2)).set {ch_stlfr2bam}
+    // a fastq is only aligned when no bam of the same library was given for that sample
+    // (fastq + bam in one row: the bam is used, the fastq is kept e.g. for PanGenie)
+    ch_data.fq_stlfr2.join(ch_data.bam_stlfr2, remainder: true)
+        .filter { it[1] != null && it[2] == null }
+        .map { id, fq, bam -> [id, fq] }
+        .set { ch_fq_stlfr2_align }
+    ch_data.bam_stlfr2.mix(WF_align_stlfr2(ch_fq_stlfr2_align)).set {ch_stlfr2bam}
 
     // combined stlfr-side bam channel fed into mergebam
     ch_stlfrbam_only.mix(ch_stlfr2bam).set {ch_stlfrbam}
 
-    ch_data.bam_pf.mix(WF_align_pf(ch_data.fq_pf)).set {ch_pfbam}
+    // user-supplied PF bams skip WF_align_pf (including its final MAPQ filter), so apply --pfmapq here;
+    // stlfr2 bams are used as given (must already carry BX tags and be duplicate-marked)
+    ch_data.fq_pf.join(ch_data.bam_pf, remainder: true)
+        .filter { it[1] != null && it[2] == null }
+        .map { id, fq, bam -> [id, fq] }
+        .set { ch_fq_pf_align }
+    mapq_frombam(ch_data.bam_pf).mix(WF_align_pf(ch_fq_pf_align)).set {ch_pfbam}
 
     // merge (or just combine)
     WF_mergebam(ch_stlfrbam.join(ch_pfbam)).set {ch_mergebam}

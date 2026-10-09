@@ -193,6 +193,7 @@ process report01 { // from bam
 
     script:
     vcf = vcf.first()
+    cmrg_exon_bed = "${params.SCRIPT}/cmrg273_exon.bed"
     """
     ${params.BIN}bcftools stats $vcf > ${id}.bcftoolsStats.txt
     hetsnp=`${params.BIN}bcftools view -v snps -g het $vcf |grep -v \\# |wc -l`

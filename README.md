@@ -281,8 +281,9 @@ sample,stlfr1,stlfr2,pcrfree1,pcrfree2,stlfrbam,pfbam
 | `stlfr1` | cWGS/stLFR **PE150** R1 FASTQ (gzipped) |
 | `stlfr2` | cWGS/stLFR **PE150** R2 FASTQ (gzipped) |
 | `stlfr21` | cWGS/stLFR **SE600** FASTQ (gzipped, single-end) |
-| `pcrfree1` | PCR-free R1 FASTQ, or single-end PCR-free SE600 FASTQ (gzipped) |
-| `pcrfree2` | PCR-free R2 FASTQ; leave empty for PCR-free SE600 |
+| `pcrfree1` | PCR-free **PE** R1 FASTQ (gzipped) |
+| `pcrfree2` | PCR-free **PE** R2 FASTQ (gzipped) |
+| `pcrfree21` | PCR-free **SE600** FASTQ (gzipped, single-end); do not combine with `pcrfree1/2` in one row |
 | `stlfrbam` | Pre-aligned cWGS BAM (for `--frombam` mode) |
 | `pfbam` | Pre-aligned PCR-free BAM (for `--frombam` mode) |
 
@@ -292,7 +293,7 @@ sample,stlfr1,stlfr2,pcrfree1,pcrfree2,stlfrbam,pfbam
 |---------|-----------|---------|---------|
 | stLFR PE150 | Paired-end 150 bp | `stlfr1` + `stlfr2` | Lariat |
 | SE600 (stLFR2) | Single-end 600 bp | `stlfr21` only | vg giraffe |
-| PCR-free SE600 | Single-end 600 bp | `pcrfree1` only | vg giraffe |
+| PCR-free SE600 | Single-end 600 bp | `pcrfree21` only | vg giraffe |
 
 **Start from FASTQ — PE150 (default):**
 ```csv
@@ -301,9 +302,9 @@ demo1,/path/cWGS_01_1.fq.gz,/path/cWGS_01_2.fq.gz,/path/PF_01_1.fq.gz,/path/PF_0
 demo2,/path/cWGS_02_1.fq.gz,/path/cWGS_02_2.fq.gz,/path/PF_02_1.fq.gz,/path/PF_02_2.fq.gz,,
 ```
 
-**Start from FASTQ — SE600** (single-end; use `stlfr21` and/or `pcrfree1`, with no R2 column):
+**Start from FASTQ — SE600** (single-end; use `stlfr21` and/or `pcrfree21`):
 ```csv
-sample,stlfr21,pcrfree1,stlfrbam,pfbam
+sample,stlfr21,pcrfree21,stlfrbam,pfbam
 demo1,/path/stLFR_SE600.fq.gz,/path/PCRfree_SE600.fq.gz,,
 ```
 
@@ -346,7 +347,7 @@ sex="${sex:-auto}"  # male, female, or auto
 nextflow run modules/main.nf ... --dv_sex_mode "$sex"
 ```
 
-**Start from BAM** (`--frombam true`). FASTQ columns (`pcrfree1`/`pcrfree2`) are used for PanGenie SV genotyping if provided:
+**Start from BAM** (`--frombam true`). FASTQ columns (`pcrfree1`/`pcrfree2`, or `pcrfree21` for PF SE600) are used for PanGenie SV genotyping if provided:
 ```csv
 sample,stlfr1,stlfr2,pcrfree1,pcrfree2,stlfrbam,pfbam
 demo1,,,/path/PF_01_1.fq.gz,/path/PF_01_2.fq.gz,/path/cWGS_01.bam,/path/PF_01.bam

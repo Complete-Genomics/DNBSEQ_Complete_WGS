@@ -1,5 +1,9 @@
-sample,stlfr1,stlfr2,pcrfree1,pcrfree2,stlfrbam,pfbam
+sample,stlfr1,stlfr2,pcrfree1,pcrfree2,stlfrbam,pfbam,stlfr2bam,pcrfree21
 # from FQ (CWGS workflow): stlfrbam/pfbam 留空
-HG002_fq,/data/HG002_stlfr_R1.fq.gz,/data/HG002_stlfr_R2.fq.gz,/data/HG002_pf_R1.fq.gz,/data/HG002_pf_R2.fq.gz,,
+HG002_fq,/data/HG002_stlfr_R1.fq.gz,/data/HG002_stlfr_R2.fq.gz,/data/HG002_pf_R1.fq.gz,/data/HG002_pf_R2.fq.gz,,,,
 # from BAM (CWGS_frombam workflow): stlfr1/stlfr2 留空; pcrfree1/2 仍需填写供 PanGenie 使用
-HG002_bam,,,/data/HG002_pf_R1.fq.gz,/data/HG002_pf_R2.fq.gz,/data/HG002_stlfr.bam,/data/HG002_pf.bam
+HG002_bam,,,/data/HG002_pf_R1.fq.gz,/data/HG002_pf_R2.fq.gz,/data/HG002_stlfr.bam,/data/HG002_pf.bam,,
+# pcrfree21 (PF SE600 fastq; pcrfree1+pcrfree2 if paired-end) is only used by PanGenie when pfbam is given - it is NOT re-aligned.
+# SE600 from BAM (CWGS workflow, --frombam false): use stlfr2bam (NOT stlfrbam) + pfbam; each bam needs a .bai next to it.
+# stlfr2bam must already carry BX tags and be markdup'd; pfbam gets the --pfmapq filter in the pipeline. No stLFRQC for SE600 (those report fields show FAIL).
+SE600_bam,,,,,,/data/SE600_pf.vg.bam,/data/SE600_stlfr2.vg.bam,/data/SE600_pf.fq.gz

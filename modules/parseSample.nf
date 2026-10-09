@@ -16,6 +16,11 @@ workflow parse_sample {
             //   - row has stlfr2 only (no stlfr1) → SE stLFR2 library
             def hasStlfr1 = row.containsKey('stlfr1') && row['stlfr1']?.trim()
 
+            // PCR-free: pcrfree1 (+ pcrfree2) = paired-end, pcrfree21 = single-end SE600. Not both in one row.
+            if ((row['pcrfree1']?.trim() || row['pcrfree2']?.trim()) && row['pcrfree21']?.trim()) {
+                exit 1, "ERROR: sample ${row.sample}: use pcrfree1/pcrfree2 (PE) or pcrfree21 (PF SE600), not both\n"
+            }
+
             // 先按列名把文件分组
             def byLibType = [:]         // [stlfr:[fq:[], bam:[]], stlfr2:[fq:[], bam:[]], pf:[fq:[], bam:[]]]
             row.each { hdr, pathStr ->
@@ -225,6 +230,13 @@ def create_channel_frombam_fq(LinkedHashMap row) {
     def resolvePath = { path ->
         def p = java.nio.file.Paths.get(path)
         return p.isAbsolute() ? p : workflow.launchDir.parent.resolve(p).toAbsolutePath()
+    }
+    // single-end PF SE600
+    def pfse = row['pcrfree21']?.trim()
+    if (pfse) {
+        def pf = file(resolvePath(pfse).toString())
+        if (!pf.exists()) exit 1, "ERROR: pcrfree21 not found: ${pf}\n"
+        return [row.sample, [pf]]
     }
     def pf1str = row['pcrfree1']?.trim()
     def pf2str = row['pcrfree2']?.trim()
