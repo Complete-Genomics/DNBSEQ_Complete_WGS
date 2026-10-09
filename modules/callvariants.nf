@@ -636,8 +636,10 @@ process deepvariant {
     def make_examples_flag = ""
     def postprocess_flag = (params.dv_postprocess_variants_extra_args && params.dv_postprocess_variants_extra_args != "") ?
         "--postprocess_variants_extra_args '${params.dv_postprocess_variants_extra_args}'" : ""
+    // the model path is resolved at run time (see dv_model below): call_variants needs the TF checkpoint
+    // prefix, so a checkpoint *directory* is turned into <dir>/<name> from the single *.index file inside
     def customized_model_flag = (params.dv_customized_model && params.dv_customized_model != "") ?
-        "--customized_model=${params.dv_customized_model}" : ""
+        '--customized_model="${dv_model}"' : ""
     def optional_args = [gbz_shm, customized_model_flag, make_examples_flag, postprocess_flag].findAll { it }.join(" \\\n      ")
     """
     dv_tmp=/tmp/dv_${id}_\${BASHPID}
@@ -646,6 +648,13 @@ process deepvariant {
     trap 'rm -rf \${dv_tmp}' EXIT
     rm -rf \${dv_tmp}
     mkdir -p \${TEST_TMPDIR} \${HOME} \${dv_tmp}/intermediate
+
+    dv_model="${params.dv_customized_model ?: ''}"
+    if [ -n "\${dv_model}" ] && [ -d "\${dv_model}" ]; then
+      dv_idx=\$(ls "\${dv_model}"/*.index 2>/dev/null | head -n 1 || true)
+      if [ -n "\${dv_idx}" ]; then dv_model="\${dv_idx%.index}"; fi
+    fi
+    echo "DeepVariant customized model: \${dv_model:-<stock WGS model>}" >&2
 
     sex=`awk 'NR == 2 {print \$1; exit}' $sex_file`
     case "\${sex}" in
