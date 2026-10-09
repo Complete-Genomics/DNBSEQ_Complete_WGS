@@ -202,7 +202,22 @@ workflow CWGS {
 
     // WF_report()
     if (params.ref == 'hg38' || params.ref.contains('GRCh38')) {
-        report0(ch_phasedvcf.join(ch_lfr).join(ch_cmrgMergebamhistbed).join(ch_cmrgMergebammeanbed).join(ch_depthreport).join(ch_phasereport)).collect().set {ch_reports}
+        // Inputs may be missing (e.g. no stLFRQC for SE600-only samples, or a failed step).
+        // remainder:true keeps the sample; a placeholder file makes report.py print FAIL for those fields.
+        def nofile = { name -> file("${params.SCRIPT}/missing/${name}") }
+        ch_phasedvcf
+            .join(ch_lfr, remainder: true)
+            .join(ch_cmrgMergebamhistbed, remainder: true)
+            .join(ch_cmrgMergebammeanbed, remainder: true)
+            .join(ch_depthreport, remainder: true)
+            .join(ch_phasereport, remainder: true)
+            .filter { it[1] != null }   // phased VCF is the anchor; without it there is nothing to report on
+            .map { id, vcf, lfr, hist, mean, depth, phase ->
+                [id, vcf, lfr ?: nofile('NO_LFR'), hist ?: nofile('NO_HISTBED'), mean ?: nofile('NO_MEANBED'),
+                 depth ?: nofile('NO_DEPTH'), phase ?: nofile('NO_PHASE')]
+            }
+            .set { ch_report0_in }
+        report0(ch_report0_in).collect().set {ch_reports}
         report(ch_reports).mix(vep_data.out, specimmune.out, cumuplot.out, pangenie_var_plot.out, pangenie_plot.out).collect().set {ch_flg}
         html(ch_flg)
     }

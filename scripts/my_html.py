@@ -41,11 +41,21 @@ def parse_specimmune(result_dir, category):
         result_file = next((path for path in matches if os.path.getsize(path) > 0), None)
         if not result_file:
             raise FileNotFoundError(category)
-        data = [line.rstrip('\n').split('\t') for line in open(result_file)]
-        df = pd.DataFrame(data[1:], columns=data[0])
-        return df.to_html(index=False, classes='data-table', border=1)
-    except Exception:
-        return fail_box(category)
+        lines = [line.rstrip('\n') for line in open(result_file) if line.strip()]
+        # '#' lines are metadata (e.g. '# version: IPD-IMGT/HLA 3.65.0'), not the header
+        notes = [l.lstrip('#').strip() for l in lines if l.startswith('#')]
+        data = [l.split('\t') for l in lines if not l.startswith('#')]
+        # result files can be ragged (rows with more/fewer fields than the header): pad instead of failing
+        width = max(len(r) for r in data)
+        header = data[0] + [f'col{i + 1}' for i in range(len(data[0]), width)]
+        rows = [r + [''] * (width - len(r)) for r in data[1:]]
+        df = pd.DataFrame(rows, columns=header)
+        note = ''.join(f'<div class="noDataTitle">{n}</div>' for n in notes)
+        return note + df.to_html(index=False, classes='data-table', border=1)
+    except FileNotFoundError:
+        return fail_box(category, 'no result file found under specimmune_out/' + category)
+    except Exception as e:
+        return fail_box(category, f'could not parse result file: {type(e).__name__}: {e}')
 
 def image_to_base64(image_path):
     try:

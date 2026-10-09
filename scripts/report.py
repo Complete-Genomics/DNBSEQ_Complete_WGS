@@ -1,39 +1,54 @@
 import sys,os,re,gzip, csv
 from funcs import *
 
+def safe(fn, nret, *args):
+	"""Call fn; return 'FAIL' (x nret) if an input is a missing-placeholder (NO_*) or parsing raises."""
+	try:
+		for a in args:
+			if isinstance(a, str) and os.path.basename(a).startswith('NO_'):
+				raise FileNotFoundError(a)
+		return fn(*args)
+	except Exception as e:
+		print(f"report.py: {fn.__name__} failed: {type(e).__name__}: {e}", file=sys.stderr)
+		return ('FAIL',) * nret if nret > 1 else 'FAIL'
+
+def c(x):
+	"""thousands separator for numbers, pass strings (e.g. FAIL) through"""
+	return f"{x:,}" if isinstance(x, (int, float)) else x
+
 def main():
 	flg, *files = sys.argv[1:]
 		
 	if flg == '0': 
 		id, vcf, lfr, histbed, meanbed, depthreport, phasereport = files
 
-		snps, indels, hetsnps, hetindels, hetsnpsphased, hetindelsphased = varcnt('varstat') 
+		snps, indels, hetsnps, hetindels, hetsnpsphased, hetindelsphased = safe(varcnt, 6, 'varstat')
 
 		## lfr
-		lfrcnt, lfravglen = flfr(lfr) 
+		lfrcnt, lfravglen = safe(flfr, 2, lfr)
 
-		n50 = fphase(phasereport)
-		phaseblockbases = fblock('hapblock')
-		_, _, merge_genome_cov20 = fdepth(depthreport)
-		cmrg_cov_merge, cmrg_depth_merge = cmrg(histbed, meanbed)
+		n50 = safe(fphase, 1, phasereport)
+		phaseblockbases = safe(fblock, 1, 'hapblock')
+		_, _, merge_genome_cov20 = safe(fdepth, 3, depthreport)
+		cmrg_cov_merge, cmrg_depth_merge = safe(cmrg, 2, histbed, meanbed)
 
-		tt, hh = vcfstats(vcf)
-		cmrg_pct, cmrg_het, cmrg_hom = cmrg_genes(vcf)
+		tt, hh = safe(vcfstats, 2, vcf)
+		cmrg_pct, cmrg_het, cmrg_hom = safe(cmrg_genes, 3, vcf)
 		str = f"""
 			Sample\t{id}
 			Percent of genome coverage >20X (merged bam)\t{merge_genome_cov20}
-			Total SNPs called\t{snps:,}
-			Total heterozygous SNPs called\t{hetsnps:,}
-			Total heterozygous SNPs phased\t{hetsnpsphased:,}
-			Total Indels (<50 bp) called\t{indels:,}
-			Total heterozygous Indels (<50 bp) called\t{hetindels:,}
-			Total phased heterozygous indels\t{hetindelsphased:,}
+			Total SNPs called\t{c(snps)}
+			Total heterozygous SNPs called\t{c(hetsnps)}
+			Total heterozygous SNPs phased\t{c(hetsnpsphased)}
+			Total Indels (<50 bp) called\t{c(indels)}
+			Total heterozygous Indels (<50 bp) called\t{c(hetindels)}
+			Total phased heterozygous indels\t{c(hetindelsphased)}
 			Ti/Tv\t{tt}
 			Het/hom\t{hh}
-			Total cWGS fragments\t{lfrcnt:,}
-			Average cWGS length (kb)\t{lfravglen:,}
-			Phased contig N50\t{n50:,}
-			Total bases in phase block\t{phaseblockbases:,}
+			Total cWGS fragments\t{c(lfrcnt)}
+			Average cWGS length (kb)\t{c(lfravglen)}
+			Phased contig N50\t{c(n50)}
+			Total bases in phase block\t{c(phaseblockbases)}
 			Average percent coverage of CMRG genes\t{cmrg_cov_merge}
 			Average depth of coverage of CMRG genes\t{cmrg_depth_merge}
 			Percent of genes covered by single phased contig\t{cmrg_pct}
