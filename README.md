@@ -448,6 +448,13 @@ Output: `{outdir}/{sample}/haplodenovo/{sample}.hp1.contigs.fa.gz` and `.hp2.con
 --demo BOOL           Skip optional analyses (gangstr, SpecImmune) [false]
 ```
 
+### Sample type (truth-based steps)
+```
+--sample_type STR     hg001 | hg002 | random [random]
+                      hg001/hg002: run vcfeval and phasing-accuracy stats against the GIAB truth set in ${DB}/hg38
+                      random:      any other sample; vcfeval and phasing-accuracy stats are skipped
+```
+
 ## Local Mac testing (stub mode)
 
 A `mac_stub` profile is included for rapid pipeline validation on a Mac without running any real tools:
