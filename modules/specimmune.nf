@@ -16,7 +16,8 @@ process specimmune {
     publishDir "${params.outdir}/report/$id/", mode: 'copy'
 
     script:
-    bam = bam instanceof List ? bam.first() : bam
+    def bams = bam instanceof List ? bam : [bam]
+    bam = bams.first()
     """
     mkdir -p specimmune_out/HLA
 
@@ -35,7 +36,19 @@ process specimmune {
     fi
 
     export PATH="${params.specimmune_env}/bin:\$PATH"
-    ${params.BIN}samtools fastq -@ ${task.cpus} -F 0x900 $bam | gzip -c > ${id}.specimmune.fastq.gz
+
+    # Feed SpecImmune only HLA-relevant reads (MHC region, chr6 MHC alt contigs, unmapped).
+    # Whole-genome input made SpecImmune run >1 day and crash in visualization.py (>1M SVG elements).
+    bai=""
+    for f in ${bams.join(' ')}; do case "\$f" in *.bai|*.csi|*.crai) bai="\$f";; esac; done
+    [ -n "\$bai" ] || ${params.BIN}samtools index -@ ${task.cpus} $bam
+    regions="${params.specimmune_region}"
+    for c in \$(${params.BIN}samtools idxstats $bam | cut -f1 | grep -E '${params.specimmune_alt_regex}' || true); do
+        regions="\$regions \$c"
+    done
+    ${params.BIN}samtools view -u -F 0x900 -@ ${task.cpus} $bam \$regions '*' \\
+        | ${params.BIN}samtools fastq -@ ${task.cpus} - | gzip -c > ${id}.specimmune.fastq.gz
+    echo "SpecImmune input reads: \$(zcat ${id}.specimmune.fastq.gz | awk 'END{print NR/4}') (regions: \$regions)" >&2
 
     "${params.specimmune_env}/bin/python" "${params.specimmune_home}/scripts/main.py" \\
         -r ${id}.specimmune.fastq.gz -j ${task.cpus} -i HLA -n $id \\
@@ -46,6 +59,9 @@ process specimmune {
     set -e
     if [ \$rc -ne 0 ]; then
         echo "SpecImmune exited with status \$rc" | tee specimmune_out/HLA/FAILED >&2
+    elif ! find specimmune_out/HLA -type f \\( -name '*.hap.alleles.txt' -o -name '*.final.type.result.formatted.txt' \\) -size +0 | grep -q .; then
+        # SpecImmune sub-scripts can fail without a non-zero exit status (e.g. visualization.py traceback)
+        echo "SpecImmune exited 0 but produced no HLA result file; see .command.err (last lines: \$(tail -n 3 .command.err 2>/dev/null | tr '\\n' ' '))" | tee specimmune_out/HLA/FAILED >&2
     fi
     exit 0
     """

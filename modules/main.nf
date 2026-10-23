@@ -207,7 +207,7 @@ workflow CWGS {
     pangenie_plot(ch_pangenie.join(hb))
     pangenie_var_plot(ch_pangenie)
     gangstr(ch_mergebam)
-    specimmune(ch_mergebam)
+    specimmune(ch_pfbam)   // PF bam after --pfmapq filter (*.pf.mapqltN.bam), not the merged bam
 
     // annot
     vep_data(vep_frombam(ch_phasedvcf).html)
@@ -500,7 +500,7 @@ workflow CWGS_frombam {
                 vep_data(vep_frombam(ch_phasedvcf).html)
 
                 gangstr(ch_mergebam)
-                specimmune(ch_mergebam)
+                specimmune(ch_pfbam)   // PF bam after --pfmapq filter (*.pf.mapqltN.bam), not the merged bam
 
                 pangenie(ch_fq_pf_frombam).set {ch_pangenie}
                 pangenie_plot(ch_pangenie.join(hb))

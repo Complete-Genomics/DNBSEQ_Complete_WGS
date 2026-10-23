@@ -147,7 +147,7 @@ flowchart TD
     %% SV/STR/HLA inputs
     fq --> pangenie
     mergeBamLariat --> gangstr
-    mergeBamLariat --> specimmune
+    pfbam[PF mapq-filtered BAM] --> specimmune
     phaseCatLariatDv --> pangenie_plot
 
     %% Annotation input
@@ -312,7 +312,8 @@ PCR-free SE600 bypasses the paired-end SOAPnuke QC and FASTQ downsampling steps;
 
 ### Immune-gene typing for SE600
 
-For hg38/GRCh38, `specimmune` exports primary reads from the merged BAM as a
+For hg38/GRCh38, `specimmune` exports MHC-region primary reads from the PF (PCR-free)
+MAPQ-filtered BAM (`*.pf.mapqlt<pfmapq>.bam`, not the merged BAM) as a
 single-end FASTQ and types `HLA`. Run
 `scripts/install-cwgs-host-tools.sh` once, build the SpecImmune HLA database
 outside the Nextflow work directory, and provide all three external paths:
