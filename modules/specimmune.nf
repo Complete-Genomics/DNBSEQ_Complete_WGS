@@ -37,17 +37,26 @@ process specimmune {
 
     export PATH="${params.specimmune_env}/bin:\$PATH"
 
-    # Feed SpecImmune only HLA-relevant reads (MHC region, chr6 MHC alt contigs, unmapped).
-    # Whole-genome input made SpecImmune run >1 day and crash in visualization.py (>1M SVG elements).
+    # Feed SpecImmune only HLA-relevant reads (manual: extract gene reads first for enrichment-free data,
+    # "otherwise typing would be slow"). Whole-genome input made SpecImmune run >1 day and crash in
+    # visualization.py (>1M SVG elements).
     bai=""
     for f in ${bams.join(' ')}; do case "\$f" in *.bai|*.csi|*.crai) bai="\$f";; esac; done
     [ -n "\$bai" ] || ${params.BIN}samtools index -@ ${task.cpus} $bam
-    regions="${params.specimmune_region}"
-    for c in \$(${params.BIN}samtools idxstats $bam | cut -f1 | grep -E '${params.specimmune_alt_regex}' || true); do
-        regions="\$regions \$c"
-    done
-    ${params.BIN}samtools view -u -F 0x900 -@ ${task.cpus} $bam \$regions '*' \\
-        | ${params.BIN}samtools fastq -@ ${task.cpus} - | gzip -c > ${id}.specimmune.fastq.gz
+    regions="upstream ExtractReads.sh -g HLA"
+    if [ "${params.specimmune_use_extract}" = "true" ] && [ -f "${params.specimmune_home}/scripts/ExtractReads.sh" ]; then
+        # upstream extractor: expects a BAM mapped to hg38 (with alt contigs); writes <id>.HLA.fastq.gz
+        bash "${params.specimmune_home}/scripts/ExtractReads.sh" -s $id -i $bam -g HLA -o extract_HLA
+        mv extract_HLA/${id}.HLA.fastq.gz ${id}.specimmune.fastq.gz
+    else
+        # fallback: MHC region + chr6 MHC alt contigs + unmapped reads
+        regions="${params.specimmune_region}"
+        for c in \$(${params.BIN}samtools idxstats $bam | cut -f1 | grep -E '${params.specimmune_alt_regex}' || true); do
+            regions="\$regions \$c"
+        done
+        ${params.BIN}samtools view -u -F 0x900 -@ ${task.cpus} $bam \$regions '*' \\
+            | ${params.BIN}samtools fastq -@ ${task.cpus} - | gzip -c > ${id}.specimmune.fastq.gz
+    fi
     echo "SpecImmune input reads: \$(zcat ${id}.specimmune.fastq.gz | awk 'END{print NR/4}') (regions: \$regions)" >&2
 
     "${params.specimmune_env}/bin/python" "${params.specimmune_home}/scripts/main.py" \\
