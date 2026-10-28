@@ -20,6 +20,33 @@ def print_main_help():
     """
     print(msg)
     
+def collect_logs(trace, logdir):
+    # gather .command.{sh,out,err,log} + .exitcode of every task into <logdir>/<process>/<tag>/ (from trace workdir column)
+    import csv, re, shutil
+    if not os.path.isfile(trace):
+        print(f'collect_logs: {trace} not found, skip')
+        return
+    n = 0
+    with open(trace) as f:
+        for row in csv.DictReader(f, delimiter='\t'):
+            wd = row.get('workdir')
+            if not wd or not os.path.isdir(wd):
+                continue
+            name = row['name']  # e.g. "CWGS:WF_phase:phase (demo, chr22)"
+            proc, _, tag = name.partition(' (')
+            proc = re.sub(r'[^\w.-]+', '_', proc.replace('CWGS:', '', 1))
+            tag = re.sub(r'[^\w.-]+', '_', tag.rstrip(')')) or 'all'
+            dst = os.path.join(logdir, proc, tag)
+            os.makedirs(dst, exist_ok=True)
+            for fn in ('.command.sh', '.command.out', '.command.err', '.command.log', '.exitcode'):
+                src = os.path.join(wd, fn)
+                if os.path.isfile(src):
+                    shutil.copyfile(src, os.path.join(dst, fn.lstrip('.')))
+            with open(os.path.join(dst, 'info.txt'), 'w') as o:
+                o.write(f"name\t{name}\nstatus\t{row.get('status')}\nexit\t{row.get('exit')}\nworkdir\t{wd}\n")
+            n += 1
+    print(f'collect_logs: {n} tasks -> {logdir}')
+
 def merge_paths(paths):
     abs_paths = [os.path.abspath(path) for path in paths]
     abs_paths.sort(key=lambda p: p.count(os.sep))
@@ -224,6 +251,7 @@ def main():
         """
         print(cmd)
         os.system(cmd)
+        collect_logs('trace.txt', os.path.join(output, 'logs'))
 
     if args.subparser_name == 'run':
         samplelist  = os.path.realpath(args.samplelist)
