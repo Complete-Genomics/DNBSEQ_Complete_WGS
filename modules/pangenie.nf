@@ -78,7 +78,7 @@ process pangenie_var_plot {
     tuple val(id), path(vcf)
 
     output:
-    path "pangenie_var_plot.png"
+    tuple val(id), path("pangenie_var_plot.png")
 
     tag "$id"
     publishDir "${params.outdir}/report/$id/", mode: 'link'

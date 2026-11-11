@@ -350,3 +350,27 @@ process html {
     ${params.BIN}python ${params.SCRIPT}/my_html.py ${params.outdir}/report/
     """
 }
+
+process htmlSample {
+    cpus params.CPU0
+    memory params.MEM0 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+
+    when: params.ref == 'hg38' || params.ref.contains('GRCh38')
+
+    input:
+    val id
+
+    output:
+    path "${id}_report.html"
+
+    tag "$id"
+    publishDir "${params.outdir}", mode: 'link'
+
+    script:
+    """
+    ${params.BIN}python ${params.SCRIPT}/my_html.py ${params.outdir}/report/ ${id}
+    """
+    stub:
+    "touch ${id}_report.html"
+}

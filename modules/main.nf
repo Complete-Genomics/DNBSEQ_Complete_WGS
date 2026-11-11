@@ -193,6 +193,7 @@ include {
     report;
     reportSample;
     html;
+    htmlSample;
     FQC } from "${params.MOD}/report"
 
 include { vep;
@@ -616,13 +617,35 @@ workflow CWGS {
                     ideogram(hb) 
                     cumuplot(hb)
 
-                    reportLariatDv(ch_lariat, ch_dv, ch_vcf.join(ch_lfr).join(ch_cmrgMergebamhistbed).join(ch_cmrgMergebammeanbed).join(ch_depthreport).join(ch_phase)).set {ch_report}
+                    // Inputs may be missing (e.g. a failed step); remainder:true keeps the sample and a
+                    // placeholder file makes report.py print FAIL for those fields.
+                    def nofile = { name -> file("${params.SCRIPT}/missing/${name}") }
+                    ch_vcf
+                        .join(ch_lfr, remainder: true)
+                        .join(ch_cmrgMergebamhistbed, remainder: true)
+                        .join(ch_cmrgMergebammeanbed, remainder: true)
+                        .join(ch_depthreport, remainder: true)
+                        .join(ch_phase, remainder: true)
+                        .filter { it[1] != null }   // phased VCF is the anchor
+                        .map { id, vcf, lfr, hist, mean, depth, phase ->
+                            [id, vcf, lfr ?: nofile('NO_LFR'), hist ?: nofile('NO_HISTBED'), mean ?: nofile('NO_MEANBED'),
+                             depth ?: nofile('NO_DEPTH'), phase ?: nofile('NO_PHASE')]
+                        }
+                        .set { ch_report0_in }
+                    reportLariatDv(ch_lariat, ch_dv, ch_report0_in).set {ch_report}
                     reportSample(ch_report)
                     ch_report.collect().mix(ch_reports).set {ch_reports}
                     report(ch_reports)
 
-                    // html
-                    ch_reports.mix(vep_data.out, pangenie_var_plot.out, pangenie_plot.out, hlala.out).collect().set {ch_flg}
+                    // per-sample html: fires once a sample's own report/VEP/plots are done, without waiting for other samples
+                    ch_report.map { f -> [f.name.replaceFirst(/\.[^.]+\.[^.]+\.report$/, ''), f] }
+                        .join(vep_data.out).join(cumuplot.out).join(pangenie_plot.out).join(pangenie_var_plot.out)
+                        .map { it[0] }
+                        .set { ch_sampleDone }
+                    htmlSample(ch_sampleDone)
+
+                    // html for all samples (final refresh)
+                    ch_reports.mix(vep_data.out, pangenie_var_plot.out.map{ it[1] }, pangenie_plot.out, hlala.out.map{ it[1] }).collect().set {ch_flg}
                     html(ch_flg)
                     
                 } else {
@@ -943,7 +966,7 @@ workflow CWGS_frombam {
                 ch_report.collect().mix(ch_reports).set {ch_reports}
                 report(ch_reports)
                 
-                ch_reports.mix(vep_data.out, hlala.out).collect().set {ch_flg}
+                ch_reports.mix(vep_data.out, hlala.out.map{ it[1] }).collect().set {ch_flg}
                 html(ch_flg)
 
             } else {

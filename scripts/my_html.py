@@ -212,6 +212,8 @@ def generate_html(outdir, sample):
 if __name__ == '__main__':
     outdir = sys.argv[1] # params.outdir/report/
     samples = [ entry.name for entry in os.scandir(outdir) if entry.is_dir() ]
+    if len(sys.argv) > 2: # optional: only this sample
+        samples = [ s for s in samples if s == sys.argv[2] ]
     for sample in samples:
         outdir1 = os.path.join(outdir, sample)
         try:

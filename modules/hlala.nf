@@ -9,7 +9,7 @@ process hlala {
     tuple val(id), path(bam)
 
     output:
-    path "hlala_out"
+    tuple val(id), path("hlala_out")
     
     tag "$id"
     publishDir "${params.outdir}/report/$id/", mode: 'copy'
