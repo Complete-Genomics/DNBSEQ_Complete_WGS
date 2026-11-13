@@ -78,7 +78,17 @@ scripts=DNBSEQ_Complete_WGS/scripts
 $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exec local -module ${modules} -script ${scripts} -debug --use_megabolt false --skipBarcodeSplit false --pfmapq 3 --pfAligner vg --ref ${ref} --ref_len ${ref_len}
 ```
 
-   
+
+**Recent updates in the dev branch**  
+- **Pangenome-aware DeepVariant (v1.10)** is the default variant caller, run on the merged BAM only (see [DeepVariant settings](#deepvariant-pangenome-aware-settings)).
+- **Variant calling requires the merged BAM.** The PF-only and stLFR-only modes (`--PF_only`, `--stLFR_only`, including the `-frombam` variants) have been removed; the pipeline exits with an error if they are set. The separate PF-BAM variant calling and PF vcfeval steps are gone as well.
+- **PCR-free alignment** can use vg giraffe (`--pfAligner vg`, default `bwa`); vg memory and concurrency are bounded (`--vg_memory`) and `--max-dp-cells` is set to avoid hangs on PE300 reads.
+- **Start from a merged BAM** with `--frombam true --fromMergedBam true` (see [Run the pipeline](#run-the-pipeline)).
+- **SE600 / PE150 reads**: barcode (BX) parsing for phasing is unified for both.
+- **Per-sample reports**: a sample's `report.csv` and `<sample>_report.html` are written as soon as that sample finishes, without waiting for other samples. The combined `report.csv` and html are refreshed at the end. If a step fails, the affected fields are reported as `FAIL` instead of dropping the sample.
+- **Per-chromosome VCFs are merged** as soon as each sample finishes; outputs are copied (not linked) to the results folder.
+- **Memory limits** for heavy processes (vg, DeepVariant, PanGenie, stLFRQC, vcfeval) are configurable, see [nextflow.config](modules/nextflow.config).
+
 # Run the pipeline  
 **Note that the order of parameters matters: single dash parameters (-opt) should be placed before all double dash parameters (--opt)**     
      
@@ -104,6 +114,14 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
    sample	stlfrbam	pfbam
    demo1	/path/to/cWGS_01.bam	/path/to/PCRfree_01.bam
    demo2	/path/to/cWGS_02.bam	/path/to/PCRfree_02.bam
+   EOF
+   ```
+    start from stLFR bam and an existing merged bam (set --frombam true --fromMergedBam true)
+      E.g.
+   ```
+   cat << EOF > sample.list
+   sample	stlfrbam	mergebam
+   demo1	/path/to/cWGS_01.bam	/path/to/merge_01.bam
    EOF
    ```
    Updates are pushed to the github module and script folders, use the latest ones. Currently, it's recommended to remove PF reads of MAPQ<3 with the --pfmapq tag. Also, to customize and make the pipeline adapt to your needs, you may revise the scripts. An example run:  
@@ -166,11 +184,49 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
       Utilizes -L option for GATK haplotypecaller; split by chromosome. [true]
 
     --dv_version STRING [only valid when '--var_tool' contains "dv"]
-      Specify the DeepVariant version. [v1.6]
+      Specify the DeepVariant version. [v1.10]
       Supports: 
+        v1.10 (pangenome-aware)
         v1.6
         v0.7
-      Current MegaBOLT DeepVariant version is v0.7; therefore, if you specify this option to "v1.6", MegaBOLT will not be used even if '--use_megabolt' is true.
+      Current MegaBOLT DeepVariant version is v0.7; therefore, if you specify a higher version, MegaBOLT will not be used even if '--use_megabolt' is true.
+    ```
+    <a id="deepvariant-pangenome-aware-settings"></a>DeepVariant (pangenome-aware) settings
+    ```
+    --dv_container PATH
+      DeepVariant v1.10 .sif container.
+
+    --dv_binary_path STRING
+      DeepVariant entry point. [run_pangenome_aware_deepvariant]
+
+    --dv_pangenome PATH
+      Pangenome graph (.gbz). [CWGS_db/hg38/panGenome/hprc-v1.1-mc-grch38.gbz]
+      GRCh38_PAR.bed in the same directory is used as the PAR regions unless --dv_par_regions_bed is set.
+
+    --dv_haploid_contigs STRING
+      Haploid contigs. ["chrX chrY"] for male, "" for female.
+
+    --dv_gbz_shm_size_gb INT
+      Shared memory for the GBZ. [50]
+
+    --dv_make_examples_extra_args STRING / --dv_postprocess_variants_extra_args STRING
+      Extra arguments passed to make_examples / postprocess_variants. []
+    ```
+    PCR-free alignment
+    ```
+    --pfAligner STRING
+      Alignment tool for PCR-free reads. [bwa]
+      Supports:
+        bwa
+        vg (vg giraffe on the pangenome)
+
+    --pfmapq INT
+      Remove PCR-free reads with MAPQ < this value. [3]
+    ```
+    Memory limits of heavy processes (override for a different reference, read type or host)
+    ```
+    --vg_memory ['160 GB']  --deepvariant_memory ['160 GB']  --pangenie_memory ['80 GB']
+    --stlfrqc_memory ['96 GB']  --vcfeval_memory ['64 GB']
     ```
     Markdup
     ```
@@ -198,14 +254,7 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
     --PF_lt_stLFR_depth INT
       Extract the intersection regions from the sampled cWGS (stLFR) bam with depth greater than (>) this value and PCRFree bam with depth less equal than (<=) this value. [10]
     ```
-   stlfr only, same sample.list as other runs  
-   ```
-   modules=$path_to_your_scirpts/DNBSEQ_Complete_WGS/modules
-   scripts=$path_to_your_scirpts/DNBSEQ_Complete_WGS/scripts
-   db=path to CWGS_db
-   
-   ./CWGS run sample.list -sif $sif -B $data_path:$data_path -module ${modules} -db $db -script ${scripts} -exec local -debug --use_megabolt false --stLFR_only true > run.log 2>&1
-   ```
+   *stLFR-only and PF-only runs are no longer supported: DeepVariant is called on the merged BAM, which needs both libraries.*  
     Enable resuming the running
     ```
     --keepFiles BOOL
@@ -256,6 +305,7 @@ A more detailed flow chart.
 All output in the ./CWGS_run folder.   
 1. The report.csv (in ./CWGS_run/out or ./result) is a summary report, with all intermediate metrics, results of mapping, variant calling, phasing etc.     
 [report.csv](CWGS_run/out/report.csv)  
+Each sample also gets its own `report/<sample>*.report.csv` and `<sample>_report.html` as soon as it finishes; fields from failed steps are shown as `FAIL`.  
 2. FQ, BAM, VCF output   
 The FQs are in ./CWGS_run/out/<sample_name>/fq, QC by SOAPnuke.  
 (demo_split_*.fq.gz are the FQ after barcode deconvolution)   
