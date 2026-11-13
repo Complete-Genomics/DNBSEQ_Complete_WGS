@@ -212,6 +212,20 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
     --dv_make_examples_extra_args STRING / --dv_postprocess_variants_extra_args STRING
       Extra arguments passed to make_examples / postprocess_variants. []
     ```
+    The DeepVariant `.sif` is not published on Docker Hub (`stlfr/complete_wgs`); convert the Google image yourself (no root needed) and point `--dv_container` to it:
+    ```
+    # tag = the DeepVariant 1.10 pangenome-aware image tag from https://hub.docker.com/r/google/deepvariant/tags
+    tag=<pangenome-aware-1.10-tag>
+
+    # with internet access: pull and convert directly
+    singularity build deepvariant-1.10.0.sif docker://google/deepvariant:${tag}
+
+    # server without internet: on a machine with Docker, pull and export
+    docker pull google/deepvariant:${tag}
+    docker save google/deepvariant:${tag} -o deepvariant-1.10.0.tar
+    # copy the .tar to the server, then (note the three slashes):
+    singularity build deepvariant-1.10.0.sif docker-archive:///absolute/path/to/deepvariant-1.10.0.tar
+    ```
     PCR-free alignment
     ```
     --pfAligner STRING
