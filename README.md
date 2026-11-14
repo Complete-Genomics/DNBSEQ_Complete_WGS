@@ -238,6 +238,30 @@ Or for MegaBolt or ZBolt nodes:
 ```
 This downloads ~32 GB and builds indices locally (~30 GB additional). Use [db_tree.txt](docs/db_tree.txt) to validate completion.
 
+   **Additional files for this release.** Add the following to the `CWGS_db` created above (`DB=/path/to/CWGS_db`). Run from the repository root:
+
+   a. Small files shipped in [db/](db/):
+```bash
+mkdir -p ${DB}/barcode ${DB}/hg38/panGenome
+cp db/barcode/barcode.list db/barcode/tenx.whitelist                ${DB}/barcode/
+cp db/GRCh38_CMRG_benchmark_gene_coordinates.bed                    ${DB}/hg38/
+cp db/GRCh38_PAR.bed                                                ${DB}/hg38/panGenome/
+cp db/GCA_000001405.15_GRCh38_no_alt_analysis_set_corrected.fasta.nonN.region ${DB}/hg38/panGenome/
+```
+   `GRCh38_PAR.bed` is used by DeepVariant for male samples (chrX/chrY haploid calling). It is read from the same directory as the pangenome `.gbz`, or set `--dv_par_regions_bed`.
+
+   b. Public files to download:
+
+| File | Source | Put in |
+|------|--------|--------|
+| `hprc-v1.1-mc-grch38.gbz` (3.3 GB) | [HPRC](https://s3-us-west-2.amazonaws.com/human-pangenomics/pangenomes/freeze/freeze1/minigraph-cactus/hprc-v1.1-mc-grch38/hprc-v1.1-mc-grch38.gbz) | `${DB}/hg38/panGenome/` |
+| `GCA_000001405.15_GRCh38_no_alt_analysis_set_corrected.fasta` (+ `.fai`, `.dict`, bwa index) | built from NCBI GCA_000001405.15 with `python scripts/cwgs_supp.py --module corrected_fasta --db_path ${DB}` (needs `_RAWDATA_/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz`) | `${DB}/hg38/panGenome/` |
+| SpecImmune HLA database | build from [SpecImmune](https://github.com/deepomicslab/SpecImmune) (tag `v0.0.3`) following its instructions | `${DB}/SpecImmune/db` (or pass `--specimmune_db`) |
+| PanGenie index (`HPRC_index_chr*`, `cactus_filtered_ids_biallelic.vcf.gz`) | build with [PanGenie](https://github.com/eblerjana/pangenie) | `${DB}/pangenie/` (only for the beta SV module) |
+| DeepVariant SE600 model `checkpoint-177536-0.98710-1` | `gsutil -m cp "gs://brain-genomics-public/experimental/exp276475129/wu_1/best/*" <dir>/` | any path; pass `--dv_customized_model <dir>` |
+
+   After copying, compare with [db_tree.txt](docs/db_tree.txt).
+
 5. Pull SIF containers for the Nextflow module pipeline:
 ```bash
 for name in pangenie vg denovo; do
