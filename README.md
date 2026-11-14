@@ -45,11 +45,6 @@ flowchart TD
         insertsizePf --> alignCatPf
     end
 
-    subgraph VC_PF["Variant Calling — PF"]
-        sampleBamPf_v[sampleBamPf] --> deepvariantv16BwaPf[deepvariantv16]
-        deepvariantv16BwaPf --> vcfevalPf[vcfevalPf]
-    end
-
     subgraph ALIGN_STLFR["Alignment — stLFR / Lariat"]
         barcode_split[barcode_split] --> splitfq[splitfq]
         splitfq --> lariatBC[lariatBC]
@@ -131,7 +126,6 @@ flowchart TD
     qc_pf --> bwaPf
 
     sampleBamPf --> sampleBamPf_s
-    sampleBamPf --> sampleBamPf_v
     sampleBamPf --> intersectLariat
     sampleBamPf --> mergeBamLariat
 
@@ -154,7 +148,6 @@ flowchart TD
     phaseCatLariatDv --> vep_frombam
 
     alignCatPf --> reportLariatDv
-    vcfevalPf --> reportLariatDv
     align_cat --> reportLariatDv
     vcfevalLariatDv --> reportLariatDv
     varStatsLariatDv --> reportLariatDv
@@ -182,7 +175,7 @@ flowchart TD
     class samplesheet,fq,parse_sample,toCsv input
     class qc_pf,readLenPf,fqcheckPf,fqdistPf,fqstats_pf,qc_stlfr_stats,readLen,basecount,fqstats_stlfr qc
     class bwaPf,markdupPf,sampleBamPf,barcode_split,splitfq,lariatBC,mergeFq,lariat,sortbam,markdupStlfrLariat,sampleBamStlfrLariat,barcode_split_se600,kff_se600,vg_se600,addBxSe600,markdup_se600 align
-    class deepvariantv16BwaPf,vcfevalPf,deepvariantv16,vcfevalLariatDv,varStatsLariatDv vc
+    class deepvariantv16,vcfevalLariatDv,varStatsLariatDv vc
     class splitVcfLariatDv,splitBam4phasing,phaseLariatDv,phaseCatLariatDv,hapKaryotype,hapcutstat,phaseall,intersectLariat,mergeBamLariat,ideogram,cumuplot phase
     class coveragePf,coverageMeanPf,samtoolsFlagstatPf,samtoolsStatsPf,samtoolsDepthPf,insertsizePf,alignCatPf,samtools_flagstat,samtools_stats,insertsize,samtools_depth,stLFRQC,align_cat,coverage,coverageMean,coverageAvg stats
     class reportLariatDv,report,html report
@@ -312,9 +305,14 @@ PCR-free SE600 bypasses the paired-end SOAPnuke QC and FASTQ downsampling steps;
 
 ### Immune-gene typing for SE600
 
-For hg38/GRCh38, `specimmune` exports MHC-region primary reads from the PF (PCR-free)
+For hg38/GRCh38, `specimmune` exports HLA-relevant primary reads from the PF (PCR-free)
 MAPQ-filtered BAM (`*.pf.mapqlt<pfmapq>.bam`, not the merged BAM) as a
-single-end FASTQ and types `HLA`. Run
+single-end FASTQ and types `HLA`. Only the MHC region (`--specimmune_region`,
+default `chr6:28000000-34000000`), chr6 MHC alt contigs (`--specimmune_alt_regex`)
+and unmapped reads are extracted; feeding whole-genome reads made SpecImmune run
+for more than a day and crash in its visualization step. Set
+`--specimmune_use_extract true` to use SpecImmune's own `ExtractReads.sh -g HLA`
+instead; this needs an hg38 BAM with alt contigs, which the vg PF BAM does not have. Run
 `scripts/install-cwgs-host-tools.sh` once, build the SpecImmune HLA database
 outside the Nextflow work directory, and provide all three external paths:
 
@@ -329,12 +327,49 @@ nextflow run modules/main.nf -profile singularity \
 The configured `--specimmune_read_type pacbio` is the SE600 compatibility
 setting and should be benchmarked against known samples before production use.
 The HLA result directory is copied into `report/<sample>/specimmune_out/` and
-shown in the final HTML report. KIR, CYP, and IG/TR remain disabled until their
+shown in the final HTML report. If SpecImmune fails, or exits 0 without writing an
+HLA result file, a `FAILED` file with the reason is written in
+`specimmune_out/HLA/` and the pipeline continues. KIR, CYP, and IG/TR remain disabled until their
 databases are built.
 
 GangSTR requires a paired-end insert-size distribution and is disabled by
 default for SE600 (`--skip_gangstr true`). It does not contribute to the final
 HTML report. Use `--skip_gangstr false` only for a compatible paired-end BAM.
+
+### DeepVariant settings
+
+DeepVariant runs only on the merged BAM, as pangenome-aware DeepVariant v1.10
+(`run_pangenome_aware_deepvariant`) with the HPRC v1.1 graph. The pangenome
+defaults to `${DB}/${ref}/panGenome/` and follows the `-db` override.
+```
+--dv_container PATH           DeepVariant .sif container (v1.10 with the chrX/chrY flags)
+--dv_pangenome PATH           .gbz pangenome graph [unset: taken from ${DB}]
+--dv_customized_model PATH    SE600 fine-tuned checkpoint; a checkpoint directory is
+                              resolved to its TF checkpoint prefix from the *.index file.
+                              Set "" to use the stock WGS model.
+--dv_gbz_shm_size_gb INT      Shared memory for the GBZ [50]
+```
+The DeepVariant `.sif` is not published on Docker Hub (`stlfr/complete_wgs`); convert
+the Google image yourself and point `--dv_container` to it. The SE600 checkpoint is not
+distributed with the repository.
+
+Build the DeepVariant `.sif` (no root needed):
+```bash
+# with internet access: pull and convert directly
+singularity build deepvariant-1.10.0-xyflags.sif \
+    docker://google/deepvariant:pangenome_aware_deepvariant-1.10.0-xyflags
+
+# server without internet: on a machine with Docker, pull and export
+docker pull google/deepvariant:pangenome_aware_deepvariant-1.10.0-xyflags
+docker save google/deepvariant:pangenome_aware_deepvariant-1.10.0-xyflags -o deepvariant-1.10.0-xyflags.tar
+# copy the .tar to the server, then (note the three slashes):
+singularity build deepvariant-1.10.0-xyflags.sif \
+    docker-archive:///absolute/path/to/deepvariant-1.10.0-xyflags.tar
+# or, if the Docker daemon is on the same machine:
+singularity build deepvariant-1.10.0-xyflags.sif \
+    docker-daemon://google/deepvariant:pangenome_aware_deepvariant-1.10.0-xyflags
+```
+Then run with `--dv_container /path/to/deepvariant-1.10.0-xyflags.sif`.
 
 ### DeepVariant sex setting
 
@@ -443,8 +478,8 @@ Output: `{outdir}/{sample}/haplodenovo/{sample}.hp1.contigs.fa.gz` and `.hp2.con
 
 ### Special modes
 ```
---stLFR_only BOOL     Run cWGS alignment only, skip PF and merging [false]
---PF_only BOOL        Run PF alignment only [false]
+--stLFR_only BOOL     Run cWGS alignment only, skip PF and merging [false]   (alignment only: no variant calling)
+--PF_only BOOL        Run PF alignment only [false]                          (alignment only: no variant calling)
 --frombam BOOL        Start from pre-aligned BAM files [false]
 --keepFiles BOOL      Keep intermediate files to enable -resume [false]
 --demo BOOL           Skip optional analyses (gangstr, SpecImmune) [false]
@@ -476,6 +511,19 @@ nextflow run modules/main.nf \
 
 The `mac_stub` profile sets `executor=local`, 2 CPUs, 4 GB RAM, and disables containers.  
 Example samplesheets for stub testing are in [test_data/](test_data/).
+
+## Logs and re-computing CMRG
+
+After a `CWGS run`, the `.command.{sh,out,err,log}` and `.exitcode` of every task are copied
+from the Nextflow work directory (using the `workdir` column of `trace.txt`) to
+`<output>/logs/<process>/<tag>/`, so failures can be inspected after `work/` is cleaned.
+
+To fill the CMRG report fields of an already finished run without re-aligning or re-calling:
+```bash
+bash scripts/cmrg_from_results.sh <outdir> <sample> [align_tool=lariat] [var_tool=dv]
+```
+Needs bedtools and python3 with pandas and intervaltree. The result is written to
+`<outdir>/<sample>/cmrg_manual/<sample>.cmrg.report`.
 
 ## Cluster execution
 
@@ -512,7 +560,8 @@ haplodenovo/                                 # only with --run_haplodenovo
   <sample>.hp2.contigs.stats.txt
 
 report/
-  report.csv                                 # summary metrics
+  report.csv                                 # summary metrics; fields of failed/missing steps show FAIL
+  <sample>/specimmune_out/                   # HLA typing (hg38 only)
   chromosome.png                             # ideogram
   cumulative_coverage_plot.png
   <sample>.vep.vcf_summary.html             # VEP annotation summary
