@@ -2,8 +2,8 @@ process hlala {
     cpus params.cpu3
     memory params.MEM1 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
-    when: !params.demo && (params.ref == 'hg38' || params.ref.contains('GRCh38'))
-    
+	when: !params.skip_hlala && !params.demo && (params.ref == 'hg38' || params.ref.contains('GRCh38'))
+
     input:
     tuple val(id), path(bam)
 
@@ -11,7 +11,7 @@ process hlala {
     path "hlala_out"
     
     tag "$id"
-    publishDir "${params.outdir}/report/$id/"
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
 
     script:
     bam = bam.first()
@@ -38,4 +38,6 @@ process hlala {
     mkdir hlala_out
     HLA-LA.pl --BAM $bam --graph ${params.DB}/hlala/PRG_MHC_GRCh38_withIMGT --sampleID $id --workingDir hlala_out --maxThreads ${task.cpus}
     """
+    stub:
+    "mkdir -p hlala_out && touch hlala_out/hlaTypeInference.txt"
 }

@@ -10,7 +10,7 @@ process vcfstats {
     tuple val(id), path("${id}.vcfstats.xls")
 
     tag "$id"
-    publishDir "${params.outdir}/report/$id/"
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
 
     script:
     vcf = vcf.first()

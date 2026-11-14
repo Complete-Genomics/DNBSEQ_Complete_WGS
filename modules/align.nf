@@ -1,4 +1,292 @@
-process bwa {    
+include {
+    qc as qc_pf;
+    qc_stlfr_stats                                 } from "${params.MOD}/qc"
+include {
+    readLen as readLenPf;
+    basecount as basecountPf;
+    splitfq;
+    samplePfFq;
+    sampleStlfrFq       } from "${params.MOD}/fq"
+include { mapq          } from "${params.MOD}/bam"
+
+
+workflow WF_align_stlfr {
+    take:
+    ch_stlfrfq
+
+    main:
+    // ch_stlfrfq.map { meta, path ->
+    //     return [meta.id, path]
+    // }.set {ch_stlfrfq}
+    needSplit(ch_stlfrfq).branch {id, reads, flag ->
+        split: flag == '1'
+            [id, reads, true]
+        no_split: flag == '0'
+            [id, reads, false]
+    }.set {ch_dosplit}
+
+    barcode_split(ch_dosplit.split)
+    splitRate(ch_dosplit.no_split)
+
+    ch_splitfq  = barcode_split.out.reads   .mix(splitRate.out.reads)
+    splitLog    = barcode_split.out.log     .mix(splitRate.out.log)
+
+    if (params.sampleFq) {
+        qc_stlfr_stats(ch_splitfq).basecnt.set {ch_stlfrbasecount}
+        qc_stlfr_stats.out.rlen.set {ch_stLFRreadLen}
+        sampleStlfrFq(ch_stlfrbasecount.join(ch_stLFRreadLen).join(ch_splitfq)).set {ch_splitfq} 
+    }
+    if (params.align_tool == 'lariat') {
+        if (params.lariatStLFRBC) { //use stLFR bc for lariat
+            splitfq(ch_splitfq).fq1s.transpose().set {ch_fq1s} //[id, num, fq1, fq2]
+            splitfq.out.fq2s.transpose().set {ch_fq2s}
+            ch_fq1s.join(ch_fq2s).set {ch_splitstlfrfq}
+            lariatBC(ch_splitstlfrfq).groupTuple().set {ch_splitlariatfqs}
+            mergeFq(ch_splitlariatfqs).set {ch_lariatfq}
+            // ch_splitlariatfqs.map {it -> it[1]}.collect().view()
+        } else {
+            tofake10xHash(splitLog).set {ch_hash}
+            if (params.lariatSplitFqNum != 1) { 
+                splitfq(ch_splitfq).fq1s.transpose().set {ch_fq1s} //[id, num, fq1, fq2]
+                splitfq.out.fq2s.transpose().set {ch_fq2s}
+                ch_fq1s.join(ch_fq2s).set {ch_splitstlfrfq}
+                // ch_splitstlfrfq.view()
+                tofake10x(ch_splitstlfrfq.combine(ch_hash, by:0)).reads.set {ch_splitfake10xfq}
+                fake10x2lariat(ch_splitfake10xfq).groupTuple().set {ch_splitlariatfqs}
+                mergeFq(ch_splitlariatfqs).set {ch_lariatfq}
+            } else { fake10x2lariat(tofake10x(ch_splitfq.join(ch_hash))).set {ch_lariatfq} }
+        }
+        sortbam(lariat(ch_lariatfq)).set {ch_lariatbam0} 
+        markdup('stlfr', 'lariat', ch_lariatbam0).set {ch_stlfrbam}
+    } else { // bwa
+        if (params.use_megabolt) {
+            bwaMegabolt('stlfr', ch_splitfq).set {ch_stlfrBwaBam}
+        } else {
+            bwa('stlfr', ch_splitfq).set {ch_stlfrBwaBam}
+            markdup('stlfr', 'bwa', ch_stlfrBwaBam).set {ch_stlfrbam}
+        }
+    }
+    
+    if (params.sampleBam) { sampleBam('stlfr', 'lariat', ch_stlfrbam).set {ch_stlfrbam} }
+
+    emit:
+    ch_stlfrbam
+}
+workflow WF_align_pf {
+    take:
+    ch_pffq
+
+    main:                                            
+    // ch_pffq.map { meta, path ->
+    //     return [meta.id, path]
+    // }.set {ch_pffq}
+
+    ch_pffq.branch { id, reads ->
+        pe    : reads.size() == 2
+        se600 : reads.size() == 1
+    }.set { ch_pf_fq }
+
+    // SOAPnuke QC and FASTQ downsampling are paired-end only.  A single-end
+    // PCR-free SE600 library goes directly to vg giraffe below.
+    qc_pf('pf', ch_pf_fq.pe).reads.set {ch_pf_qc}
+    ch_pf_fq.se600.set {ch_pf_se600fq}
+
+    if (params.sampleFq) { 
+        qc_pf.out.bssq.set {ch_pfbssq}
+        readLenPf(ch_pfbssq).set {ch_PFreadLen} 
+        basecountPf(ch_pfbssq).set {ch_pfbasecount}
+        samplePfFq(ch_pfbasecount.join(ch_PFreadLen).join(ch_pf_qc)).set {ch_pf_sampled}
+        ch_pf_sampled.mix(ch_pf_se600fq).set {ch_pf_alignfq}
+    } else {
+        ch_pf_qc.mix(ch_pf_se600fq).set {ch_pf_alignfq}
+    }
+
+    if (params.pfAligner == 'bwa') {
+        if (params.use_megabolt) {
+            bwaMegaboltPf('pf', ch_pf_alignfq).set {ch_pfbam}
+        } else {
+            bwa('pf', ch_pf_alignfq).set {ch_pfsortbam}
+            markdup('pf', 'bwa', ch_pfsortbam).set {ch_pfbam} 
+        } 
+    } else if (params.pfAligner == 'vg') {
+        if (params.ref != 'hg38' && !params.ref.contains('GRCh38')) { exit 1, 'graph aligner only support hg38 ref!'}
+        ch_pf_alignfq.map { id, reads -> [id, reads, reads.size() == 2] }.set {ch_pffq_typed}
+        kff(ch_pffq_typed.map { id, reads, is_pe -> [id, reads] }).set {ch_kff}
+        vg(ch_kff.join(ch_pffq_typed)).set {ch_pfbam}
+        markdup('pf', 'vg', ch_pfbam).set {ch_pfbam}
+    } else {
+        exit 1, 'pf aligner only supports bwa and vg!'
+    }
+    if (params.sampleBam) { sampleBam('pf', 'bwa', ch_pfbam).set {ch_pfbam} }
+    mapq(ch_pfbam).set {ch_pfbam}
+
+    emit:
+    ch_pfbam
+}
+// stLFR single-end 600/700bp reads
+// - fastq columns in samp.list: stlfr21 / stlfr22  (same PE format as regular stLFR)
+// - barcodes are at the 3' end of each read
+// - Lariat cannot handle SE → align with vg giraffe (same as PF)
+// - vg process already strips GRCh38#0# from BAM header (sed 's/GRCh38#0#//g')
+workflow WF_align_stlfr2 {
+    take:
+    ch_stlfr2fq   // [id, [r1]] — single-end raw FASTQ (barcodes embedded in sequence)
+
+    main:
+    if (params.ref != 'hg38' && !params.ref.contains('GRCh38')) {
+        exit 1, 'stlfr2 aligner only supports hg38/GRCh38 ref (vg giraffe)!'
+    }
+
+    // SE600 reads normally carry the 42 bp barcode in sequence.  A pre-split
+    // input already has #bc1_bc2_bc3/[12] in the FASTQ header and must not be
+    // split a second time.
+    if (params.skipBarcodeSplit) {
+        ch_stlfr2fq.map { id, reads -> [id, reads[0]] }.set { ch_stlfr2_split }
+    } else {
+        barcode_split_se600(ch_stlfr2fq).set { ch_stlfr2_split }
+    }
+
+    // Pass split FASTQ as single-element list to avoid Nextflow path-staging collision
+    ch_stlfr2_split.map { id, fq -> [id, [fq], false] }
+                   .set { ch_stlfr2fq_typed }   // [id, [fq], is_pe=false]
+
+    kff(ch_stlfr2fq_typed.map { id, fqs, is_pe -> [id, fqs] }).set { ch_kff2 }
+    vg(ch_kff2.join(ch_stlfr2fq_typed)).set { ch_stlfr2bam0 }
+    addBxSe600(ch_stlfr2bam0).set { ch_stlfr2bam0 }
+    markdup('stlfr2', 'vg', ch_stlfr2bam0).set { ch_stlfr2bam }
+
+    if (params.sampleBam) { sampleBam('stlfr2', 'vg', ch_stlfr2bam).set { ch_stlfr2bam } }
+
+    emit:
+    ch_stlfr2bam
+}
+
+process needSplit {
+    cpus params.CPU0
+    memory params.MEM0 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+        
+    input:
+    tuple val(id), path(reads)
+
+    output:
+    tuple val(id), path(reads), env(dosplit)
+
+    tag "${id}"
+
+    script:
+    def r1 = "${reads[0]}"
+    """
+    fl=`zcat $r1 | head -1 || true`
+    if echo "\$fl" | grep -q '#'; then
+        dosplit=0
+    else
+        dosplit=1
+    fi
+    """
+}
+process barcode_split {
+    cpus params.CPU1
+    memory params.MEM2 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+        
+    input:
+    tuple val(id), path(reads), val(dosplit)
+
+    when: dosplit
+
+    output:
+    tuple val(id), path("${id}_split_1.fq.gz"), path("${id}_split_2.fq.gz"), emit: reads
+    tuple val(id), path("split_stat_read1.log"), emit: log
+
+    tag "${id}"
+    publishDir "${params.outdir}/$id/fq/", mode: 'link'
+
+    script:
+    def bcList = "${params.DB}/barcode/barcode.list"
+    def r1 = "${reads[0]}"
+    def r2 = "${reads[1]}"
+    """
+    tmp=`zcat $r1 | head -n 2 | tail -n 1 |wc -c ||true`
+    rlen=`expr \$tmp - 1`
+    echo \$rlen
+    mv $r1 read_1.fq.gz
+    mv $r2 read_2.fq.gz
+
+    s1=\$((\$rlen*2+1))
+    s2=\$((\$rlen*2+17))
+    s3=\$((\$rlen*2+33))
+
+    bcpos="-I \$s1 10 1 false -I \$s2 10 1 false -I \$s3 10 1 false"
+    ${params.BIN}MGI.Lite.GenFastQ -F read_1.fq.gz read_2.fq.gz \\
+                        -B ${bcList}    \\
+                        \$bcpos       \\
+                        --stLFR                     \\
+                        -O split_out  \\
+                        --logPath ./ 
+
+    out1=`find split_out -name "*_1.fq.gz"`
+    out2=`find split_out -name "*_2.fq.gz"`
+    log=`find split_out -name "split_stat_read.log"`
+
+    mv \$out1 ${id}_split_1.fq.gz
+    mv \$out2 ${id}_split_2.fq.gz
+    mv \$log split_stat_read1.log
+    """
+}
+process splitRate {
+    cpus params.CPU0
+    memory params.MEM0 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+        
+    input:
+    tuple val(id), path(reads), val(dosplit)
+
+    when: !dosplit
+
+    output:
+    tuple val(id), path("${id}_split_1.fq.gz"), path("${id}_split_2.fq.gz"), emit: reads
+    tuple val(id), path("split_stat_read1.log"), emit: log
+
+    tag "${id}"
+    publishDir "${params.outdir}/$id/fq/", mode: 'link'
+
+    script:
+    def r1 = reads[0]
+    def r2 = reads[1]
+    """
+    mv $r1 ${id}_split_1.fq.gz 2>/dev/null || true
+    mv $r2 ${id}_split_2.fq.gz 2>/dev/null || true
+
+    ${params.BIN}python ${params.SCRIPT}/splitRate.py ${id}_split_1.fq.gz > split_stat_read1.log
+    """
+}
+process barcode_split_se600 {
+    cpus params.CPU1
+    memory params.MEM2 + "g"
+    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
+
+    input:
+    tuple val(id), path(reads)
+
+    output:
+    tuple val(id), path("${id}_split.fq.gz")
+
+    tag "${id}"
+    publishDir "${params.outdir}/$id/fq/", mode: 'link'
+
+    script:
+    def bcList = "${params.DB}/barcode/barcode.list"
+    def fq = "${reads[0]}"
+    """
+    ${params.BIN}python3 ${params.SCRIPT}/stlfr2lariatfq_se600.py \\
+        $bcList $fq ${id}_split.fq.gz ${params.se600_umi_start}
+    """
+
+    stub:
+    "touch ${id}_split.fq.gz"
+}
+process bwa {
     cpus params.cpu3
     memory params.MEM2 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
@@ -7,7 +295,7 @@ process bwa {
 
     input:
     val(lib)
-    tuple val(id), path(r1), path(r2)
+    tuple val(id), path(reads)
 
     output:
     tuple val(id), path("${id}.${lib}.sort.bam*") 
@@ -15,17 +303,17 @@ process bwa {
     // publishDir "${params.outdir}/$id/align/", mode: 'link', enabled: !params.sampleBam
  
     script:
-    def ref
     if (params.ref.startsWith('/')) {
-        ref = params.ref
+        def ref = params.ref
     } else {
-        ref = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
+        def ref = "${params.DB}/${params.ref}/reference/${params.ref}.fa"
     }
-    
+    def r1 = reads[0]
+    def r2 = reads[1]
     """
     ${params.BIN}bwa mem -t ${task.cpus} -R '@RG\\tID:${id}\\tSM:sample\\tPL:COMPLETE' $ref $r1 $r2 | \
     ${params.BIN}samtools view -bhS -@ ${task.cpus} -t ${ref}.fai -T $ref - | \
-    ${params.BIN}samtools sort -@ ${task.cpus} -T `pwd`/sort.tmp. -o ${id}.${lib}.sort.bam - 
+    ${params.BIN}samtools sort -@ ${task.cpus} -T /tmp/sort.${id}.${lib}. -o ${id}.${lib}.sort.bam -
     ${params.BIN}samtools index -@ ${task.cpus} ${id}.${lib}.sort.bam
     """
     stub:
@@ -113,17 +401,17 @@ process kff {
     tag "$id"
 
     input:
-    tuple val(id), path(r1), path(r2)
+    tuple val(id), path(reads)
 
     output:
-    tuple val(id), path("${id}.kff") 
+    tuple val(id), path("${id}.kff")
 
     // publishDir "${params.outdir}/$id/align/", mode: 'link', enabled: !params.sampleBam
- 
+
     script:
 
     """
-    echo -e "$r1\\n$r2" > file
+    printf "%s\\n" ${reads} > file
     kmc -k29 -m${task.memory.giga} -okff -t${task.cpus} @file ${id} .
     """
     stub:
@@ -131,30 +419,59 @@ process kff {
 }
 process vg {    
     cpus params.cpu3
-    memory params.MEM2 + "g"
+    memory params.vg_memory
+    maxForks 1
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
     tag "$id"
 
     input:
-    tuple val(id), path(kff), path(r1), path(r2)
+    tuple val(id), path(kff), path(reads), val(is_pe)
 
     output:
-    tuple val(id), path("${id}.sort.bam*") 
+    tuple val(id), path("${id}.sort.bam*")
 
     // publishDir "${params.outdir}/$id/align/", mode: 'link', enabled: !params.sampleBam
- 
-    script:
-    def gbz = "${params.DB}/hg38/panGenome/hprc-v1.1-mc-grch38.gbz"
-    def hapl = "${params.DB}/hg38/panGenome/hprc-v1.1-mc-grch38.hapl"
-    def fai = params.ref.startsWith('/') ? "${params.ref}.fai" : "${params.DB}/hg38/reference/hg38.fa.fai"
-    def vg = "/usr/local/app/vg/bin/vg"
-    """
-    awk '{print \$1}' $fai |sed 's/^/GRCh38#0#/' > list
 
-    $vg giraffe -Z $gbz --progress --index-basename `pwd`/${id} --read-group "ID:$id LB:lib1 SM:$id PL:CG PU:unit1" --sample $id -o BAM \\
-        --ref-paths list -P -L 3000 -f $r1 -f $r2 --kff-name $kff --haplotype-name $hapl -t ${task.cpus} | \\
-    samtools sort -@ ${task.cpus} -T `pwd`/sort.tmp. -o ${id}.sort0.bam - 
+    script:
+    def gbz  = params.vg_pangenome_gbz ?: "${params.DB}/hg38/panGenome/hprc-v1.1-mc-grch38.gbz"
+    def hapl = params.vg_pangenome_hapl ?: "${params.DB}/hg38/panGenome/hprc-v1.1-mc-grch38.hapl"
+    def fai  = params.ref.startsWith('/') ? "${params.ref}.fai" : "${params.DB}/hg38/reference/hg38.fa.fai"
+    def vg_bin = "/usr/local/app/vg/bin/vg"
+    def fq_args = is_pe ? "-f ${reads[0]} -f ${reads[1]}" : "-f ${reads[0]}"
+    def vg_lock = params.vg_lock_dir
+    def vg_lock_parent = vg_lock.substring(0, vg_lock.lastIndexOf('/'))
+    def stale_sec = 8 * 3600  // longer than any real vg giraffe run should take
+    """
+    awk '{print \$1}' $fai | sed 's/^/GRCh38#0#/' > list
+
+    # machine-wide mutex: mkdir is atomic even on network filesystems, so this
+    # holds even across the two independent vg call-sites (WF_align_pf,
+    # WF_align_stlfr2) and across separate nextflow runs -- maxForks 1 alone
+    # does not cover that (see comment on vg_lock_dir in nextflow.config).
+    mkdir -p $vg_lock_parent
+    while ! mkdir $vg_lock 2>/dev/null; do
+        if [ -d $vg_lock ]; then
+            age=\$(( \$(date +%s) - \$(stat -c %Y $vg_lock 2>/dev/null || echo 0) ))
+            if [ "\$age" -gt "$stale_sec" ]; then
+                echo "[vg] lock older than ${stale_sec}s, assuming stale and clearing: $vg_lock" >&2
+                rmdir $vg_lock 2>/dev/null || true
+                continue
+            fi
+        fi
+        echo "[vg] waiting for machine-wide vg giraffe lock: $vg_lock" >&2
+        sleep 15
+    done
+    trap 'rmdir $vg_lock 2>/dev/null || true' EXIT
+
+    $vg_bin giraffe -Z $gbz --progress --index-basename `pwd`/${id} \\
+        --read-group "ID:$id LB:lib1 SM:$id PL:CG PU:unit1" --sample $id -o BAM \\
+        --ref-paths list -P -L 3000 $fq_args --kff-name $kff --haplotype-name $hapl \\
+        -t ${task.cpus} | \\
+    samtools sort -@ ${task.cpus} -T /tmp/sort.${id}.vg. -o ${id}.sort0.bam -
+
+    rmdir $vg_lock 2>/dev/null || true
+    trap - EXIT
 
     samtools view -H ${id}.sort0.bam > header
     sed 's/GRCh38#0#//g' header > new_header.txt
@@ -162,6 +479,8 @@ process vg {
 
     samtools index -@ ${task.cpus} ${id}.sort.bam
     """
+    stub:
+    "touch ${id}.sort.bam ${id}.sort.bam.bai"
 }
 
 process bqsr {
@@ -520,7 +839,7 @@ process sortbam {
 }
 process markdup {
     cpus params.cpu2
-    memory params.MEM1 + "g"
+    memory params.markdup_memory
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
     input:
@@ -541,12 +860,12 @@ process markdup {
     if (params.markdup == "sambamba") {
         cmd += """
         ${params.BIN}sambamba markdup \\
-            -t ${task.cpus} --tmpdir . $bam ${id}.${lib}.${aligner}.sambamba.bam
+            -t ${task.cpus} --tmpdir /tmp $bam ${id}.${lib}.${aligner}.sambamba.bam
         ${params.BIN}samtools index -@ ${task.cpus} ${id}.${lib}.${aligner}.sambamba.bam
         """
     } else if (params.markdup == "picard") {
         cmd += """
-        java -Xms${task.memory.giga}g -Xmx${task.memory.giga}g -jar ${params.SCRIPT}/picard/picard.jar MarkDuplicates I=$bam O=${id}.${lib}.${aligner}.picard.bam M=${id}.${lib}.${aligner}.picardMarkdup.log TMP_DIR=. 
+        java -Xms${task.memory.giga}g -Xmx${task.memory.giga}g -jar ${params.SCRIPT}/picard/picard.jar MarkDuplicates I=$bam O=${id}.${lib}.${aligner}.picard.bam M=${id}.${lib}.${aligner}.picardMarkdup.log TMP_DIR=/tmp
         ${params.BIN}samtools index -@ ${task.cpus} ${id}.${lib}.${aligner}.picard.bam
         """
     } else if (params.markdup == "biobambam2") {
@@ -570,7 +889,7 @@ process markdup {
     }
     return cmd
     stub:
-    "touch ${id}.${lib}.${aligner}.*.bam"
+    "touch ${id}.${lib}.${aligner}.${params.markdup}.bam ${id}.${lib}.${aligner}.${params.markdup}.bam.bai"
 }
 process sampleBam_samtools {
     cpus params.cpu2
@@ -591,7 +910,7 @@ process sampleBam_samtools {
  
     script:
     def bam = indexedbam.first()
-    def cov = lib == "stlfr" ? "${params.stLFR_sampling_cov}" : "${params.PF_sampling_cov}"
+    def cov = lib == "pf" ? "${params.PF_sampling_cov}" : "${params.stLFR_sampling_cov}"
     if (params.debug) {
         cmd = """
         cp $bam ${id}.${lib}.${aligner}.sampled.bam
@@ -637,10 +956,13 @@ process sampleBam {
  
     script:
     def bam = indexedbam.first()
-    def cov = lib == "stlfr" ? "${params.stLFR_sampling_cov}" : "${params.PF_sampling_cov}"
+    def cov = lib == "pf" ? "${params.PF_sampling_cov}" : "${params.stLFR_sampling_cov}"
 
     cmd = """
-    if [ $cov -eq 0 ];then 
+    bamcov=`${params.BIN}samtools depth -@ ${task.cpus} $bam | awk '{sum += \$3}END{print sum/${params.ref_len}}'`
+    echo \$bamcov > tmp
+    ratio=`echo "scale=5; $cov/\$bamcov" | bc`
+    if [[ \$ratio > 1 ]];then
         cp $bam ${id}.${lib}.${aligner}.sampled.bam
         cp ${bam}.bai ${id}.${lib}.${aligner}.sampled.bam.bai
     else 
@@ -666,32 +988,7 @@ process sampleBam {
     stub:
     "touch ${id}.${lib}.${aligner}.sampled.bam"
 }
-process intersect {
-    cpus params.cpu2
-    memory params.MEM1 + "g"
-    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
-    input:
-    val(aligner)
-    tuple val(id), path(stlfrbam), path(pfbam)
-
-    output:
-    tuple val(id), path("*.intersect.bed") //demo.stlfr.bwa.cov10.bed
-
-    tag "$id, $aligner"
-    publishDir "${params.outdir}/$id/align/", mode: 'link'
-    
-    script:
-    stlfrbam = stlfrbam.first() //demo.stlfr.bwa.bam
-    pfbam = pfbam.first()
-    """
-    ${params.BIN}samtools depth -@ ${task.cpus} $stlfrbam $pfbam | awk -v cov="${params.PF_lt_stLFR_depth}" '\$3 >= cov && \$4 < cov {print \$1"\\t"\$2"\\t"\$2}' | \\
-    ${params.BIN}bedtools merge > ${id}.${aligner}.cov${params.PF_lt_stLFR_depth}.intersect.bed
-
-    """
-    stub:
-    "touch ${id}.${aligner}.cov${params.PF_lt_stLFR_depth}.intersect.bed"
-}
 process depth {
     cpus params.cpu2
     memory params.MEM1 + "g"
@@ -743,69 +1040,35 @@ process bed {
     "touch ${id}.${aligner}.cov${params.bamcov}.intersect.bed"
 }
 
-process mergeBam {
-    cpus params.cpu2
-    memory params.MEM3 + "g"
+
+
+process addBxSe600 {
+    cpus params.CPU0
+    memory params.MEM1 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
     input:
-    val(aligner)
-    tuple val(id), path(pfbam), path(stlfrbam), path(bed) 
+    tuple val(id), path(bam_files)
 
     output:
-    tuple val(id), path("${id}.${aligner}.merge.bam*") 
-    tag "$id, $aligner"
+    tuple val(id), path("${id}.stlfr2.vg.bx.bam*")
 
-    publishDir "${params.outdir}/$id/align/", mode: 'link'
-
-    script:
-    def pfbam = pfbam.first()
-    def stlfrbam = stlfrbam.first()
-    """
-    ${params.BIN}samtools view -hb -L $bed $stlfrbam > lfr_lfr10_pf10.bam && \\
-    ${params.BIN}samtools index lfr_lfr10_pf10.bam && \\
-    ${params.BIN}samtools addreplacerg -w -O BAM -r '@RG\\tID:${id}\\tSM:sample' -o new.bam lfr_lfr10_pf10.bam && \\
-    ${params.BIN}samtools index new.bam && \\
-    ${params.BIN}samtools reheader $pfbam new.bam > new2.bam && \\
-    ${params.BIN}samtools index new2.bam && \\
-    # ${params.BIN}samtools addreplacerg -O BAM -r '@RG\\tID:sample\\tSM:sample' -o new3.bam new2.bam && \\
-    # ${params.BIN}samtools index new3.bam && \\
-    ${params.BIN}samtools merge -@ ${task.cpus} -f ${id}.${aligner}.merge.bam $pfbam new2.bam && \\
-    ${params.BIN}samtools index -@ ${task.cpus} ${id}.${aligner}.merge.bam
-
-    """
-    stub:
-    "touch ${id}.${aligner}.merge.bam"
-}
-
-process combinebam {
-    cpus params.cpu2
-    memory params.MEM3 + "g"
-    clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
-
-    input:
-    tuple val(id), path(pfbam), path(stlfrbam)
-
-    output:
-    tuple val(id), path("${id}.lariat.merge.bam*") 
-
-    publishDir "${params.outdir}/$id/align/", mode: 'link'
+    tag "$id"
 
     script:
-    def pfbam = pfbam.first()
-    def stlfrbam = stlfrbam.first()
-    def aligner = 'lariat'
+    def bam = bam_files instanceof List ? bam_files.first() : bam_files
     """
-    ${params.BIN}samtools merge -@ ${task.cpus} -f ${id}.${aligner}.merge.bam $pfbam $stlfrbam && \\
-    ${params.BIN}samtools index -@ ${task.cpus} ${id}.${aligner}.merge.bam
-
+    python3 ${params.SCRIPT}/add_bx_se600.py $bam ${id}.stlfr2.vg.bx.bam
+    ${params.BIN}samtools index -@ ${task.cpus} ${id}.stlfr2.vg.bx.bam
     """
     stub:
-    "touch ${id}.lariat.merge.bam"
+    "touch ${id}.stlfr2.vg.bx.bam ${id}.stlfr2.vg.bx.bam.bai"
 }
+
 process stLFRQC {
     cpus params.CPU1
-    memory params.MEM1 + "g"
+    memory params.stlfrqc_memory
+    maxForks 2
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
 
     input:
@@ -816,7 +1079,7 @@ process stLFRQC {
     path("06*.txt")
 
     tag "$id"
-    publishDir "${params.outdir}/report/$id/", mode:'link'
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
  
     script:
     bam = bam.first()
@@ -825,13 +1088,20 @@ process stLFRQC {
     ${params.BIN}stLFRQC --samtools /usr/bin/samtools --python3 /usr/bin/python3 \
         --ref $ref \
         --bam $bam \
-        --thread ${task.cpus}
+        --thread ${task.cpus} || {
+            echo "stLFRQC failed, using NA placeholders" >&2
+            touch 06.lfr_highquality.txt 06.lfr_length.txt 06.lfr_readpair.txt 06.lfr_per_barcode.txt
+        }
 
-    sed -n '11p' 06.lfr_highquality.txt > tmp
-    sed -n '4p' 06.lfr_length.txt >> tmp
-    sed -n '4p' 06.lfr_readpair.txt >> tmp
-    sed -n '77p' 06.lfr_per_barcode.txt >> tmp
-    mv tmp  ${id}.lfr.report
+    if [ -f 06.lfr_highquality.txt ]; then
+        sed -n '11p' 06.lfr_highquality.txt > tmp
+        sed -n '4p' 06.lfr_length.txt >> tmp
+        sed -n '4p' 06.lfr_readpair.txt >> tmp
+        sed -n '77p' 06.lfr_per_barcode.txt >> tmp
+    else
+        printf 'NA\nNA\nNA\nNA\n' > tmp
+    fi
+    mv tmp ${id}.lfr.report
     """
     stub:
     "touch 06*.txt ${id}.lfr.report "
