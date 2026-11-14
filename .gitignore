@@ -8,3 +8,7 @@ run.log
 .nextflow*
 test_data
 resources
+subprojects/
+checkpoints/
+/checkpoint
+memory
