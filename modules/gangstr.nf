@@ -2,8 +2,8 @@ process gangstr {
     cpus params.CPU1
     memory params.MEM1 + "g"
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
-    when: !params.demo && (params.ref == 'hg38' || params.ref.contains('GRCh38'))
-    
+    when: !params.skip_gangstr && !params.demo && (params.ref == 'hg38' || params.ref.contains('GRCh38'))
+
     input:
     tuple val(id), path(bam)
 
@@ -11,7 +11,7 @@ process gangstr {
     path "GangSTR_out*"
 
     tag "$id"
-    publishDir "${params.outdir}/report/$id/"
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
 
     script:
     ref = params.ref.startsWith('/') ? params.ref : "${params.DB}/${params.ref}/reference/${params.ref}.fa"
@@ -20,4 +20,6 @@ process gangstr {
     """
     GangSTR --bam $bam --ref $ref --regions $bed --out GangSTR_out
     """
+    stub:
+    "touch GangSTR_out.vcf GangSTR_out.samplestats.tab GangSTR_out.insdata.tab"
 }

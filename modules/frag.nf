@@ -11,7 +11,7 @@ process frag1 {
     tuple val(id), path("${id}.stlfr.${chr}.frag1.txt")
 
     tag "$id, $chr"
-    // publishDir "${params.outdir}/$id/"
+    publishDir "${params.outdir}/$id/align/", mode: 'link'
 
     script:
     def bam = bam.first()
@@ -38,7 +38,7 @@ process frag2 {
 
     tag "$id"
 
-    publishDir "${params.outdir}/report/$id/", mode: 'link'
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
     // publishDir "${params.outdir}/report/", pattern: "${id}.frag_per_barcode.pdf", saveAs: {"${id}.32.align.fragbc.dist.pdf"}
     // publishDir "${params.outdir}/report/", pattern: "${id}.fraglen_distribution_min5000.pdf", saveAs: {"${id}.33.align.fraglen.dist.pdf"}
     // publishDir "${params.outdir}/report/", pattern: "${id}.frag_cov.pdf", saveAs: {"${id}.34.align.fragcov.dist.pdf"}
@@ -65,7 +65,7 @@ process fragstats {
     tuple val(id), path("${id}.fragstats.xls")
 
     tag "$id"
-    publishDir "${params.outdir}/report/$id/", mode: 'link'
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
 
     """
     python ${params.SCRIPT}/fragstats.py $id $splitLog $lfr_report > ${id}.fragstats.xls

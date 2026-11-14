@@ -1,9 +1,10 @@
 process vep {
     
-    cpus params.CPU0
-    memory params.MEM1 + "g"
+    cpus 8
+    memory params.vep_memory
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
-    
+    when: params.ref == 'hg38' || params.ref.contains('GRCh38')
+
     input:
     tuple val(id), path(phasedvcf)
 
@@ -13,7 +14,7 @@ process vep {
 
     tag "$id"
     publishDir "${params.outdir}/$id/annot/", pattern: "*vcf.gz*", mode: 'link'
-    publishDir "${params.outdir}/report/$id/", pattern: "*html", mode: 'link'
+    publishDir "${params.outdir}/report/$id/", pattern: "*html", mode: 'copy'
 
     script:
     def vcf = phasedvcf.first()
@@ -23,11 +24,13 @@ process vep {
     set +u
     source /usr/local/app/miniconda3/bin/activate /usr/local/app/miniconda3/envs/vep
 
-    vep -i $vcf -o ${id}.vep.vcf --cache --offline --dir_cache $db --fasta $ref --species homo_sapiens --assembly GRCh38 --cache_version 113 --vcf --fields Uploaded_variation,Location,Allele,Gene,Feature,Feature_type,Consequence,cDNA_position,CDS_position,Protein_position,Amino_acids,Codons,Existing_variation,IMPACT,SYMBOL,dbNSF,AlphaMissense,UTRAnnotator,BIOTYPE,DISTANCE,FLAGS,VARIANT_CLASS,CLIN_SIG,AF
+    vep -i $vcf -o ${id}.vep.vcf --cache --offline --dir_cache $db --fasta $ref --species homo_sapiens --assembly GRCh38 --cache_version 113 --vcf --fork ${task.cpus} --fields Uploaded_variation,Location,Allele,Gene,Feature,Feature_type,Consequence,cDNA_position,CDS_position,Protein_position,Amino_acids,Codons,Existing_variation,IMPACT,SYMBOL,dbNSF,AlphaMissense,UTRAnnotator,BIOTYPE,DISTANCE,FLAGS,VARIANT_CLASS,CLIN_SIG,AF
 
     bgzip -c ${id}.vep.vcf > ${id}.vep.vcf.gz
     tabix -p vcf ${id}.vep.vcf.gz
     """
+    stub:
+    "touch ${id}.vep.vcf.gz ${id}.vep.vcf.gz.tbi ${id}.vep.vcf_summary.html"
 }
 
 process vep_data {
@@ -42,11 +45,13 @@ process vep_data {
     tuple val(id), path("*.{csv,png}")
 
     tag "$id"
-    publishDir "${params.outdir}/report/$id/", mode: 'link'
+    publishDir "${params.outdir}/report/$id/", mode: 'copy'
 
     // cache false
     script:
     """
     python ${params.SCRIPT}/mk_vep_pic.py ${html}
     """
+    stub:
+    "touch vep_summary.csv vep_summary.png"
 }
