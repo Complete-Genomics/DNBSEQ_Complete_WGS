@@ -230,7 +230,7 @@ singularity build --fakeroot CWGS.sif CWGS.def
 If singularity doesn't support `--fakeroot`, use sudo:
 ```bash
 sudo singularity build CWGS.sif CWGS.def
-singularity exec -B`pwd -P` --pwd `pwd -P` CWGS.sif cp -rL /usr/local/bin/CWGS /usr/local/bin/runit /usr/local/app/CWGS/PARAMS.txt /usr/local/app/CWGS/demo .
+singularity exec -B`pwd -P` --pwd `pwd -P` CWGS.sif cp -rL /usr/local/bin/CWGS /usr/local/bin/runit /usr/local/app/CWGS/PARAMS.txt .
 ```
 
 4. Download the database (internet connection required):
@@ -270,20 +270,6 @@ for name in pangenie vg denovo; do
 done
 ```
 Remove the `complete_wgs_` prefix from .sif filenames and place them in `${sif_dir}`.
-
-6. Test with demo data:
-```bash
-cat << EOF > samplesheet.csv
-sample,stlfr1,stlfr2,stlfr21,pcrfree1,pcrfree2,stlfrbam,pfbam
-demo,demo/stLFR_demo_1M_1.fq.gz,demo/stLFR_demo_1M_2.fq.gz,,demo/PF_demo_1M_1.fq.gz,demo/PF_demo_1M_2.fq.gz,,
-EOF
-
-nextflow run modules/main.nf -entry CWGS \
-    --input samplesheet.csv \
-    --outdir ./output \
-    --ref hg38 \
-    --var_tool dv
-```
 
 # Samplesheet format
 
@@ -518,26 +504,6 @@ Output: `{outdir}/{sample}/haplodenovo/{sample}.hp1.contigs.fa.gz` and `.hp2.con
                       hg001/hg002: run vcfeval and phasing-accuracy stats against the GIAB truth set in ${DB}/hg38
                       random:      any other sample; vcfeval and phasing-accuracy stats are skipped
 ```
-
-## Local Mac testing (stub mode)
-
-A `mac_stub` profile is included for rapid pipeline validation on a Mac without running any real tools:
-
-```bash
-nextflow run modules/main.nf \
-    -entry CWGS \
-    -profile mac_stub \
-    -stub-run \
-    --input test_data/samplesheet_stub_se600pe150.csv \
-    --outdir test_data/out \
-    -w test_data/work \
-    --ref hg38 \
-    --var_tool dv \
-    --run_haplodenovo
-```
-
-The `mac_stub` profile sets `executor=local`, 2 CPUs, 4 GB RAM, and disables containers.  
-Example samplesheets for stub testing are in [test_data/](test_data/).
 
 ## Logs and re-computing CMRG
 
