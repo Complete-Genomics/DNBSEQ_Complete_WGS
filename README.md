@@ -2,6 +2,11 @@
 # Complete WGS (cWGS)  
 This is a pipeline that enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' DNBSEQ Complete WGS (cWGS) (a DNA cobarcoding technology, previous name stLFR) library of the same sample. Running this pipeline results in a highly accurate and complete phased VCF. We recommend at least 40X depth for the PCR free library and 30X depth for the cWGS library. Below is a flow chart which summarizes the pipeline processes. *Note, SV detection with Pangenie is a beta version of the pipeline.*
 
+> **⚠️ This version supports SE600 data only.**
+> It is built and validated for single-end 600 bp cWGS (stLFR2) and PCR-free SE600 libraries, and **accepts pre-aligned BAM input only** (`--frombam true`).
+> Paired-end cWGS/stLFR data (PE100/PE150, Lariat) is **not supported or validated** in this version; for PE data use the `dev` branch or an earlier release.
+> The vg-based FASTQ path (barcode splitting + vg giraffe) and the haplotype de novo module (`--run_haplodenovo`) are not fully tested yet.
+
 ![flowchart](images/Flow_chart.png)
 
 A more detailed flow chart.  
@@ -282,6 +287,8 @@ nextflow run modules/main.nf -entry CWGS \
 
 # Samplesheet format
 
+> **Only SE600 data is supported in this version, as BAM input.** The PE150 columns and examples below are kept for reference and are not validated in this release.
+
 The samplesheet is a **CSV file** with a unified format for all run modes (from FASTQ or from BAM). Leave columns empty if not applicable.
 
 ```
@@ -308,7 +315,7 @@ sample,stlfr1,stlfr2,pcrfree1,pcrfree2,stlfrbam,pfbam
 | SE600 (stLFR2) | Single-end 600 bp | `stlfr21` only | vg giraffe |
 | PCR-free SE600 | Single-end 600 bp | `pcrfree21` only | vg giraffe |
 
-**Start from FASTQ — PE150 (default):**
+**Start from FASTQ — PE150** *(not supported in this version)*:
 ```csv
 sample,stlfr1,stlfr2,pcrfree1,pcrfree2,stlfrbam,pfbam
 demo1,/path/cWGS_01_1.fq.gz,/path/cWGS_01_2.fq.gz,/path/PF_01_1.fq.gz,/path/PF_01_2.fq.gz,,
