@@ -2,6 +2,8 @@
 # Complete WGS (cWGS)  
 This is a pipline the enables the mapping, variant calling, and phasing of input fastq files from a PCR free (PF) and a Complete Genomics' DNBSEQ Complete WGS (cWGS) (a DNA cobarcoding technology, previous name stLFR) library of the same sample. Running this pipeline results in a highly accurate and complete phased vcf. We recommend at least 40X depth for the PCR free library and 30X depth for the cWGS library. Below is a flow chart which summarizes the pipeline processes. *Note, SV detection with Pangenie is a beta version of the pipeline.
 
+> **⚠️ SE600 data:** for SE600 sequencing data the pipeline currently supports **BAM input only** (`--frombam true`, see [Run the pipeline](#run-the-pipeline)). FASTQ input for SE600 is still being tested.
+
 ![flowchart](images/Flow_chart.png)
 
 A more detailed flow chart.  
@@ -254,7 +256,7 @@ $CWGS run sample.list -sifs ${sif_dir} -B <your_drive>:<your_drive> -db $db -exe
     start from barcode (BC) split/deconvolution fastq files (cWGS/stLFR PE100, R2 is 100bp e.g.) **(set --skipBarcodeSplit true)**
       format same as above.
    
-    start from PCR-free and cWGS bam files (set --frombam true)
+    start from PCR-free and cWGS bam files (set --frombam true) **(currently the only supported input for SE600 data; SE600 FASTQ input is still being tested)**
       E.g.
    ```
    cat << EOF > sample.list
