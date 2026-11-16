@@ -60,30 +60,45 @@ def fsplitrate(splitLog):
 	f.close()
 	return bctype, bcsplitrate
 def flfr(lfr):
-	f = open(lfr)
-	for line in f:
-		a = line.rstrip().split()[1]
-		if "good" in line:
-			lfrnum = a
-		elif "length" in line:
-			avglen = a
-		elif "readpair" in line:
-			avgfragreadcount = a
-		else:
-			lfrperbc = a
-	f.close()
-	avglen = int(float(avglen) / 1e3)
-	return int(lfrnum), avglen
+	lfrnum, avglen = 'NA', 'NA'
+	try:
+		f = open(lfr)
+		for line in f:
+			parts = line.rstrip().split()
+			if len(parts) < 2:
+				continue
+			a = parts[1]
+			if "good" in line:
+				lfrnum = a
+			elif "length" in line:
+				avglen = a
+			elif "readpair" in line:
+				avgfragreadcount = a
+			else:
+				lfrperbc = a
+		f.close()
+		if avglen != 'NA':
+			avglen = int(float(avglen) / 1e3)
+		if lfrnum != 'NA':
+			lfrnum = int(lfrnum)
+	except Exception:
+		pass
+	return lfrnum, avglen
 
 def parse_flgstat(flgstat):
+	pemaprate = None
+	maprate = None
 	f = open(flgstat)
 	for line in f:
 		match = re.search(r'(\d+) \+ \d+ properly paired \(([\d.]+%) : \S+\)', line)
 		if match:
 			pemaprate = match.group(2)
-			break
+		else:
+			match = re.search(r'\d+ \+ \d+ mapped \(([\d.]+%) : \S+\)', line)
+			if match:
+				maprate = match.group(1)
 	f.close()
-	return pemaprate
+	return pemaprate or maprate or 'NA'
 
 def fphase(phase):
     f = open(phase)
@@ -116,6 +131,13 @@ def fdepth(depthreport):
 	return cov1, cov10, cov20
 
 def cmrg(histbed, meanbed):
+	try:
+		return _cmrg(histbed, meanbed)
+	except Exception as e:
+		print(f"cmrg coverage failed: {e}", file=sys.stderr)
+		return "FAIL", "FAIL"
+
+def _cmrg(histbed, meanbed):
 	ratios = []
 	f = open(histbed)
 	for line in f:
@@ -258,6 +280,13 @@ def calculate_gene_coverage(gene_trees, block_tree):
     return covered_genes, total_genes
 
 def cmrg_genes(phasedvcf):
+    try:
+        return _cmrg_genes(phasedvcf)
+    except Exception as e:
+        print(f"cmrg_genes failed: {e}", file=sys.stderr)
+        return "FAIL", "FAIL", "FAIL"
+
+def _cmrg_genes(phasedvcf):
     cmrg_het, cmrg_hom = defaultdict(set), set()
     f = open('cmrg_exon.vcf')
     for line in f:

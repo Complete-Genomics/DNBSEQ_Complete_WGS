@@ -1,0 +1,7 @@
+name: cwgs-runtime
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - openjdk=17
+  - nextflow=25.04.6

@@ -1,10 +1,11 @@
 process vcfeval {
     
     cpus params.CPU1
-    memory params.MEM1 + "g"
+    memory params.vcfeval_memory
+    maxForks 2
     clusterOptions = params.clusterOptions.replace('CPUS', cpus.toString()).replace('MEMORY', memory.toString()).replace('QUEUE', params.queue)
     
-    when: params.ref == 'hg38' || params.ref.contains('GRCh38')
+    when: (params.ref == 'hg38' || params.ref.contains('GRCh38')) && params.sample_type in ['hg001', 'hg002']
     
     input:
     val(lib)
@@ -13,8 +14,8 @@ process vcfeval {
     output:
     tuple val(id), path("*.xls")
     tag "$id"
-    publishDir "${params.outdir}/report/$id", saveAs: {"${id}.${lib}.evaluation.xls"}, mode: 'link'
-    publishDir "${params.outdir}/report/$id", saveAs: {"${id}.evaluation.xls"}, mode: 'link', enabled: params.stLFR_only
+    publishDir "${params.outdir}/report/$id", saveAs: {"${id}.${lib}.evaluation.xls"}, mode: 'copy'
+    publishDir "${params.outdir}/report/$id", saveAs: {"${id}.evaluation.xls"}, mode: 'copy', enabled: params.stLFR_only
     // publishDir (
     //   path: "${params.outdir}/report/", 
     //   saveAs: { fn ->
@@ -28,8 +29,8 @@ process vcfeval {
     script:
     def vcf = vcf.first()
     def prefix = "${vcf.getBaseName(2)}.${lib}"
-    def benchmark = "${params.DB}/hg38/hg38.${params.std}.vcf.gz"
-    def bed = "${params.DB}/hg38/hg38.${params.std}.bed"
+    def benchmark = "${params.DB}/hg38/hg38.${params.sample_type}.vcf.gz"
+    def bed = "${params.DB}/hg38/hg38.${params.sample_type}.bed"
     def sdf = "${params.DB}/hg38/hg38.SDF"
     """
     ${params.BIN}bcftools view -O z --type snps $vcf > ${id}.snp.vcf.gz
@@ -95,7 +96,7 @@ process eachstat_vcf {
     output:
     tuple val(id), path("${id}.varianttable.xls")
 
-    publishDir "${params.outdir}/report/$id", mode: 'link'
+    publishDir "${params.outdir}/report/$id", mode: 'copy'
     // publishDir (
     //   path: "${params.outdir}/report/", 
     //   saveAs: { fn ->
@@ -127,7 +128,7 @@ process variant_fix {
     path "${id}.var.xls"
 
     tag "$id"
-    publishDir "${params.outdir}/report/$id/", mode: 'link', saveAs: {"${id}.varianttable.xls"}
+    publishDir "${params.outdir}/report/$id/", mode: 'copy', saveAs: {"${id}.varianttable.xls"}
     // publishDir (
     //   path: "${params.outdir}/report/", 
     //   saveAs: { fn ->
