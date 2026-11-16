@@ -57,6 +57,23 @@ def parse_specimmune(result_dir, category):
     except Exception as e:
         return fail_box(category, f'could not parse result file: {type(e).__name__}: {e}')
 
+def parse_avi(sample_dir):
+    if 'AVI' in SKIPPED:
+        return skipped_box('AVI')
+    # marker written by the avi process when annotation failed
+    marker = os.path.join(sample_dir, 'avi_top.FAILED')
+    if os.path.exists(marker):
+        reason = open(marker).read().strip().replace('<', '&lt;') or 'process reported failure'
+        return fail_box('AVI', reason)
+    top = os.path.join(sample_dir, 'avi_top.tsv')
+    if not os.path.exists(top):
+        return fail_box('AVI', 'avi_top.tsv not found')
+    note = ('<div class="noDataTitle">AlphaGenome variant impact score (PHRED, SNVs only; indels have no score): '
+            '10 &asymp; top 10%, 20 &asymp; top 1%, 30 &asymp; top 0.1% of all possible SNVs. '
+            'Predicted regulatory impact, not pathogenicity. Gene/consequence: most severe VEP CSQ.</div>')
+    summary = parse_report(os.path.join(sample_dir, 'avi_summary.tsv'), 'AVI summary')
+    return note + summary + '<h3>Top AVI variants</h3>' + parse_report(top, 'AVI top variants')
+
 def image_to_base64(image_path):
     try:
         with open(image_path, 'rb') as img_file:
@@ -97,6 +114,7 @@ def generate_html(outdir, sample):
     # table
     metrics     = parse_report(csv) if csv else fail_box('Metrics (stLFRQC)', 'report file not found')
     hla         = parse_specimmune(specimmune_dir, 'HLA')
+    avi         = parse_avi(outdir)
 
     var_class_table           = parse_report(os.path.join(outdir, 'var_class.csv'), 'VEP var_class table')
     cons_type_severe_table    = parse_report(os.path.join(outdir, 'cons_type_severe.csv'), 'VEP cons_type_severe table')
@@ -263,6 +281,11 @@ def generate_html(outdir, sample):
 
             <h3>Variants by chromosome</h3>
             {var_chrom_png}
+        </div>
+
+        <div class="section">
+            <h2>AlphaGenome variant impact (AVI)</h2>
+            {avi}
         </div>
 
         <div class="section">

@@ -105,6 +105,7 @@ include {pangenie;
     pangenie_var_plot;
     pangenie_frombam } from "${params.MOD}/pangenie"
 include {specimmune} from "${params.MOD}/specimmune"
+include {avi} from "${params.MOD}/avi"
 include {WF_haplodenovo} from "${params.MOD}/haplodenovo"
 
 include {report0;
@@ -211,6 +212,7 @@ workflow CWGS {
 
     // annot
     vep_data(vep_frombam(ch_phasedvcf).html)
+    avi(vep_frombam.out.vcf)   // AlphaGenome AVI on the VEP VCF, top N for the html report
 
     // WF_report()
     if (params.ref == 'hg38' || params.ref.contains('GRCh38')) {
@@ -230,7 +232,7 @@ workflow CWGS {
             }
             .set { ch_report0_in }
         report0(ch_report0_in).collect().set {ch_reports}
-        report(ch_reports).mix(vep_data.out, specimmune.out, cumuplot.out, pangenie_var_plot.out, pangenie_plot.out).collect().set {ch_flg}
+        report(ch_reports).mix(vep_data.out, avi.out.report, specimmune.out, cumuplot.out, pangenie_var_plot.out, pangenie_plot.out).collect().set {ch_flg}
         html(ch_flg)
     }
 }
@@ -498,6 +500,7 @@ workflow CWGS_frombam {
                 samtoolsDepthMerge(ch_merge, ch_mergebam).set {ch_mergedepthreport}
 
                 vep_data(vep_frombam(ch_phasedvcf).html)
+                avi(vep_frombam.out.vcf)
 
                 gangstr(ch_mergebam)
                 specimmune(ch_pfbam)   // PF bam after --pfmapq filter (*.pf.mapqltN.bam), not the merged bam
@@ -515,7 +518,7 @@ workflow CWGS_frombam {
                 ch_report.collect().mix(ch_reports).set {ch_reports}
                 report(ch_reports)
 
-                ch_reports.mix(vep_data.out, specimmune.out, cumuplot.out, pangenie_var_plot.out, pangenie_plot.out).collect().set {ch_flg}
+                ch_reports.mix(vep_data.out, avi.out.report, specimmune.out, cumuplot.out, pangenie_var_plot.out, pangenie_plot.out).collect().set {ch_flg}
                 html(ch_flg)
 
             } else {

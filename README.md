@@ -111,6 +111,7 @@ flowchart TD
 
     subgraph ANNOT["Annotation — hg38/GRCh38 only"]
         vep_frombam[vep_frombam] --> vep_data[vep_data]
+        vep_frombam --> avi[avi]
     end
 
     subgraph REPORT["Report"]
@@ -156,6 +157,7 @@ flowchart TD
     stLFRQC --> reportLariatDv
 
     vep_data --> html
+    avi --> html
     pangenie_var_plot --> html
     pangenie_plot --> html
     specimmune --> html
@@ -180,7 +182,7 @@ flowchart TD
     class coveragePf,coverageMeanPf,samtoolsFlagstatPf,samtoolsStatsPf,samtoolsDepthPf,insertsizePf,alignCatPf,samtools_flagstat,samtools_stats,insertsize,samtools_depth,stLFRQC,align_cat,coverage,coverageMean,coverageAvg stats
     class reportLariatDv,report,html report
     class pangenie,pangenie_plot,pangenie_var_plot,gangstr,specimmune sv
-    class vep_frombam,vep_data annot
+    class vep_frombam,vep_data,avi annot
     class haplotag,propagateBxHp,makeWindows,denovoBatch,catContigs denovo
 
 ```
@@ -256,6 +258,7 @@ cp db/GCA_000001405.15_GRCh38_no_alt_analysis_set_corrected.fasta.nonN.region ${
 |------|--------|--------|
 | `hprc-v1.1-mc-grch38.gbz` (3.3 GB) | [HPRC](https://s3-us-west-2.amazonaws.com/human-pangenomics/pangenomes/freeze/freeze1/minigraph-cactus/hprc-v1.1-mc-grch38/hprc-v1.1-mc-grch38.gbz) | `${DB}/hg38/panGenome/` |
 | `GCA_000001405.15_GRCh38_no_alt_analysis_set_corrected.fasta` (+ `.fai`, `.dict`, bwa index) | built from NCBI GCA_000001405.15 with `python scripts/cwgs_supp.py --module corrected_fasta --db_path ${DB}` (needs `_RAWDATA_/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna.gz`) | `${DB}/hg38/panGenome/` |
+| AlphaGenome AVI table (`alphagenome_avi_phred.tsv.gz` + `.tbi`) | build from `alphagenome_variant_impact_score_snvs.tsv.gz` with `bash scripts/avi_prep.sh <in.tsv.gz> ${DB}/hg38/alphagenome/alphagenome_avi_phred.tsv.gz` | `${DB}/hg38/alphagenome/` (or pass `--avi_table`) |
 | SpecImmune HLA database | build from [SpecImmune](https://github.com/deepomicslab/SpecImmune) (tag `v0.0.3`) following its instructions | `${DB}/SpecImmune/db` (or pass `--specimmune_db`) |
 | PanGenie index (`HPRC_index_chr*`, `cactus_filtered_ids_biallelic.vcf.gz`) | build with [PanGenie](https://github.com/eblerjana/pangenie) | `${DB}/pangenie/` (only for the beta SV module) |
 | DeepVariant SE600 model `checkpoint-177536-0.98710-1` | `gsutil -m cp "gs://brain-genomics-public/experimental/exp276475129/wu_1/best/*" <dir>/` | any path; pass `--dv_customized_model <dir>` |
@@ -355,6 +358,18 @@ shown in the final HTML report. If SpecImmune fails, or exits 0 without writing 
 HLA result file, a `FAILED` file with the reason is written in
 `specimmune_out/HLA/` and the pipeline continues. KIR, CYP, and IG/TR remain disabled until their
 databases are built.
+
+### AlphaGenome variant impact (AVI)
+
+For hg38/GRCh38, `avi` adds INFO/AVI (the AlphaGenome variant impact PHRED score)
+to the VEP VCF (`<sample>/annot/<sample>.avi.vcf.gz`) and lists the top
+`--avi_top_n` (default 100) variants by AVI, with the most severe VEP consequence,
+in the HTML report. PHRED 10/20/30 ≈ top 10%/1%/0.1% of all possible SNVs; the score
+is a predicted regulatory impact, not pathogenicity. Only SNVs are scored. Build the
+lookup table once with `scripts/avi_prep.sh` (see the database table above); tabix
+needs it sorted by CHROM, POS, with the same chromosome names as the VCF (`chr1`).
+`--skip_avi true` disables it. If annotation fails, `avi_top.FAILED` is written and
+the report shows the reason.
 
 GangSTR requires a paired-end insert-size distribution and is disabled by
 default for SE600 (`--skip_gangstr true`). It does not contribute to the final
@@ -589,6 +604,7 @@ report/
   chromosome.png                             # ideogram
   cumulative_coverage_plot.png
   <sample>.vep.vcf_summary.html             # VEP annotation summary
+  <sample>/avi_top.tsv, avi_summary.tsv      # top AlphaGenome AVI variants (hg38 only)
 ```
 
 **Typical runtime** (1 sample, 30× cWGS + 40× PF, 60 CPU):  
