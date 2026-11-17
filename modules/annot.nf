@@ -20,11 +20,15 @@ process vep {
     def vcf = phasedvcf.first()
     def ref = "${params.DB}/hg38/reference/hg38.fa"
     def db = "${params.DB}/hg38/"
+    // --vep_known true: match known variants in the cache (Existing_variation, CLIN_SIG) and add 1000G/gnomAD AF, MAX_AF
+    // off: the rendered command is byte-identical to the old one, so -resume keeps cached VEP results
+    def known = params.vep_known ? " ${params.vep_known_args}" : ''
+    def known_fields = params.vep_known ? ',gnomADe_AF,gnomADg_AF,MAX_AF' : ''
     """
     set +u
     source /usr/local/app/miniconda3/bin/activate /usr/local/app/miniconda3/envs/vep
 
-    vep -i $vcf -o ${id}.vep.vcf --cache --offline --dir_cache $db --fasta $ref --species homo_sapiens --assembly GRCh38 --cache_version 113 --vcf --fork ${task.cpus} --fields Uploaded_variation,Location,Allele,Gene,Feature,Feature_type,Consequence,cDNA_position,CDS_position,Protein_position,Amino_acids,Codons,Existing_variation,IMPACT,SYMBOL,dbNSF,AlphaMissense,UTRAnnotator,BIOTYPE,DISTANCE,FLAGS,VARIANT_CLASS,CLIN_SIG,AF
+    vep -i $vcf -o ${id}.vep.vcf --cache --offline --dir_cache $db --fasta $ref --species homo_sapiens --assembly GRCh38 --cache_version 113 --vcf --fork ${task.cpus}${known} --fields Uploaded_variation,Location,Allele,Gene,Feature,Feature_type,Consequence,cDNA_position,CDS_position,Protein_position,Amino_acids,Codons,Existing_variation,IMPACT,SYMBOL,dbNSF,AlphaMissense,UTRAnnotator,BIOTYPE,DISTANCE,FLAGS,VARIANT_CLASS,CLIN_SIG,AF${known_fields}
 
     bgzip -c ${id}.vep.vcf > ${id}.vep.vcf.gz
     tabix -p vcf ${id}.vep.vcf.gz

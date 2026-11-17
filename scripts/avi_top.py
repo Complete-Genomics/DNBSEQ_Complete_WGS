@@ -8,7 +8,7 @@ If the VCF also has VEP INFO/CSQ, the most severe consequence is added to each r
 import sys, heapq
 
 IMPACT_RANK = {'HIGH': 3, 'MODERATE': 2, 'LOW': 1, 'MODIFIER': 0}
-CSQ_COLS = ['SYMBOL', 'Consequence', 'IMPACT', 'CLIN_SIG', 'AF']
+CSQ_COLS = ['SYMBOL', 'Consequence', 'IMPACT', 'Existing_variation', 'CLIN_SIG', 'gnomADg_AF', 'MAX_AF']
 THRESHOLDS = [10, 20, 30]
 
 
